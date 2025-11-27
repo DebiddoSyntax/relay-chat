@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+// import Navbar from "../ui/reusable/Navbar";
+import Sidebar from "../ui/reusable/Sidebar";
 
 export const metadata: Metadata = {
   title: "RelayChat",
