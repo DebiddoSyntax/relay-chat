@@ -1,4 +1,3 @@
-import React from 'react'
 import Chats from '@/src/ui/chats/Chats'
 
 const chat = () => {

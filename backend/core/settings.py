@@ -27,8 +27,21 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'chats',
-    'rest_framework'
+    'rest_framework',
+    'channels'
 ]
+
+ASGI_APPLICATION = "chatproj.asgi.application"
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
+}
 
 AUTH_USER_MODEL = 'chats.User'
 

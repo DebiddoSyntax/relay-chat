@@ -2,7 +2,12 @@
 import ChatCard from './ChatCard'
 import { PiNotePencilBold } from "react-icons/pi";
 
-function ChatOverview() {
+interface ChatOverviewProps{
+    chatOpen: boolean
+    setChatOpen: (val:boolean)=> void
+}
+
+function ChatOverview({ chatOpen, setChatOpen }: ChatOverviewProps) {
 
     const OverView = [
         { active: true },
@@ -22,8 +27,8 @@ function ChatOverview() {
     ]
 
     return (
-        <div className="w-full md:w-80 lg:w-96 2xl:w-[420px] flex flex-col h-full z-20 border-r-2 border-gray-300"> 
-            <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-9 border-b-2 border-gray-300'>
+        <div className={`${chatOpen ? "hidden md:flex md:flex-col" : "flex flex-col "} w-full md:w-full lg:w-96 2xl:w-[420px] h-screen z-20 border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300`}> 
+            <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-gray-300'>
                 <div className='flex justify-between items-center'>
                     <p className='text-xl font-semibold'>
                         Chats
@@ -43,10 +48,12 @@ function ChatOverview() {
                 />
             </div>
 
-            <div className="flex-1 flex flex-col overflow-hidden w-full">
-                <div className="flex-1 px-5 lg:px-6 2xl:px-8 py-8 overflow-y-auto w-full">
+            <div className="flex-1 flex flex-col w-full overflow-y-auto pb-20 md:pb-3 ">
+                <div className="px-5 lg:px-6 2xl:px-8 pt-8 flex-1 overflow-y-auto w-full custom-scrollbar">
                     {OverView.map((a, i)=> (
-                        <ChatCard active={a.active} key={i} />
+                        <div key={i} onClick={()=> setChatOpen(true)}>
+                            <ChatCard active={a.active} />
+                        </div>
                     ))}
                 </div>
             </div>

@@ -46,15 +46,15 @@ function Sidebar() {
 	// })
 
   	return (
-    	<div className='px-0 md:px-0 pt-0 md:pt-0 h-screen'>
+    	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen'>
 
 			{/* Sidebar */}
-			<div className="w-full md:w-40 lg:w-52 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 bg-dashboard-sidebar border-r-2 border-gray-300"> 
+			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 bg-dashboard-sidebar border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
 				
-                <h3 className='font-cherryBombOne font-black text-2xl md:text-3xl lg:text-4xl'>RelayChat</h3>
+                <h3 className='font-cherryBombOne font-black text-2xl md:text-3xl lg:text-4xl pl-5 md:pl-0 pb-5 md:py-0'>RelayChat</h3>
 				
                 {/* <div className='mt-20 hidden md:block'> */}
-                <div className='mt-10 md:mt-20'>
+                <div className='hidden md:block mt-10 md:mt-20'>
                     {/* chats */}
                     <Link href="/chats">
                         <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/chats')}`}>

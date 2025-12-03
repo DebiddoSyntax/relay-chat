@@ -1,10 +1,15 @@
 "use client"
-import { IoMdMore } from "react-icons/io";
+import { IoMdMore, IoIosArrowBack } from "react-icons/io";
 import MessageCard from './MessageCard';
 import { IoSend } from "react-icons/io5";
-// import ChatCard from './ChatCard';
 
-function ChatBox() {
+
+interface ChatBoxProps{
+    chatOpen: boolean
+    setChatOpen: (val:boolean)=> void
+}
+
+function ChatBox({ chatOpen, setChatOpen }: ChatBoxProps) {
     const messages = [
         {
             message: 'This is a message This is a message This is a message This is a message This is a message ',
@@ -75,43 +80,52 @@ function ChatBox() {
             isUser: false
         },
         {
-            message: 'This is a message This is a message This is a message This is a message This is a message ',
+            message: 'This is the last message This is a message This is a message This is a message This is a message ',
             isUser: false
         },
     ]
 
     return (
-        <div className='flex flex-col flex-1 w-full h-screen bg-gray-100'>
+        <div className={`${!chatOpen && "hidden md:flex md:flex-col"} flex-1 w-full h-screen bg-gray-100`}>
             <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-sm'>
-                <div className='w-full flex justify-between items-center'>
-                    <div>
-                        <p className='text-lg font-semibold'>
-                            David Michael
-                        </p>
-                        <p className="text-xs text-green-700">online</p>
+                <div className='w-full flex gap-3 items-center'>
+                    <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={()=> setChatOpen(false)} />
+
+                    <div className='w-full flex justify-between items-center'>
+                        <div>
+                            <p className='text-lg font-semibold'>
+                                David Michael
+                            </p>
+                            <p className="text-xs text-green-700">online</p>
+                        </div>
+
+                        <IoMdMore className='text-2xl cursor-pointer'/>
                     </div>
-                    <IoMdMore className='text-2xl cursor-pointer'/>
                 </div>
             </div>
 
-            <div className='flex-1 overflow-y-auto px-10 pt-3 pb-20 h-full w-full'>
-                {messages.map((m, i)=> (
-                    <MessageCard key={i} m={m} />
-                ))}
+
+            <div className='relative flex-1 h-screen w- pb-80 md:pb-64'>
+                <div className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
+                    {messages.map((m, i)=> (
+                        <MessageCard key={i} m={m} />
+                    ))}
+                </div>
+
+                <div className="sticky bottom-5 w-full flex gap-6 py-10 px-5 lg:px-8 bg-white">
+                    <input 
+                        type="text" 
+                        placeholder="enter your message" 
+                        className="flex-1 py-3 px-4 bg-gray-100 rounded-sm focus:placeholder:opacity-0 focus:outline-none placeholder:text-sm placeholder:font-medium"
+                    />
+                    <button className="bg-blue-700 text-white px-4 py-3 cursor-pointer rounded-sm">
+                        <IoSend />
+                    </button>
+                </div>
+
             </div>
 
-            <div className="flex gap-6 py-10 px-10 bg-white">
-                <input 
-                    type="text" 
-                    placeholder="enter your message" 
-                    name="message" id="message" 
-                    className="py-4 px-5 bg-gray-100 w-full rounded-sm focus:placeholder:opacity-0 focus:outline-0" 
-                />
 
-                <button className="bg-blue-700 text-white px-5 py-4 cursor-pointer rounded-sm">
-                    <IoSend />
-                </button>
-            </div>
         </div>
     )
 }
