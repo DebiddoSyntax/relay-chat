@@ -35,20 +35,22 @@ def signup_view(request):
     # Check if user exists
     email = data['email'].lower().strip()
     if User.objects.filter(email=email).exists():
-        return Response({'detail': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'message': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
 
+
+    print("signup data", request.data)
 
     # Create user
-    try:
-        user = User.objects.create_user(
-            email=email,
-            firstname=data['firstname'],
-            lastname=data['lastname'],
-            password=data['password'],
-        )
-    except Exception as e:
-        print(f"Error creating user: {e}")
-        return Response({'detail': 'Failed to create user'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    # try:
+    #     user = User.objects.create_user(
+    #         email=email,
+    #         firstname=data['firstname'],
+    #         lastname=data['lastname'],
+    #         password=data['password'],
+    #     )
+    # except Exception as e:
+    #     print(f"Error creating user: {e}")
+    #     return Response({'message': 'Failed to create user'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
     # Token generation
@@ -56,7 +58,7 @@ def signup_view(request):
     # access = str(refresh.access_token)
     # refresh = str(refresh)
 
-    login(request, user)
+    # login(request, user)
 
     return Response({
         'message': 'User created successfully',
@@ -64,7 +66,7 @@ def signup_view(request):
         #     'access': access,
         #     'refresh': refresh
         # },
-        'user': user,
+        # 'user': user,
         # 'user': CustomUserSerializer(user).data,
     }, status=status.HTTP_201_CREATED)
 

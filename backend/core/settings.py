@@ -20,6 +20,7 @@ ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost']
 # Application definition
 
 INSTALLED_APPS = [
+    "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -29,6 +30,10 @@ INSTALLED_APPS = [
     'chats',
     'rest_framework',
     'channels'
+]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
 ]
 
 ASGI_APPLICATION = "chatproj.asgi.application"
@@ -46,6 +51,7 @@ CHANNEL_LAYERS = {
 AUTH_USER_MODEL = 'chats.User'
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
