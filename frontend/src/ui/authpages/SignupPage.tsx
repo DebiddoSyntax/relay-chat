@@ -10,13 +10,14 @@ import axios from "axios";
 // import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useAuth } from "@/src/functions/data/auth/Store";
+import LeftSection from "./LeftSection";
 
 
 
 const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 
-interface signupType {
+export interface signupType {
     firstname: string,
     lastname: string,
     email: string,
@@ -63,20 +64,19 @@ const SignupPage = () => {
             ...data
         }
 
-        // console.log(payload)
-
         try{
             setLoading(true)
             const response = await axios.post(`${apiURL}/auth/signup/`, payload)
             console.log("signed Up", response.data)
             const authData = response.data
             setAuth(authData.user, authData.accessToken)
+            router.push('/chats')
         }catch(err){
             if (axios.isAxiosError(err)) {
                 // recaptchaRef.current?.reset();
                 setCaptchaToken("");
-				console.error("error", err.response?.data?.message);
-				setError(err.response?.data || "Something went wrong");
+				console.log("error", err.response?.data);
+				setError(err.response?.data.email || "Something went wrong");
 			} else {
 				console.error("unexpected error", err);
 				setError("An unexpected error occurred");
@@ -90,9 +90,7 @@ const SignupPage = () => {
 
   return (
     <div className='grid grid-cols-1 md:grid-cols-2 w-full h-screen py-0 bg-dashboard-background'>
-        <div className="px-5 md:px-20 w-full bg-blue-700">
-            Hello
-        </div>
+        <LeftSection />
 
         <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
             <div className='w-full md:w-[400px] mx-auto mt-20'>
@@ -111,7 +109,7 @@ const SignupPage = () => {
                             </p>
                         </div>
                         <div className="mb-5 mt-5 items-start text-left w-full">
-                            <label htmlFor="lastname" className="text-sm font-semibold  ">Last Name</label>
+                            <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
                             <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
                                 className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
                                 {...register('lastname')}

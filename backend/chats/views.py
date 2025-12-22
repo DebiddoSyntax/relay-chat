@@ -1,72 +1,112 @@
-from django.contrib.auth import authenticate, login
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-import json
+from .serializers import SignupSerializer, LoginSerializer
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 
-
-# Create your views here.
 
 User = get_user_model()
 
+
+# Create your views here.
 @api_view(['GET'])
 def chats(request):
     content = { 'name': "David" }
     return Response(content, status=status.HTTP_200_OK)
 
 
+# Signup view
+@csrf_exempt
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def signup_view(request):
-    data = request.data
+    serializer = SignupSerializer(data=request.data)
 
-    required_fields = [
-        'firstname', 'lastname', 'email', 'password', 
-    ]
+    if not serializer.is_valid():
+        errors = serializer.errors
 
-    missing_fields = [field for field in required_fields if not data.get(field)]
+        field_name = list(errors.keys())[0]
+        message = errors[field_name][0]
 
-    if missing_fields:
-        return Response({
-            'detail': f'Missing required fields: {", ".join(missing_fields)}'
-        }, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": message},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
-    # Check if user exists
-    email = data['email'].lower().strip()
-    if User.objects.filter(email=email).exists():
-        return Response({'message': 'Email already exists'}, status=status.HTTP_400_BAD_REQUEST)
+    data = serializer.save()
+
+    accessToken = data['accessToken']
+    refreshToken = data['refreshToken']
+    user = data['user']
+
+    send_user = {
+        'id': user.id,
+        'email': user.email,
+        'firstname': user.firstname,
+        'lastname': user.lastname,
+    }
+
+    response = Response(
+        {
+            'accessToken': accessToken,
+            'user': send_user
+        },
+        status=status.HTTP_200_OK
+    )
+
+    response.set_cookie(
+        key='refreshToken',
+        value=refreshToken,
+        httponly=True,
+        secure=False,
+        samesite='Lax',
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    return response
 
 
-    print("signup data", request.data)
-
-    # Create user
-    # try:
-    #     user = User.objects.create_user(
-    #         email=email,
-    #         firstname=data['firstname'],
-    #         lastname=data['lastname'],
-    #         password=data['password'],
-    #     )
-    # except Exception as e:
-    #     print(f"Error creating user: {e}")
-    #     return Response({'message': 'Failed to create user'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+# Login view
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_view(request):
+    serializer = LoginSerializer(data=request.data)
 
 
-    # Token generation
-    # refresh = RefreshToken.for_user(user)
-    # access = str(refresh.access_token)
-    # refresh = str(refresh)
+    serializer.is_valid(raise_exception=True)
 
-    # login(request, user)
+    user = serializer.user
+    accessToken = serializer.access_token
+    refreshToken = serializer.refresh_token
 
-    return Response({
-        'message': 'User created successfully',
-        # 'token': {
-        #     'access': access,
-        #     'refresh': refresh
-        # },
-        # 'user': user,
-        # 'user': CustomUserSerializer(user).data,
-    }, status=status.HTTP_201_CREATED)
+    response = Response(
+        {
+            'accessToken': accessToken,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'firstname': user.firstname,
+                'lastname': user.lastname,
+            }
+        },
+        status=status.HTTP_200_OK
+    )
+
+    response.set_cookie(
+        key='refreshToken',
+        value=refreshToken,
+        httponly=True,
+        secure=False,
+        samesite='Lax',
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    return response
 

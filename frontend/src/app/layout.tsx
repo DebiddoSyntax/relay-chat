@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-// import Navbar from "../ui/reusable/Navbar";
+import Navbar from "../ui/reusable/Navbar";
+import Wrapper from "../ui/reusable/Wrapper";
 
 export const metadata: Metadata = {
   title: "RelayChat",
@@ -15,8 +16,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {/* <Navbar /> */}
-        {children}
+        <Wrapper>
+          {children}
+        </Wrapper>
       </body>
     </html>
   );

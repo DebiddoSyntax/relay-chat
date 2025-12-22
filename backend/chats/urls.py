@@ -4,5 +4,6 @@ from . import views
 
 urlpatterns = [
     path('chats/', views.chats),
-    path('auth/signup/', views.signup_view)
+    path('auth/signup/', views.signup_view),
+    path('auth/login/', views.login_view)
 ]
