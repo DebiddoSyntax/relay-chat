@@ -48,7 +48,7 @@ function AddNewChat({ setOverviewData, setActiveId }: AddNewChatProps ) {
     return (
         <div>
             
-            <PiNotePencilBold className='text-2xl cursor-pointer' onClick={()=> setNewChat(true)}/>
+            <PiNotePencilBold className='text-2xl cursor-pointer' onClick={()=> setNewChat(true)} />
 
             {newChat && (
                 <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">

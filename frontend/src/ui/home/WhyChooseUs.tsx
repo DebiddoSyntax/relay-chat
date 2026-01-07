@@ -7,8 +7,8 @@ function WhyChooseUs() {
             <h3 className='text-4xl font-bold'>Why choose us?</h3>
 
             <div className='grid grid-cols-2 gap-12 mt-10'>
-                {[1,2,3,4] .map(()=> (
-                    <div className='px-5 md:px-8 py-5 md:py-8 bg-[#f2f2f2] rounded-lg'>
+                {[1,2,3,4] .map((i)=> (
+                    <div key={i} className='px-5 md:px-8 py-5 md:py-8 bg-[#f2f2f2] rounded-lg'>
                         <div className='p-2 rounded-full bg-orange-700 inline-block'>
                             <RiChatSmileAiLine className='text-2xl text-white' />
                         </div>

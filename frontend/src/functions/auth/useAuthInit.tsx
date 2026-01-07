@@ -1,12 +1,11 @@
-import { usePathname } from "next/navigation";
+"use client";
 import { useAuth } from "./Store";
 import { useEffect, useRef } from "react";
-import { areInterceptorsActive, EjectInterceptors, InitializedInterceptor } from "@/src/functions/state/AxiosConfig";
+import { areInterceptorsActive, EjectInterceptors, InitializedInterceptor } from "@/src/functions/auth/AxiosConfig";
 
 
-export function useAuthInit() {
-    const pathname = usePathname();
-    const { user, accessToken, authInitialized, refreshAccessToken } = useAuth();
+export default function AuthInit() {
+    const { accessToken, authInitialized, refreshAccessToken } = useAuth();
 
     const refreshRef = useRef(refreshAccessToken);
 
@@ -34,5 +33,8 @@ export function useAuthInit() {
                 InitializedInterceptor(refreshRef.current);
             }
         }
-    }, [pathname, accessToken, authInitialized]);
+    }, [accessToken, authInitialized]);
+
+
+    return null
 }

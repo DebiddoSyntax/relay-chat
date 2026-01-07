@@ -1,10 +1,9 @@
 export interface OverviewDataProps {
-    active: boolean
-    lastmessage: string, 
-    sender: string, 
-    receiver: string, 
-    timeStamp: string, 
-    id: number
+    last_message: string, 
+        last_message_time: string, 
+        receiver: string,  
+        chat_id: number
+        chat_name: string
 }
 
 export interface NewchatInputType{

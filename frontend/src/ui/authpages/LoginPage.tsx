@@ -65,7 +65,7 @@ const Loginpage = () => {
             const response = await axios.post(`${apiURL}/auth/login/`, payload)
             // console.log("logged in", response.data.message)
             const authData = response.data
-            setAuth(authData.user, authData.accessToken)
+            setAuth(authData.user, authData.accessToken, authData.refreshToken)
             router.push(`/chats`)
         }catch(err){
             if (axios.isAxiosError(err)) {

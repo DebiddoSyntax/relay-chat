@@ -6,11 +6,8 @@ from datetime import timedelta
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!b$&^kp0oct+5z8cal59qbsf%b$y6n*pfps^e+sh-5j6o@_#2j'
+SECRET_KEY = config('DJANGO_SECRETKEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -20,6 +17,7 @@ ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost']
 
 # Application definition
 INSTALLED_APPS = [
+    "daphne",
     "corsheaders",
     'django.contrib.admin',
     'django.contrib.auth',
@@ -30,8 +28,16 @@ INSTALLED_APPS = [
     'chats',
     'rest_framework',
     'rest_framework_simplejwt',
+    "rest_framework_simplejwt.token_blacklist",
     'channels'
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+}
+
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -60,7 +66,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-ASGI_APPLICATION = "chatproj.asgi.application"
 
 
 SIMPLE_JWT = {
@@ -88,7 +93,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    # 'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -110,6 +115,8 @@ TEMPLATES = [
         },
     },
 ]
+
+ASGI_APPLICATION = "core.asgi.application"
 
 WSGI_APPLICATION = 'core.wsgi.application'
 

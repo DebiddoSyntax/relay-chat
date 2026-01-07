@@ -1,19 +1,20 @@
 import React from 'react'
+import { MessageType } from './ChatBox'
+import { useAuth } from '@/src/functions/auth/Store'
 
 interface MessageProps {
-    m: {
-        message: string, 
-        isUser: boolean
-    }
+    m: MessageType
 }
 
 
 function MessageCard({ m }: MessageProps) {
+
+    const user = useAuth((state)=> state.user)
     
     return (
-        <div className={`flex ${ m.isUser ? "justify-end" : "justify-start" } mt-5 px-5 xl:px-8`} >
-            <div className={`${ !m.isUser ? "bg-white text-black" : "bg-blue-700 text-white" } px-5 py-4 w-72 md:w-80 xl:max-w-[420px] text-xs leading-6 rounded-sm wrap-break-words`} >
-                {m.message}
+        <div className={`flex ${ m.sender_id == user?.id ? "justify-end" : "justify-start" } mt-5 px-5 xl:px-8`} >
+            <div className={`${m.sender_id !== user?.id ? "bg-white text-black" : "bg-blue-700 text-white" } px-5 py-4 w-72 md:w-80 xl:max-w-[420px] text-xs leading-6 rounded-sm break-words`} >
+                {m.content}
             </div> 
         </div>
            

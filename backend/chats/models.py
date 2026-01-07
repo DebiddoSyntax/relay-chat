@@ -2,7 +2,9 @@
 import uuid
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import PermissionsMixin
+
 
 # 1. User Manager
 class CustomUserManager(BaseUserManager):
@@ -63,14 +65,23 @@ class RefreshToken(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
 
 class Chat(models.Model):
-    id = models.CharField(primary_key=True, max_length=25, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, null=True, blank=True)
     is_group = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     users = models.ManyToManyField(User, through='UserChat', related_name='chats')
+    
+    last_message = models.ForeignKey(
+        'Message', 
+        null=True, 
+        blank=True, 
+        on_delete=models.SET_NULL,
+        related_name='+'
+    )
+    updated_at = models.DateTimeField(auto_now=True)
 
 class UserChat(models.Model):
-    id = models.CharField(primary_key=True, max_length=25, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
     role = models.CharField(max_length=50, null=True, blank=True)
@@ -80,7 +91,7 @@ class UserChat(models.Model):
         unique_together = ('user', 'chat')
 
 class Message(models.Model):
-    id = models.CharField(primary_key=True, max_length=25, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
     content = models.TextField()
@@ -88,8 +99,15 @@ class Message(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     read_by = models.ManyToManyField(User, through='MessageReadBy', related_name='messages_read')
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['chat', '-created_at']),
+            models.Index(fields=['sender', '-created_at']),
+        ]
+        ordering = ['-created_at']
+
 class MessageReadBy(models.Model):
-    id = models.CharField(primary_key=True, max_length=25, default=uuid.uuid4, editable=False)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     message = models.ForeignKey(Message, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     read_at = models.DateTimeField(default=timezone.now)

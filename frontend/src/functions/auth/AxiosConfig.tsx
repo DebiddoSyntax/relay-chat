@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useAuth } from './Store';
 
 const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
@@ -36,7 +37,12 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
     
     requestInterceptorId = api.interceptors.request.use(
         (config) => {
-            const RequestInterToken = localStorage.getItem('accessToken');
+            if (config.url?.includes("/auth/refresh")) {
+                console.log("Token not added to request");
+                return config
+            }
+
+           const RequestInterToken = useAuth.getState().accessToken;
             if (RequestInterToken) {
                 config.headers = config.headers || {};
                 config.headers.Authorization = `Bearer ${RequestInterToken}`;
@@ -53,28 +59,38 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
     responseInterceptorId = api.interceptors.response.use(
         (response) => response,
         async (error) => {
-            // console.log("Response interceptor triggered");
+            console.log("Response interceptor triggered");
             
             if (!error.response) {
-                // console.error("Network error, no response received");
+                console.error("Network error, no response received");
                 return Promise.reject(error);
             }
 
             const originalRequest = error.config;
+
+            if (originalRequest.url?.includes("/api/auth/refresh")) {
+                console.log("Refresh failed. Logging out.");
+
+                processQueue(error, null);
+                useAuth.getState().logout();
+
+                return Promise.reject(error);
+            }
+
             
             if (error.response?.status === 401 && !originalRequest._retry) {
-                const token = localStorage.getItem('accessToken');
+                const token = useAuth.getState().accessToken;
                 
                 if (!token) {
-                    // console.log("No token found, rejecting request");
+                    console.log("No token found, rejecting request");
                     return Promise.reject(error);
                 }
 
                 if (isRefreshing) {
-                    // console.log("Already refreshing, queueing request");
+                    console.log("Already refreshing, queueing request");
                     return new Promise((resolve, reject) => {
                         failedQueue.push({ resolve, reject });
-						// console.log('failed request queue with 401', failedQueue)
+						console.log('failed request queue with 401', failedQueue)
                     })
                         .then(token => {
                             if (token) {
@@ -90,13 +106,13 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
                 originalRequest._retry = true;
                 isRefreshing = true;
 
-                // console.log("Starting token refresh");
+                console.log("Starting token refresh");
 
                 try {
                     const newToken = await refreshAccessToken();
                     
                     if (newToken) {
-                        // console.log("Token refreshed successfully");
+                        console.log("Token refreshed successfully");
                         originalRequest.headers.Authorization = `Bearer ${newToken}`;
                         processQueue(null, newToken);
                         return api(originalRequest);
@@ -118,8 +134,10 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
         }
     );
 
-    // console.log("Interceptors initialized with IDs:", requestInterceptorId, responseInterceptorId);
+    console.log("Interceptors initialized with IDs:", requestInterceptorId, responseInterceptorId);
 };
+
+
 
 export const EjectInterceptors = () => {
     if (requestInterceptorId !== null) {

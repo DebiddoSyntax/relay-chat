@@ -2,6 +2,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from .models import Chat, UserChat, Message
 
 
 User = get_user_model()
@@ -94,3 +95,38 @@ class LoginSerializer(serializers.Serializer):
         self.refresh_token = str(refresh)
 
         return data
+
+  
+
+
+class StartChatSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        if not User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User not found")
+        return value
+    
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.UUIDField(source='sender.id', read_only=True)
+    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    is_read = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Message
+        fields = [
+            'id',
+            'chat',
+            'sender_id',
+            'sender_name',
+            'content',
+            'type',
+            'created_at',
+            'is_read',
+        ]
+
+    def get_is_read(self, obj):
+        user = self.context['request'].user
+        return obj.read_by.filter(id=user.id).exists()
