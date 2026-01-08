@@ -7,40 +7,54 @@ import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
 import { IoClose } from "react-icons/io5";
 import { NewchatInputType, OverviewDataProps } from '@/src/functions/types/ChatType';
+import api from '@/src/functions/auth/AxiosConfig';
 
 
 
 interface AddNewChatProps { 
     setOverviewData: Dispatch<SetStateAction<OverviewDataProps[] | null>>
     setActiveId: (val: number)=> void
+    isGroup: boolean
 }
 
 
-function AddNewChat({ setOverviewData, setActiveId }: AddNewChatProps ) {
+function AddNewChat({ setOverviewData, setActiveId, isGroup }: AddNewChatProps ) {
 
 
     const [newChat, setNewChat] = useState(false)
 
-    const schema = yup.object({
-        email: yup.string().required("Who do you want to text?").email('Enter a valid email'),
+    const schema = yup.object().shape({
+        groupName: isGroup 
+            ? yup.string().required("Enter a group name")
+            : yup.string().notRequired().nullable(),
+        receiver: yup.string().required("Who do you want to text?").email('Enter a valid email'),
         firstMessage: yup.string().required("Enter your message"),
-    })
+    }) as yup.ObjectSchema<NewchatInputType>;
 
+    
     const { register, handleSubmit, formState: { errors } } = useForm<NewchatInputType>({
-        resolver: yupResolver(schema),
+        resolver: yupResolver(schema)
     });
 
     const handleCall = async (data: NewchatInputType) => {
         console.log(data)
-        const newdata = { active: true, lastmessage: data.firstMessage, sender: 'user', receiver: 'David Michael', timeStamp: '20mins', id: 100 }
         
-        setOverviewData((prev) => {
-            return prev ? [newdata, ...prev] : prev
-        })
+        try{
+            const fetchPath = isGroup ? '/groupchat/start/' : '/chat/start/'
 
-        setNewChat(false)
+            const response = await api.post(`${fetchPath}`, data)
+            console.log('start chat', response.data)
+        } catch(e){
+            console.log('start chat error', e)
+        }
 
-        setActiveId(newdata.id)
+        // setOverviewData((prev) => {
+        //     return prev ? [newdata, ...prev] : prev
+        // })
+
+        // setNewChat(false)
+
+        // setActiveId(newdata.id)
 
     }
 
@@ -64,31 +78,51 @@ function AddNewChat({ setOverviewData, setActiveId }: AddNewChatProps ) {
                         </div>
 
                         <form onSubmit={handleSubmit(handleCall)} className=''>
+
+                            {isGroup && (
+                                <div className="mb-5 mt-5 items-start text-left w-full">
+                                    <label htmlFor="groupName" className="text-sm font-semibold">
+                                        Group Name
+                                    </label>
+                                    <input autoComplete="off" type="text" id="groupName" placeholder='Enter a group name'
+                                        className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        {...register('groupName')}
+                                    />
+                                    <p className="text-red-700 text-sm mt-2">
+                                        {errors.groupName?.message && String(errors.groupName.message)}
+                                    </p>
+                                </div>
+                            )}
+
+
                             <div className="mb-5 mt-5 items-start text-left w-full">
                                 <label htmlFor="email" className="text-sm font-semibold">
                                     Email
                                 </label>
                                 <input autoComplete="off" type="text" id="email" placeholder='Enter an email'
                                     className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    {...register('email')}
+                                    {...register('receiver')}
                                 />
                                 <p className="text-red-700 text-sm mt-2">
-                                    {errors.email?.message && String(errors.email.message)}
+                                    {errors.receiver?.message && String(errors.receiver.message)}
                                 </p>
                             </div>
+                            
 
                             <div className="mb-5 mt-5 items-start text-left w-full">
                                 <label htmlFor="firstMessage" className="text-sm font-semibold">
                                     Message
                                 </label>
+                                
                                 <textarea
                                     autoComplete="off" 
                                     id="firstMessage" 
                                     placeholder='Enter your message'
-                                    className=" min-h-5 max-h-[120px] w-full p-3 bg-gray-100 mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    className=" min-h-16 max-h-16 resize-none w-full p-3 bg-gray-100 mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
                                     rows={1}
                                     {...register('firstMessage')}
                                 /> 
+
                                 <p className="text-red-700 text-sm mt-2">
                                     {errors.firstMessage?.message && String(errors.firstMessage.message)}
                                 </p>

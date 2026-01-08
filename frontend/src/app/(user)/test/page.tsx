@@ -1,4 +1,4 @@
-import TestChat from "@/src/ui/chats/Test"
+import TestChat from "@/src/ui/play/Test"
 
 function test() {
     return (

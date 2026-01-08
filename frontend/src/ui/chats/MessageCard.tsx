@@ -6,7 +6,7 @@ interface MessageProps {
     m: MessageType
 }
 
-
+// single message component 
 function MessageCard({ m }: MessageProps) {
 
     const user = useAuth((state)=> state.user)

@@ -2,6 +2,8 @@
 import { useAuth } from "./Store";
 import { useEffect, useRef } from "react";
 import { areInterceptorsActive, EjectInterceptors, InitializedInterceptor } from "@/src/functions/auth/AxiosConfig";
+import { usePathname } from "next/navigation";
+import { useChat } from "../chats/chatStore";
 
 
 export default function AuthInit() {
@@ -13,7 +15,6 @@ export default function AuthInit() {
         refreshRef.current = refreshAccessToken;
     }, [refreshAccessToken]);
 
-    
     useEffect(() => {
         if (accessToken) {
             InitializedInterceptor(refreshRef.current);
@@ -34,6 +35,15 @@ export default function AuthInit() {
             }
         }
     }, [accessToken, authInitialized]);
+    
+    const pathname = usePathname()
+    const setActiveId = useChat((state)=> state.setActiveId)
+    const setChatOpen = useChat((state)=> state.setChatOpen)
+
+    useEffect(()=> {
+        setActiveId(null)
+        setChatOpen(false)
+    }, [pathname])
 
 
     return null

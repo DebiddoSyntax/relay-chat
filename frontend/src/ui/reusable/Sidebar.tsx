@@ -10,6 +10,7 @@ import { IoIosArrowBack } from "react-icons/io";
 import { TbLayoutSidebarRightCollapseFilled } from "react-icons/tb";
 import { HiUser } from "react-icons/hi2";
 import { PiChatTeardropDotsFill } from "react-icons/pi";
+import { useAuth } from '@/src/functions/auth/Store';
 
 
 
@@ -17,10 +18,10 @@ import { PiChatTeardropDotsFill } from "react-icons/pi";
 function Sidebar() {
 
 	const pathname = usePathname();
+	const logout = useAuth((state)=> state.logout)
 	const [nav, setNav] = useState<boolean>(false);
-
+	
 	const handleNav = () => setNav(!nav);
-
 
 	const getLinkClass = (path: string, exact: boolean = false) => {
 		const normalizedPathname = pathname?.endsWith('/') && pathname !== '/' 
@@ -44,6 +45,10 @@ function Sidebar() {
 	// const navCloseRef = useClicktoClose(()=> {
 	// 	setNav(false)
 	// })
+
+	 const handleLogout = () => {
+        logout()
+    }
 
   	return (
     	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen'>
@@ -78,6 +83,11 @@ function Sidebar() {
                             <p className="text-sm 2xl:text-base font-bold">Profile</p>
                         </div>
                     </Link>
+                </div>
+
+				<div className=''>
+                    <p onClick={handleLogout}>logout</p>
+                    {/* <p onClick={handleRefresh}>refresh Token</p> */}
                 </div>
 
 			</div>

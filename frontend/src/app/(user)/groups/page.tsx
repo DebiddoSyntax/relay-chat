@@ -1,4 +1,4 @@
-import GroupChats from "@/src/ui/groups/GroupChats"
+import GroupChats from "@/src/ui/chats/GroupChats"
 
 function chatgroup() {
     return (
