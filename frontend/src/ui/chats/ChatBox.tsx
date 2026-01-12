@@ -2,11 +2,13 @@
 import { IoMdMore, IoIosArrowBack } from "react-icons/io";
 import MessageCard from './MessageCard';
 import { IoSend } from "react-icons/io5";
+import { MdGroupAdd } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/functions/auth/Store";
 import api from "@/src/functions/auth/AxiosConfig";
-import { fetchAllMessages } from "@/src/ui/play/chats/fetchMessage";
 import { useChat } from "@/src/functions/chats/chatStore";
+import AddMember from "./AddMember";
+import ViewMemebers from "./ViewMemebers";
 
 
 
@@ -21,7 +23,11 @@ export interface MessageType {
 
 }
 
-function ChatBox() {
+interface ChatBoxProps{
+    isGroup: boolean
+}
+
+function ChatBox({ isGroup }: ChatBoxProps) {
 
     const token = useAuth((state)=> state.accessToken)
 
@@ -37,6 +43,8 @@ function ChatBox() {
     const [input, setInput] = useState("");
     const [status, setStatus] = useState("connecting");
     const [nextUrl, setNextUrl] = useState<string | null>(null);
+    
+    const [moreOPtion, setMoreOPtion] = useState(false);
 
 
     
@@ -61,7 +69,12 @@ function ChatBox() {
         const fetchMore = async() => {
             const res = await api.get(`${nextUrl}`)
             console.log('more', res.data)
+            setMessages((prev)=> (
+                [res.data.results.reverse(), ...prev])
+            )
         }
+
+         console.log('messages', messages)
 
         fetchMore()
     }, [nextUrl])
@@ -187,8 +200,16 @@ function ChatBox() {
 
                                     <p className={`text-xs ${status == 'disconnected' && 'text-red-700'} text-green-700`}>{status}</p>
                                 </div>
-
-                                <IoMdMore className='text-2xl cursor-pointer'/>
+                                
+                                <div className="relative inline-block text-left">
+                                    <IoMdMore className='text-2xl cursor-pointer' onClick={()=> setMoreOPtion(true)}/>
+                                    {isGroup && moreOPtion && (
+                                        <div className={`w-32 absolute right-0 z-10 mt-3 origin-top-left rounded-sm bg-background shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none text-xs font-bold`}>
+                                            <AddMember />
+                                            <ViewMemebers />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -196,8 +217,8 @@ function ChatBox() {
 
                     <div className='relative flex-1 h-full w-full pb-80 md:pb-[220px]'>
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
-                            {messages.map((m, i)=> (
-                                <MessageCard key={i} m={m} />
+                            {messages.map((m)=> (
+                                <MessageCard key={m.id} m={m} />
                             ))}
                         </div>
 
@@ -206,7 +227,6 @@ function ChatBox() {
                             <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                autoComplete="off" 
                                 id="firstMessage" 
                                 onKeyDown={handleKeyPress}
                                 placeholder='enter your message'
@@ -222,7 +242,6 @@ function ChatBox() {
 
 
                     </div>
-
 
                 </div>
             ) : (

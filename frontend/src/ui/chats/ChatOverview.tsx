@@ -66,7 +66,7 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
                         {isGroup ? 'Groups' : 'Chats'}
                     </p>
 
-                    <AddNewChat setOverviewData={setOverviewData} setActiveId={setActiveId} isGroup={isGroup}/>
+                    <AddNewChat setOverviewData={setOverviewData} isGroup={isGroup}/>
                 </div>
             </div>
 

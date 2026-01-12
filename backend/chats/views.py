@@ -20,8 +20,56 @@ from django.utils import timezone
 
 User = get_user_model()
 
+# get chat messages
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_message_list_view(request, chat_id):
+ 
+    chat = get_object_or_404(Chat, id=chat_id)
 
-# start chat
+   
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response([], status=403)
+
+    
+    queryset = (
+        Message.objects
+        .filter(chat=chat)
+        .select_related('sender')
+        .prefetch_related('read_by')
+    )
+
+    # 4. Paginate manually
+    paginator = MessageCursorPagination()
+    page = paginator.paginate_queryset(queryset, request)
+
+    serializer = MessageSerializer(
+        page,
+        many=True,
+        context={'request': request}
+    )
+
+    # 5. Mark messages as read (only paginated ones)
+    unread_messages = (
+        Message.objects
+        .filter(id__in=[msg.id for msg in page])
+        .exclude(read_by=request.user)
+    )
+
+    MessageReadBy.objects.bulk_create(
+        [
+            MessageReadBy(message=msg, user=request.user)
+            for msg in unread_messages
+        ],
+        ignore_conflicts=True
+    )
+
+    # 6. Return paginated response
+    return paginator.get_paginated_response(serializer.data)
+
+
+
+# start private chat
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def start_chat_view(request):
@@ -133,57 +181,6 @@ def get_chat_view(request):
 
 
     return Response(data, status=status.HTTP_200_OK)
-
-
-
-
-# get chat messages
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def chat_message_list_view(request, chat_id):
- 
-    chat = get_object_or_404(Chat, id=chat_id)
-
-   
-    if not chat.users.filter(id=request.user.id).exists():
-        return Response([], status=403)
-
-    
-    queryset = (
-        Message.objects
-        .filter(chat=chat)
-        .select_related('sender')
-        .prefetch_related('read_by')
-    )
-
-    # 4. Paginate manually
-    paginator = MessageCursorPagination()
-    page = paginator.paginate_queryset(queryset, request)
-
-    serializer = MessageSerializer(
-        page,
-        many=True,
-        context={'request': request}
-    )
-
-    # 5. Mark messages as read (only paginated ones)
-    unread_messages = (
-        Message.objects
-        .filter(id__in=[msg.id for msg in page])
-        .exclude(read_by=request.user)
-    )
-
-    MessageReadBy.objects.bulk_create(
-        [
-            MessageReadBy(message=msg, user=request.user)
-            for msg in unread_messages
-        ],
-        ignore_conflicts=True
-    )
-
-    # 6. Return paginated response
-    return paginator.get_paginated_response(serializer.data)
-
 
 
 # start group chat
@@ -306,52 +303,135 @@ def get_groupchat_view(request):
 
 
 
-# get group chat messages
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
-# def chat_message_list_view(request, chat_id):
- 
-#     chat = get_object_or_404(Chat, id=chat_id)
+# join group chat
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def join_groupchat_view(request):
+    user = request.user
+    group_id = request.data.get('groupId').strip()
 
-   
-#     if not chat.users.filter(id=request.user.id).exists():
-#         return Response([], status=403)
+    if not group_id:
+        return Response(
+            {"detail": "Group id not provided"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
+    try:
+        chat = Chat.objects.get(id=group_id, is_group=True)
+    except Chat.DoesNotExist:
+        return Response(
+            {"detail": "Chat with this id does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    chat.users.add(user)
+
+
+    return Response(
+        {
+            "chat_id": chat.id,
+            "chat_name": chat.name,
+            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message_time": chat.last_message.created_at if chat.last_message else None,
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+# add new member to group chat
+@api_view(['PUT'])
+@permission_classes([IsAuthenticated])
+def addmember_groupchat_view(request):
+    requester = request.user
+    group_id = request.data.get('groupId')
+    receiver_email = request.data.get('receiver')
+
+    if not group_id:
+        return Response(
+            {"detail": "Group id not provided"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not receiver_email:
+        return Response(
+            {"detail": "Receiver email is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
     
-#     queryset = (
-#         Message.objects
-#         .filter(chat=chat)
-#         .select_related('sender')
-#         .prefetch_related('read_by')
-#     )
+    try:
+        receiver = User.objects.get(email=receiver_email)
+    except User.DoesNotExist:
+        return Response(
+            {"detail": "User with this email does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
-#     # 4. Paginate manually
-#     paginator = MessageCursorPagination()
-#     page = paginator.paginate_queryset(queryset, request)
+    try:
+        chat = Chat.objects.get(id=group_id, is_group=True)
+    except Chat.DoesNotExist:
+        return Response(
+            {"detail": "Chat with this id does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
-#     serializer = MessageSerializer(
-#         page,
-#         many=True,
-#         context={'request': request}
-#     )
+    if requester not in chat.users.all():
+        return Response(
+            {"detail": "You are not allowed to add members to this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
-#     # 5. Mark messages as read (only paginated ones)
-#     unread_messages = (
-#         Message.objects
-#         .filter(id__in=[msg.id for msg in page])
-#         .exclude(read_by=request.user)
-#     )
+    chat.users.add(receiver)
 
-#     MessageReadBy.objects.bulk_create(
-#         [
-#             MessageReadBy(message=msg, user=request.user)
-#             for msg in unread_messages
-#         ],
-#         ignore_conflicts=True
-#     )
 
-#     # 6. Return paginated response
-#     return paginator.get_paginated_response(serializer.data)
+    return Response(
+        {
+            "chat_id": chat.id,
+            "chat_name": chat.name,
+            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message_time": chat.last_message.created_at if chat.last_message else None,
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+
+# view members of group chat
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def viewmember_groupchat_view(request, chat_id):
+
+    chat = get_object_or_404(Chat, id=chat_id)
+
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response([], status=403)
+
+    try:
+        chat = Chat.objects.get(id=chat_id, is_group=True)
+    except Chat.DoesNotExist:
+        return Response(
+            {"detail": "Chat with this id does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if request.user not in chat.users.all():
+        return Response(
+            {"detail": "You are not allowed to view members to this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    members = chat.users.all()
+
+
+    return Response(
+        [
+            {
+                # "id": m.id,
+                "email": m.email
+            }
+            for m in members
+        ],
+        status=status.HTTP_200_OK
+    )
 
 
 
@@ -405,7 +485,6 @@ def signup_view(request):
     )
 
     return response
-
 
 
 

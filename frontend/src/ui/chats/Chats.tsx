@@ -8,7 +8,7 @@ function Chats() {
     return (
         <div className='flex flex-col lg:flex-row flex-1 h-full w-full'>
             <ChatOverview isGroup={false}  />
-            <ChatBox />
+            <ChatBox isGroup={false}/>
         </div>
     )
 }

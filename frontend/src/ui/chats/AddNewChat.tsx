@@ -8,19 +8,21 @@ import { yupResolver } from "@hookform/resolvers/yup"
 import { IoClose } from "react-icons/io5";
 import { NewchatInputType, OverviewDataProps } from '@/src/functions/types/ChatType';
 import api from '@/src/functions/auth/AxiosConfig';
+import { useChat } from '@/src/functions/chats/chatStore';
 
 
 
 interface AddNewChatProps { 
     setOverviewData: Dispatch<SetStateAction<OverviewDataProps[] | null>>
-    setActiveId: (val: number)=> void
     isGroup: boolean
 }
 
 
-function AddNewChat({ setOverviewData, setActiveId, isGroup }: AddNewChatProps ) {
+function AddNewChat({ setOverviewData, isGroup }: AddNewChatProps ) {
 
 
+
+    const setActiveId = useChat((state)=> state.setActiveId)
     const [newChat, setNewChat] = useState(false)
 
     const schema = yup.object().shape({
@@ -69,7 +71,7 @@ function AddNewChat({ setOverviewData, setActiveId, isGroup }: AddNewChatProps )
                     <div className={`flex flex-col relative w-96 md:w-[640px] h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
                         <div className='flex justify-between items-center'>
                             <p className='text-lg font-semibold'>
-                                Add new chat
+                                {isGroup ? 'Create new group' : 'Add new chat'}
                             </p>
                             <IoClose 
                                 onClick={()=> setNewChat(false)} 
