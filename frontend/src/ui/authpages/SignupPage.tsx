@@ -9,7 +9,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
 // import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { useAuth } from "@/src/functions/data/auth/Store";
+import { useAuth } from "@/src/functions/auth/Store";
 import LeftSection from "./LeftSection";
 
 
@@ -69,7 +69,7 @@ const SignupPage = () => {
             const response = await axios.post(`${apiURL}/auth/signup/`, payload)
             console.log("signed Up", response.data)
             const authData = response.data
-            setAuth(authData.user, authData.accessToken)
+            setAuth(authData.user, authData.accessToken, authData.refreshToken)
             router.push('/chats')
         }catch(err){
             if (axios.isAxiosError(err)) {

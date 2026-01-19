@@ -1,6 +1,6 @@
 "use client"
 import axios from 'axios'
-import React, { Dispatch, SetStateAction, useState } from 'react'
+import { useState } from 'react'
 import { PiNotePencilBold } from "react-icons/pi";
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
@@ -13,17 +13,17 @@ import { useChat } from '@/src/functions/chats/chatStore';
 
 
 interface AddNewChatProps { 
-    setOverviewData: Dispatch<SetStateAction<OverviewDataProps[] | null>>
     isGroup: boolean
 }
 
 
-function AddNewChat({ setOverviewData, isGroup }: AddNewChatProps ) {
-
+function AddNewChat({ isGroup }: AddNewChatProps ) {
 
 
     const setActiveId = useChat((state)=> state.setActiveId)
+    const setChats = useChat((state)=> state.setChats)
     const [newChat, setNewChat] = useState(false)
+
 
     const schema = yup.object().shape({
         groupName: isGroup 
@@ -38,6 +38,7 @@ function AddNewChat({ setOverviewData, isGroup }: AddNewChatProps ) {
         resolver: yupResolver(schema)
     });
 
+
     const handleCall = async (data: NewchatInputType) => {
         console.log(data)
         
@@ -46,17 +47,29 @@ function AddNewChat({ setOverviewData, isGroup }: AddNewChatProps ) {
 
             const response = await api.post(`${fetchPath}`, data)
             console.log('start chat', response.data)
+            const newdata = response.data
+            setChats(prev => {
+                if (!prev) return [newdata] 
+
+                const exists = prev.find(chat => chat.chat_id == newdata.id)
+
+                if (exists) {
+                    return [
+                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.id),
+                    ]
+                }
+
+                return [newdata, ...prev]
+            })
+
+
+
+            setNewChat(false)
+
+            setActiveId(newdata.id)
         } catch(e){
             console.log('start chat error', e)
         }
-
-        // setOverviewData((prev) => {
-        //     return prev ? [newdata, ...prev] : prev
-        // })
-
-        // setNewChat(false)
-
-        // setActiveId(newdata.id)
 
     }
 

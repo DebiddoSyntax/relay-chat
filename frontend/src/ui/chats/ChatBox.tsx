@@ -9,6 +9,7 @@ import api from "@/src/functions/auth/AxiosConfig";
 import { useChat } from "@/src/functions/chats/chatStore";
 import AddMember from "./AddMember";
 import ViewMemebers from "./ViewMemebers";
+import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
 
 
 
@@ -30,13 +31,16 @@ interface ChatBoxProps{
 function ChatBox({ isGroup }: ChatBoxProps) {
 
     const token = useAuth((state)=> state.accessToken)
+    const user = useAuth((state)=> state.user)
 
+
+    const chats = useChat((state)=> state.chats)
     const activeId = useChat((state)=> state.activeId)
     const setActiveId = useChat((state)=> state.setActiveId)
-    const chatName = useChat((state)=> state.chatName)
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
-    const setLastMessage = useChat((state)=> state.setLastMessage)
+    const updateLastMessage = useChat((state) => state.updateLastMessage)
+    const resetUnread = useChat((state) => state.resetUnread)
     
     const socketRef = useRef<WebSocket | null>(null);
     const [messages, setMessages] = useState<MessageType[]>([]);
@@ -46,46 +50,127 @@ function ChatBox({ isGroup }: ChatBoxProps) {
     
     const [moreOPtion, setMoreOPtion] = useState(false);
 
+    // mobile back button 
+    const handleBackButton = () => {
+        setChatOpen(false);
+        setActiveId(null)
+    }
 
+
+    // get current open chat 
+    const chat = chats.find(
+        (chat) => activeId == chat.chat_id
+    )
     
+    // set chat name
+    const chatName = isGroup ? chat?.chat_name :  handlePrivateChatName(isGroup, chat)
+
+
+    // fetch chat messages 
     const fetchMessages = async() => {
         try{
             const response = await api.get(`/chat/${activeId}/messages/`)
             console.log('fetched mess', response.data)
             setNextUrl(response.data.next)
-            setMessages(response.data.results.reverse())
+            setMessages(response.data.results)
+            resetUnread(activeId)
         }catch(error){
             console.log('fetch messages', error)
         }
     }
 
 
-    // handle scroll to load new messages 
-    useEffect(()=> {
-        if(!nextUrl){
-            return
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const shouldScrollRef = useRef(true);
+
+
+    // fetch more chat messages
+    const fetchMoreMessages = async () => {
+        if (!nextUrl || loadingMore) return;
+
+        
+        const container = containerRef.current;
+        const previousHeight = container?.scrollHeight || 0;
+        
+        try{
+            setLoadingMore(true);
+            
+            const res = await api.get(nextUrl);
+            console.log('fetched more messages', res.data)
+
+            setMessages(prev => [
+                ...res.data.results,
+                ...prev,
+            ]);
+    
+            setNextUrl(res.data.next);
+        }catch(error){
+            console.log('error')
+        }finally{
+            setLoadingMore(false);
+            shouldScrollRef.current = false;
         }
 
-        const fetchMore = async() => {
-            const res = await api.get(`${nextUrl}`)
-            console.log('more', res.data)
-            setMessages((prev)=> (
-                [res.data.results.reverse(), ...prev])
-            )
-        }
 
-         console.log('messages', messages)
 
-        fetchMore()
-    }, [nextUrl])
 
-    
+        requestAnimationFrame(() => {
+            if (container) {
+                container.scrollTop =
+                    container.scrollHeight - previousHeight;
+            }
+        });
 
-    
+        setLoadingMore(false);
+    };
+
+
+
     useEffect(() => {
-        if(!chatOpen){
-            return
+        if (containerRef.current && chatOpen && shouldScrollRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
+    }, [messages]);
+
+
+    
+
+    // useEffect(() => {
+    //     if (containerRef.current && chatOpen) {
+    //         containerRef.current.scrollTo({
+    //             top: containerRef.current.scrollHeight,
+    //             behavior: 'smooth',
+    //         });
+    //     }
+    // }, [chatOpen]);
+
+
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || !nextUrl) return;
+
+        const handleScroll = () => {
+            if (container.scrollTop === 0) {
+                fetchMoreMessages();
+            }
+        };
+
+        container.addEventListener("scroll", handleScroll);
+        return () => container.removeEventListener("scroll", handleScroll);
+    }, [nextUrl]);
+
+
+    
+    
+
+ 
+
+
+    // ====== handle web socket connections =====
+    useEffect(() => {
+        if(!chatOpen){ return }
 
         fetchMessages()
         
@@ -107,6 +192,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
             }
 
             if (data.type === "message") {
+                shouldScrollRef.current = true;
                 setMessages((prev) => [...prev, data]);
 
                 // Send read receipt
@@ -140,6 +226,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
     }, [activeId, token]);
     
 
+    // send message function 
     const sendMessage = () => {
         if (!input.trim()) return;
 
@@ -151,38 +238,27 @@ function ChatBox({ isGroup }: ChatBoxProps) {
             })
         );
 
-        setLastMessage(input)
+        updateLastMessage(
+            activeId!,
+            input,
+            new Date().toISOString()
+        )
+
         setInput("");
     };
 
-
+    // enter to send message 
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             sendMessage();
-            
         }
     };
 
 
-
-    const containerRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (containerRef.current && chatOpen) {
-            containerRef.current.scrollTo({
-                top: containerRef.current.scrollHeight,
-                behavior: 'smooth',
-            });
-        }
-    }, [messages, chatOpen]);
-
-    const handleBackButton = () => {
-        setChatOpen(false);
-        setActiveId(null)
-    }
-
-
+    const sortedMessages = messages.sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
 
     return (
         <div  className={`flex-1 w-full h-screen bg-gray-100`}>
@@ -217,7 +293,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
 
                     <div className='relative flex-1 h-full w-full pb-80 md:pb-[220px]'>
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
-                            {messages.map((m)=> (
+                            {sortedMessages.map((m)=> (
                                 <MessageCard key={m.id} m={m} />
                             ))}
                         </div>

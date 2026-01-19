@@ -13,8 +13,7 @@ interface ChatOverviewProps{
 
 
 function ChatOverview({ isGroup }: ChatOverviewProps) {
-    // chat overview states 
-    const [overviewData, setOverviewData] = useState<null | OverviewDataProps[]>(null)
+    // chat overview states
     const authInitialized = useAuth((state)=> state.authInitialized)
 
     const activeId = useChat((state)=> state.activeId)
@@ -22,6 +21,8 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
     const setChatName = useChat((state)=> state.setChatName)
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
+    const chats = useChat((state)=> state.chats)
+    const setChats = useChat((state)=> state.setChats)
     
 
     // fetch user chats effects 
@@ -37,8 +38,8 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
             console.log('init')
             try{
                 const response = await api.get(`${fetchPath}`)
-                console.log(response.data)
-                setOverviewData(response.data)
+                console.log('chat overview', response.data)
+                setChats(response.data)
             }catch(error){
                 console.log('overview error', error)
             }
@@ -55,6 +56,11 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
         setChatOpen(true)
     }
 
+
+    const sortedChats = chats.sort(
+        (a, b) => new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
+    );
+
    
 
 
@@ -66,7 +72,7 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
                         {isGroup ? 'Groups' : 'Chats'}
                     </p>
 
-                    <AddNewChat setOverviewData={setOverviewData} isGroup={isGroup}/>
+                    <AddNewChat isGroup={isGroup}/>
                 </div>
             </div>
 
@@ -82,9 +88,9 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
 
             <div className="flex-1 flex flex-col w-full overflow-y-auto pb-20 md:pb-3">
                 <div className="px-5 lg:px-6 2xl:px-8 pt-8 flex-1 overflow-y-auto w-full custom-scrollbar">
-                    {overviewData?.map((a, i)=> (
+                    {sortedChats?.map((a, i)=> (
                         <div key={i} onClick={()=> handleChatOpen(a)}>
-                            <ChatCard data={a} activeId={activeId} />
+                            <ChatCard data={a} activeId={activeId} isGroup={isGroup} />
                         </div>
                     ))}
                 </div>

@@ -4,6 +4,13 @@ export interface OverviewDataProps {
     receiver: string,  
     chat_id: number
     chat_name: string
+    unread_count: number
+    users: {
+        firstname: string
+        lastname: string
+        email: string
+        id: string
+    }[]
 }
 
 export interface NewchatInputType{

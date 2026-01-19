@@ -1,7 +1,7 @@
 "use client"
 import api from '@/src/functions/auth/AxiosConfig';
 import axios from 'axios';
-import React, { useState } from 'react'
+import { useState } from 'react'
 import LoadingModal from '../reusable/LoadingModal';
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'

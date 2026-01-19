@@ -1,6 +1,6 @@
 import api from '@/src/functions/auth/AxiosConfig';
 import { useChat } from '@/src/functions/chats/chatStore';
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { IoClose } from "react-icons/io5";
 
 function ViewMemebers() {
@@ -50,7 +50,7 @@ function ViewMemebers() {
 
 						<div className='mt-10 h-96 flex overflow-hidden'>
                             <div className='flex flex-col flex-1 overflow-y-auto pr-0 scrollbar-hide gap-3'>
-                                {members?.map((m)=> <p key={m.id} className='text-sm font-semibold'>{m.email}</p>)}
+                                {members?.map((m, i)=> <p key={i} className='text-sm font-semibold'>{m.email}</p>)}
                             </div>
                         </div>
 					</div>

@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/src/functions/data/auth/Store";
+import { useAuth } from "@/src/functions/auth/Store";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
 // import ReCAPTCHA from "react-google-recaptcha"

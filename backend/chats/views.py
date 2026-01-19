@@ -15,6 +15,7 @@ from .models import Message, Chat, MessageReadBy
 from .serializers import MessageSerializer
 from .pagination import MessageCursorPagination
 from django.utils import timezone
+from django.db.models import Q, Count
 
 
 
@@ -50,11 +51,18 @@ def chat_message_list_view(request, chat_id):
     )
 
     # 5. Mark messages as read (only paginated ones)
+    # unread_messages = (
+    #     Message.objects
+    #     .filter(id__in=[msg.id for msg in page])
+    #     .exclude(read_by=request.user)
+    # )
     unread_messages = (
         Message.objects
-        .filter(id__in=[msg.id for msg in page])
+        .filter(chat=chat)
+        .exclude(sender=request.user)
         .exclude(read_by=request.user)
     )
+
 
     MessageReadBy.objects.bulk_create(
         [
@@ -75,7 +83,7 @@ def chat_message_list_view(request, chat_id):
 def start_chat_view(request):
     sender = request.user
     receiver_email = request.data.get('receiver')
-    content = request.data.get('firstMessage').strip()
+    content = request.data.get('firstMessage')
 
     if not receiver_email:
         return Response(
@@ -109,15 +117,17 @@ def start_chat_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    chat = Chat.objects.filter(
-        is_group=False,
-        users=sender
-    ).filter(
-        users=receiver
-    ).distinct().first()
+    chat = Chat.objects.filter(is_group=False, users=sender).filter(users=receiver).distinct().first()
 
     if not chat:
-        chat_name = f"{receiver.first_name} {receiver.last_name}".strip()
+        first = receiver.firstname or ""
+        last = receiver.lastname or ""
+
+        chat_name = f"{first} {last}".strip()
+
+        if not chat_name:
+            chat_name = receiver.email
+        # chat_name = f"{receiver.firstname} {receiver.lastname}".strip()
 
         chat = Chat.objects.create(
             is_group=False,
@@ -129,23 +139,31 @@ def start_chat_view(request):
             UserChat(user=receiver, chat=chat),
         ])
 
-        message = Message.objects.create(
-            chat=chat,
-            sender=sender,
-            content=content,
-            type='text'
-        )
-        
-        # Update chat's last message and timestamp
-        chat.last_message = message
-        chat.updated_at = timezone.now()
-        chat.save(update_fields=['last_message', 'updated_at'])
+    message = Message.objects.create(
+        chat=chat,
+        sender=sender,
+        content=content,
+        type='text'
+    )
+    
+    # Update chat's last message and timestamp
+    chat.last_message = message
+    chat.updated_at = timezone.now()
+    chat.save(update_fields=['last_message', 'updated_at'])
 
 
     return Response(
         {
             "chat_id": chat.id,
-            "chat_name": chat.name,
+            "users": [
+                {
+                    "id": u.id,
+                    "firstname": u.firstname,
+                    "lastname": u.lastname,
+                    "email": u.email,
+                }
+                for u in chat.users.all()
+            ],
             "last_message": chat.last_message.content if chat.last_message else None,
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
@@ -161,7 +179,21 @@ def start_chat_view(request):
 def get_chat_view(request):
     user = request.user
 
-    chats = Chat.objects.filter(is_group=False, users=user)
+    chats = (
+        Chat.objects
+        .filter(is_group=False, users=user)
+        .annotate(
+            unread_count=Count(
+                "messages",
+                filter=~Q(messages__sender=user)
+                    & ~Q(
+                        messages__id__in=MessageReadBy.objects.filter(
+                            user=user
+                        ).values("message_id")
+                    )
+            )
+        )
+    )
 
     if not chats.exists():
         return Response(
@@ -172,9 +204,18 @@ def get_chat_view(request):
     data = [
         {
             "chat_id": chat.id,
-            "chat_name": chat.name,
+            "users": [
+                {
+                    "id": u.id,
+                    "firstname": u.firstname,
+                    "lastname": u.lastname,
+                    "email": u.email,
+                }
+                for u in chat.users.all()
+            ],
             "last_message": chat.last_message.content if chat.last_message else None,
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
+            "unread_count": chat.unread_count,
         }
         for chat in chats
     ]
@@ -280,7 +321,21 @@ def start_groupchat_view(request):
 def get_groupchat_view(request):
     user = request.user
 
-    chats = Chat.objects.filter(is_group=True, users=user)
+    chats = (
+        Chat.objects
+        .filter(is_group=True, users=user)
+        .annotate(
+            unread_count=Count(
+                "messages",
+                filter=~Q(messages__sender=user)
+                    & ~Q(
+                        messages__id__in=MessageReadBy.objects.filter(
+                            user=user
+                        ).values("message_id")
+                    )
+            )
+        )
+    )
 
     if not chats.exists():
         return Response(
@@ -294,13 +349,13 @@ def get_groupchat_view(request):
             "chat_name": chat.name,
             "last_message": chat.last_message.content if chat.last_message else None,
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
+            "unread_count": chat.unread_count,
         }
         for chat in chats
     ]
 
 
     return Response(data, status=status.HTTP_200_OK)
-
 
 
 # join group chat

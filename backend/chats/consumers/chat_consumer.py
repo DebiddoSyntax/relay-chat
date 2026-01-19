@@ -5,7 +5,7 @@ from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Q
-from .models import Chat, Message, MessageReadBy, UserChat
+from ..models import Chat, Message, MessageReadBy, UserChat
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -133,6 +133,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': payload
                 }
             )
+
+            participants = await self.get_chat_participants(self.chat_id)
+
+            for user_id in participants:
+                if user_id != self.user.id:
+                    await self.channel_layer.group_send(
+                        f"user_{user_id}",
+                        {
+                            "type": "notify",
+                            "payload": {
+                                "type": "new_message",
+                                "chat_id": str(self.chat_id),
+                                "content": message.content,
+                                "created_at": message.created_at.isoformat(),
+                                "sender_id": str(self.user.id),
+                            }
+                        }
+                    )
+
             
             logger.info(f"Message {message.id} sent in chat {self.chat_id}")
             
@@ -212,6 +231,15 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat.save(update_fields=['last_message', 'updated_at'])
         
         return message
+    
+
+    @database_sync_to_async
+    def get_chat_participants(self, chat_id):
+        return list(
+            UserChat.objects.filter(chat_id=chat_id)
+            .values_list("user_id", flat=True)
+        )
+
 
     @database_sync_to_async
     def mark_message_read(self, message_id, user_id):
