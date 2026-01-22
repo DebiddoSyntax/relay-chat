@@ -6,6 +6,11 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Q
 from ..models import Chat, Message, MessageReadBy, UserChat
+import asyncio
+# from asgiref.sync import sync_to_async
+from django.utils import timezone
+import uuid
+
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -134,6 +139,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+
             participants = await self.get_chat_participants(self.chat_id)
 
             for user_id in participants:
@@ -152,14 +158,153 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
-            
+            is_ai_chat = await self.is_ai_chat(self.chat_id)
+
+            if is_ai_chat:
+                await self.channel_layer.group_send(
+                    self.group_name,
+                    {
+                        "type": "chat.typing",
+                        "sender": "ai",
+                        "typing": True,
+                    }
+                )
+
+                asyncio.create_task(
+                    self.handle_ai_response(message)
+                )
+
             logger.info(f"Message {message.id} sent in chat {self.chat_id}")
             
         except Exception as e:
             logger.error(f"Error saving message: {e}", exc_info=True)
             await self.send_error("Failed to send message")
 
-    
+
+
+
+    async def handle_ai_response(self, user_message):
+        from google import genai
+        from asgiref.sync import sync_to_async
+
+        client = genai.Client()
+        ai_user = await self.get_ai_user()
+        now = timezone.now()
+
+        SYSTEM_PROMPT = f"""
+                Current date and time: {now}
+
+                Your name is Sydeny or Sydney AI
+
+                Assume this date is correct.
+                Do not question it or mention training cutoffs.
+                Answer using this date as "now".
+                Speak naturally
+
+                You are a modern, conversational AI chatting inside a messaging app.
+                Speak naturally, like a real person.
+                Do not mention training data, model limitations, or cutoff dates.
+                Keep replies short unless the user asks for depth.
+                Stay in character at all times.
+        """
+        prompt = user_message.content.strip()
+        if not prompt:
+            return
+
+
+        failed_payload = {
+            'type': 'message',
+            'id': str(uuid.uuid4()),
+            'chat_id': str(self.chat_id),
+            'sender': {
+                'id': str(ai_user.id),
+                'email': ai_user.email,
+            },
+            'sender_id': str(ai_user.id),
+            'content': "Sorry, I’m having trouble responding right now.",
+            'message_type': 'text',
+            'created_at': now.isoformat(),
+            'meta': {
+                'ephemeral': True,
+                'ai_failed': True
+            }
+        }
+
+        # Notify frontend that AI is typing
+        await self.channel_layer.group_send(
+            self.group_name,
+            {"type": "chat.typing", "sender": "ai", "typing": True}
+        )
+
+        await asyncio.sleep(0)
+
+        try:
+            final_prompt = [
+                {"role": "system", "parts": [{"text": SYSTEM_PROMPT}]},
+                {"role": "user", "parts": [{"text": prompt}]}
+            ]
+
+            response = await sync_to_async(
+                client.models.generate_content,
+                thread_sensitive=False
+            )(model="gemini-3-flash-preview", contents=final_prompt)
+
+            ai_text = (response.text or "").strip()
+            if not ai_text:
+                raise ValueError("AI returned empty response")
+
+            # Save AI message
+            message = await self.save_message(self.chat_id, ai_user.id, ai_text, "text")
+
+            payload = {
+                'type': 'message',
+                'id': str(message.id),
+                'chat_id': str(message.chat.id),
+                'sender': {
+                    'id': str(ai_user.id),
+                    'email': ai_user.email,
+                },
+                'sender_id': str(ai_user.id),
+                'content': message.content,
+                'message_type': message.type,
+                'created_at': message.created_at.isoformat(),
+            }
+
+   
+            await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': payload})
+
+
+            participants = await self.get_chat_participants(self.chat_id)
+            for user_id in participants:
+                if user_id != self.user.id:
+                    await self.channel_layer.group_send(
+                        f"user_{user_id}",
+                        {
+                            "type": "notify",
+                            "payload": {
+                                "type": "new_message",
+                                "chat_id": str(self.chat_id),
+                                "content": message.content,
+                                "created_at": message.created_at.isoformat(),
+                                "sender_id": str(self.user.id),
+                            }
+                        }
+                    )
+
+        except Exception as e:
+            logger.warning(f"AI response failed: {e}", exc_info=True)
+            # Send failed message
+            await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
+
+        finally:
+            # Always stop typing indicator
+            await self.channel_layer.group_send(
+                self.group_name,
+                {"type": "chat.typing", "sender": "ai", "typing": False}
+            )
+
+
+
 
     async def handle_read_receipt(self, data):
         message_id = data.get('message_id')
@@ -193,25 +338,47 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps(event['message']))
 
     
-    async def message_read(self, event):
+    async def chat_typing(self, event):
+        logger.info(f"chat_typing called with event: {event}")
         await self.send(text_data=json.dumps({
-            'type': 'read',
-            'message_id': event['message_id'],
-            'user_id': event['user_id'],
-            'email': event['email'],
-            'read_at': event['read_at']
+            "type": "typing",
+            "user": event.get("sender"), 
+            "typing": event.get("typing", False)
         }))
+
+
+    async def message_read(self, event):
+        try:
+            await self.send(text_data=json.dumps({
+                'type': 'read',
+                'message_id': event['message_id'],
+                'user_id': event['user_id'],
+                'email': event['email'],
+                'read_at': event['read_at']
+            }))
+        except Message.DoesNotExist:
+            return
 
     
 
     # Database operations
-    
+    @database_sync_to_async
+    def is_ai_chat(self, chat_id):
+        return Chat.objects.filter(id=chat_id, is_ai=True).exists()
+
+    @database_sync_to_async
+    def get_ai_user(self):
+        return User.objects.get(email="ai@system.local")
+
+
+
     @database_sync_to_async
     def check_chat_access(self, chat_id, user_id):
         return UserChat.objects.filter(
             chat_id=chat_id,
             user_id=user_id
         ).exists()
+
 
     @database_sync_to_async
     def save_message(self, chat_id, sender_id, content, message_type='text'):
@@ -225,7 +392,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             type=message_type
         )
         
-        # Update chat's last message and timestamp
+  
         chat.last_message = message
         chat.updated_at = timezone.now()
         chat.save(update_fields=['last_message', 'updated_at'])
@@ -265,8 +432,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         ).count()
 
 
-    # Utility methods
-    
+    # Utility methods  
     async def send_error(self, error_message):
         await self.send(text_data=json.dumps({
             'type': 'error',

@@ -1,4 +1,3 @@
-import React from 'react'
 import { MessageType } from './ChatBox'
 import { useAuth } from '@/src/functions/auth/Store'
 
@@ -19,13 +18,20 @@ function MessageCard({ m }: MessageProps) {
         year: "numeric",
     });
 
+    const time = date.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
     
     return (
         <div className={`flex ${ m.sender_id == user?.id ? "justify-end" : "justify-start" } mt-5 px-5 xl:px-8`} >
-            <div className={`${m.sender_id !== user?.id ? "bg-white text-black" : "bg-blue-700 text-white" } px-5 py-4 w-auto max-w-72 md:max-w-80 xl:max-w-[420px] text-xs leading-6 rounded-sm break-words`} >
+            <div className={`${m.sender_id !== user?.id ? "bg-white text-black" : "bg-blue-700 text-white" } px-3 py-2 w-auto max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm break-words`} >
                 {m.content}
+                <div className='mt-2 flex justify-end items-end'>
+                    <p className='text-[10px]'>{time}</p>
+                </div>
             </div> 
-            <p>{formatted}</p>
         </div>
            
     )

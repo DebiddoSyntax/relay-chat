@@ -18,8 +18,8 @@ function AddMember() {
 
 
 	const activeId = useChat((state)=> state.activeId)
-	const [newMember, setNewMember] = useState(false)
 
+	const [newMember, setNewMember] = useState(false)
 	const [updateModal, setUpdateModal] = useState(false)
 	const [updatingState, setUpdatingState] = useState<"idle" | "loading" | "success" | "failure">("idle");
 	const [errorMessage, setErrorMessage] = useState('')
@@ -41,9 +41,6 @@ function AddMember() {
 			...data,
 			groupId: activeId
 		}
-
-      
-        console.log("form data", payload)
 
         try{
             setUpdateModal(true);

@@ -1,0 +1,14 @@
+"use client"
+import ChatBox from './ChatBox'
+import ChatOverview from './ChatOverview'
+
+function SydneyAI() {
+    return (
+        <div className='flex flex-col lg:flex-row flex-1 h-full w-full'>
+            <ChatOverview isGroup={false} isAI={true}/>
+            <ChatBox isGroup={false} isAI={true}/>
+        </div>
+    )
+}
+
+export default SydneyAI

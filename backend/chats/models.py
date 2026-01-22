@@ -68,6 +68,7 @@ class Chat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, null=True, blank=True)
     is_group = models.BooleanField(default=False)
+    is_ai = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     users = models.ManyToManyField(User, through='UserChat', related_name='chats')
     

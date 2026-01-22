@@ -7,6 +7,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 class UserConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = self.scope.get("user")
+        self.group_name = None
 
         if not self.user or self.user.is_anonymous:
             await self.close(code=4001)
@@ -22,10 +23,11 @@ class UserConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        if isinstance(self.group_name, str):
+            await self.channel_layer.group_discard(
+                self.group_name,
+                self.channel_name
+            )
 
     async def notify(self, event):
         await self.send(text_data=json.dumps(event["payload"]))

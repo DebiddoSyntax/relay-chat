@@ -9,10 +9,11 @@ import { useChat } from '@/src/functions/chats/chatStore';
 
 interface ChatOverviewProps{
     isGroup: boolean
+    isAI: boolean
 }
 
 
-function ChatOverview({ isGroup }: ChatOverviewProps) {
+function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
     // chat overview states
     const authInitialized = useAuth((state)=> state.authInitialized)
 
@@ -33,7 +34,7 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
                 return
             }
 
-            const fetchPath = isGroup ? '/groupchat/all/' : '/chat/all/'
+            const fetchPath = isGroup ? '/groupchat/all/' : isAI ? '/chat/ai/' : '/chat/all/'
             
             console.log('init')
             try{
@@ -69,10 +70,10 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
             <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-gray-300'>
                 <div className='flex justify-between items-center'>
                     <p className='text-xl font-semibold'>
-                        {isGroup ? 'Groups' : 'Chats'}
+                        {isGroup ? 'Groups' : isAI ? 'Sydney' : 'Chats'}
                     </p>
 
-                    <AddNewChat isGroup={isGroup}/>
+                    <AddNewChat isGroup={isGroup} isAI={isAI} />
                 </div>
             </div>
 
@@ -90,7 +91,7 @@ function ChatOverview({ isGroup }: ChatOverviewProps) {
                 <div className="px-5 lg:px-6 2xl:px-8 pt-8 flex-1 overflow-y-auto w-full custom-scrollbar">
                     {sortedChats?.map((a, i)=> (
                         <div key={i} onClick={()=> handleChatOpen(a)}>
-                            <ChatCard data={a} activeId={activeId} isGroup={isGroup} />
+                            <ChatCard data={a} activeId={activeId} isGroup={isGroup} isAI={isAI} />
                         </div>
                     ))}
                 </div>

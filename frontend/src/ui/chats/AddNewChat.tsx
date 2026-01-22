@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
 import { IoClose } from "react-icons/io5";
-import { NewchatInputType, OverviewDataProps } from '@/src/functions/types/ChatType';
+import { NewchatInputType } from '@/src/functions/types/ChatType';
 import api from '@/src/functions/auth/AxiosConfig';
 import { useChat } from '@/src/functions/chats/chatStore';
 
@@ -14,15 +14,18 @@ import { useChat } from '@/src/functions/chats/chatStore';
 
 interface AddNewChatProps { 
     isGroup: boolean
+    isAI: boolean
 }
 
 
-function AddNewChat({ isGroup }: AddNewChatProps ) {
+function AddNewChat({ isGroup, isAI }: AddNewChatProps ) {
 
 
     const setActiveId = useChat((state)=> state.setActiveId)
     const setChats = useChat((state)=> state.setChats)
+    const chats = useChat((state)=> state.chats)
     const [newChat, setNewChat] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
 
 
     const schema = yup.object().shape({
@@ -39,8 +42,7 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
     });
 
 
-    const handleCall = async (data: NewchatInputType) => {
-        console.log(data)
+    const handleNewChat = async (data: NewchatInputType) => {
         
         try{
             const fetchPath = isGroup ? '/groupchat/start/' : '/chat/start/'
@@ -62,29 +64,76 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
                 return [newdata, ...prev]
             })
 
+            setNewChat(false)
 
+            setActiveId(newdata.id)
+        } catch (err) {
+			if (axios.isAxiosError(err)) {
+				console.error("error", err.response?.data);
+				setErrorMessage(err.response?.data?.detail || "Something went wrong");
+			} else {
+				console.error("unexpected error", err);
+				setErrorMessage("An unexpected error occurred");
+			}
+		}
+
+    }
+
+    const handleAiChat = async () => {
+        
+        try{
+            
+            const response = await api.post('/chat/ai/start/')
+            console.log('start chat', response.data)
+            const newdata = response.data
+            setChats(prev => {
+                if (!prev) return [newdata] 
+
+                const exists = prev.find(chat => chat.chat_id == newdata.id)
+
+                if (exists) {
+                    return [
+                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.id),
+                    ]
+                }
+
+                return [newdata, ...prev]
+            })
 
             setNewChat(false)
 
             setActiveId(newdata.id)
-        } catch(e){
-            console.log('start chat error', e)
-        }
-
+        } catch (err) {
+			if (axios.isAxiosError(err)) {
+				console.error("error", err.response?.data);
+				setErrorMessage(err.response?.data?.detail || "Something went wrong");
+			} else {
+				console.error("unexpected error", err);
+				// setErrorMessage("An unexpected error occurred");
+			}
+		}
     }
+
+
+    // handle new chat toggle 
+    const handleNewChatToggle = () => {
+        if(isAI && chats.length > 0){ return }
+        setNewChat(true)
+    }
+
 
 
     return (
         <div>
             
-            <PiNotePencilBold className='text-2xl cursor-pointer' onClick={()=> setNewChat(true)} />
+            <PiNotePencilBold className='text-2xl cursor-pointer' onClick={handleNewChatToggle} />
 
             {newChat && (
                 <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
-                    <div className={`flex flex-col relative w-96 md:w-[640px] h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
+                    <div className={`flex flex-col relative ${isAI ? 'w-80 md:w-[440px]' : 'w-96 md:w-[640px]'} h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
                         <div className='flex justify-between items-center'>
-                            <p className='text-lg font-semibold'>
-                                {isGroup ? 'Create new group' : 'Add new chat'}
+                            <p className={`text-lg font-semibold ${isAI && 'text-center'}`}>
+                                {isGroup ? 'Create new group' : isAI ? 'Start talking to Sydney AI' : 'Add new chat'}
                             </p>
                             <IoClose 
                                 onClick={()=> setNewChat(false)} 
@@ -92,63 +141,81 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
                             />
                         </div>
 
-                        <form onSubmit={handleSubmit(handleCall)} className=''>
+                        {!isAI && (
+                            <form onSubmit={handleSubmit(handleNewChat)} className=''>
 
-                            {isGroup && (
+                                {isGroup && (
+                                    <div className="mb-5 mt-5 items-start text-left w-full">
+                                        <label htmlFor="groupName" className="text-sm font-semibold">
+                                            Group Name
+                                        </label>
+                                        <input autoComplete="off" type="text" id="groupName" placeholder='Enter a group name'
+                                            className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                            {...register('groupName')}
+                                        />
+                                        <p className="text-red-700 text-sm mt-2">
+                                            {errors.groupName?.message && String(errors.groupName.message)}
+                                        </p>
+                                    </div>
+                                )}
+
+
                                 <div className="mb-5 mt-5 items-start text-left w-full">
-                                    <label htmlFor="groupName" className="text-sm font-semibold">
-                                        Group Name
+                                    <label htmlFor="email" className="text-sm font-semibold">
+                                        Email
                                     </label>
-                                    <input autoComplete="off" type="text" id="groupName" placeholder='Enter a group name'
+                                    <input autoComplete="off" type="text" id="email" placeholder='Enter an email'
                                         className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                        {...register('groupName')}
+                                        {...register('receiver')}
                                     />
                                     <p className="text-red-700 text-sm mt-2">
-                                        {errors.groupName?.message && String(errors.groupName.message)}
+                                        {errors.receiver?.message && String(errors.receiver.message)}
                                     </p>
                                 </div>
-                            )}
-
-
-                            <div className="mb-5 mt-5 items-start text-left w-full">
-                                <label htmlFor="email" className="text-sm font-semibold">
-                                    Email
-                                </label>
-                                <input autoComplete="off" type="text" id="email" placeholder='Enter an email'
-                                    className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    {...register('receiver')}
-                                />
-                                <p className="text-red-700 text-sm mt-2">
-                                    {errors.receiver?.message && String(errors.receiver.message)}
-                                </p>
-                            </div>
-                            
-
-                            <div className="mb-5 mt-5 items-start text-left w-full">
-                                <label htmlFor="firstMessage" className="text-sm font-semibold">
-                                    Message
-                                </label>
                                 
-                                <textarea
-                                    autoComplete="off" 
-                                    id="firstMessage" 
-                                    placeholder='Enter your message'
-                                    className=" min-h-16 max-h-16 resize-none w-full p-3 bg-gray-100 mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    rows={1}
-                                    {...register('firstMessage')}
-                                /> 
+
+                                <div className="mb-5 mt-5 items-start text-left w-full">
+                                    <label htmlFor="firstMessage" className="text-sm font-semibold">
+                                        Message
+                                    </label>
+                                    
+                                    <textarea
+                                        autoComplete="off" 
+                                        id="firstMessage" 
+                                        placeholder='Enter your message'
+                                        className=" min-h-16 max-h-16 resize-none w-full p-3 bg-gray-100 mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        rows={1}
+                                        {...register('firstMessage')}
+                                    /> 
+
+                                    <p className="text-red-700 text-sm mt-2">
+                                        {errors.firstMessage?.message && String(errors.firstMessage.message)}
+                                    </p>
+                                </div>
 
                                 <p className="text-red-700 text-sm mt-2">
-                                    {errors.firstMessage?.message && String(errors.firstMessage.message)}
+                                    {errorMessage}
                                 </p>
+
+                                <div className='mt-5 flex justify-end'>
+                                    <button type="submit" className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
+                                        Start
+                                    </button>
+                                </div>
+                            </form>
+                        )}
+
+                        {isAI && (
+                            <div>
+                                {/* <p className='text-center'>Start talking to Sydney</p> */}
+                                <div className='mt-5 flex justify-center'>
+                                    <button type="button" onClick={handleAiChat} className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
+                                        Start
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className='mt-5 flex justify-end'>
-                                <button type="submit" className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
-                                    Start
-                                </button>
-                            </div>
-                        </form>
+                        )}
                     </div>
                 </div>
             )}

@@ -21,6 +21,98 @@ from django.db.models import Q, Count
 
 User = get_user_model()
 
+
+# start ai chat 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def start_ai_chat(request):
+    ai_user = User.objects.get(email="ai@system.local")
+
+    sender = request.user
+
+    chat = Chat.objects.filter(
+        is_group=False, is_ai=True,
+        users=sender
+    ).filter(
+        users=ai_user
+    ).distinct().first()
+
+    if not chat:
+        chat = Chat.objects.create(
+            is_group=False, is_ai=True
+        )
+
+        UserChat.objects.bulk_create([
+            UserChat(user=sender, chat=chat),
+            UserChat(user=ai_user, chat=chat),
+        ])
+
+    return Response(
+        {
+            "chat_id": chat.id,
+            "chat_name": chat.name,
+            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message_time": chat.last_message.created_at if chat.last_message else None,
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+
+# get ai chat
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_aichat_view(request):
+    user = request.user
+
+    chats = (
+        Chat.objects
+        .filter(is_group=False, is_ai=True, users=user)
+        .annotate(
+            unread_count=Count(
+                "messages",
+                filter=~Q(messages__sender=user)
+                    & ~Q(
+                        messages__id__in=MessageReadBy.objects.filter(
+                            user=user
+                        ).values("message_id")
+                    )
+            )
+        )
+    )
+
+    if not chats.exists():
+        return Response(
+            {"detail": "No chats found"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    data = [
+        {
+            "chat_id": chat.id,
+            "users": [
+                {
+                    "id": u.id,
+                    "firstname": u.firstname,
+                    "lastname": u.lastname,
+                    "email": u.email,
+                }
+                for u in chat.users.all()
+            ],
+            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message_time": chat.last_message.created_at if chat.last_message else None,
+            "unread_count": chat.unread_count,
+        }
+        for chat in chats
+    ]
+
+
+    return Response(data, status=status.HTTP_200_OK)
+
+
+
+
+
 # get chat messages
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -131,6 +223,7 @@ def start_chat_view(request):
 
         chat = Chat.objects.create(
             is_group=False,
+            is_ai=False,
             name=chat_name
         )
 
@@ -181,7 +274,7 @@ def get_chat_view(request):
 
     chats = (
         Chat.objects
-        .filter(is_group=False, users=user)
+        .filter(is_group=False, is_ai=False, users=user)
         .annotate(
             unread_count=Count(
                 "messages",

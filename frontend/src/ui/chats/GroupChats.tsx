@@ -7,8 +7,8 @@ function GroupChats() {
 
     return (
         <div className='flex flex-col lg:flex-row flex-1 h-full w-full'>
-            <ChatOverview isGroup={true} />
-            <ChatBox isGroup={true}/>
+            <ChatOverview isGroup={true} isAI={false} />
+            <ChatBox isGroup={true} isAI={false}/>
         </div>
     )
 }

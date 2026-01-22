@@ -10,6 +10,7 @@ import { useChat } from "@/src/functions/chats/chatStore";
 import AddMember from "./AddMember";
 import ViewMemebers from "./ViewMemebers";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
+import { formatAIReply } from "@/src/functions/chats/formatAIReply";
 
 
 
@@ -26,12 +27,12 @@ export interface MessageType {
 
 interface ChatBoxProps{
     isGroup: boolean
+    isAI: boolean
 }
 
-function ChatBox({ isGroup }: ChatBoxProps) {
+function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
     const token = useAuth((state)=> state.accessToken)
-    const user = useAuth((state)=> state.user)
 
 
     const chats = useChat((state)=> state.chats)
@@ -45,6 +46,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
     const socketRef = useRef<WebSocket | null>(null);
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [input, setInput] = useState("");
+    const [aiTyping, setAiTyping] = useState(false);
     const [status, setStatus] = useState("connecting");
     const [nextUrl, setNextUrl] = useState<string | null>(null);
     
@@ -63,7 +65,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
     )
     
     // set chat name
-    const chatName = isGroup ? chat?.chat_name :  handlePrivateChatName(isGroup, chat)
+    const chatName = isGroup ? chat?.chat_name : isAI ? 'Sydney AI' : handlePrivateChatName(isGroup, chat)
 
 
     // fetch chat messages 
@@ -131,19 +133,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
         if (containerRef.current && chatOpen && shouldScrollRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
-    }, [messages]);
-
-
-    
-
-    // useEffect(() => {
-    //     if (containerRef.current && chatOpen) {
-    //         containerRef.current.scrollTo({
-    //             top: containerRef.current.scrollHeight,
-    //             behavior: 'smooth',
-    //         });
-    //     }
-    // }, [chatOpen]);
+    }, [messages, aiTyping]);
 
 
 
@@ -162,10 +152,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
     }, [nextUrl]);
 
 
-    
-    
 
- 
 
 
     // ====== handle web socket connections =====
@@ -191,17 +178,26 @@ function ChatBox({ isGroup }: ChatBoxProps) {
                 console.log("Connected:", data);
             }
 
+            if (data.type === "typing" && data.user === "ai") {
+                console.log("ai typing");
+                setAiTyping(data.typing);
+            }
+
             if (data.type === "message") {
+                setAiTyping(false)
                 shouldScrollRef.current = true;
                 setMessages((prev) => [...prev, data]);
 
-                // Send read receipt
-                socket.send(
-                    JSON.stringify({
-                        type: "read",
-                        message_id: data.id,
-                    })
-                );
+                console.log("message entering", data);
+                // Only mark real messages as read
+                if (!data.meta?.ephemeral) {
+                    socket.send(
+                        JSON.stringify({
+                            type: "read",
+                            message_id: data.id,
+                        })
+                    );
+                }
             }
 
             if (data.type === "read") {
@@ -293,9 +289,46 @@ function ChatBox({ isGroup }: ChatBoxProps) {
 
                     <div className='relative flex-1 h-full w-full pb-80 md:pb-[220px]'>
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
-                            {sortedMessages.map((m)=> (
-                                <MessageCard key={m.id} m={m} />
-                            ))}
+                            {sortedMessages.map((m, index) => {
+                                const currentDate = new Date(m.created_at);
+                                const prevDate = index > 0 ? new Date(sortedMessages[index - 1].created_at) : null;
+                                
+                                const showTimestamp = index === 0 || currentDate.toDateString() !== prevDate?.toDateString();
+                                const today = new Date();
+                                const yesterday = new Date();
+                                yesterday.setDate(today.getDate() - 1);
+
+                                let displayDate;
+                                if (currentDate.toDateString() === today.toDateString()) {
+                                    displayDate = "Today";
+                                } else if (currentDate.toDateString() === yesterday.toDateString()) {
+                                    displayDate = "Yesterday";
+                                } else {
+                                    displayDate = currentDate.toLocaleDateString(undefined, {
+                                        weekday: 'long',
+                                        year: 'numeric',
+                                        month: 'long',
+                                        day: 'numeric'
+                                    });
+                                }
+
+                                return (
+                                    <div key={m.id} className="mt-5">
+                                        {showTimestamp && (
+                                            <div className="text-center text-xs text-gray-400 mb-2">
+                                                {displayDate}
+                                            </div>
+                                        )}
+                                        <MessageCard m={m} />
+                                        
+                                    </div>
+                                );
+                            })}
+                            {aiTyping && (
+                                <div className="px-5 lg:px-6 2xl:px-8 mt-5 py-2 w-auto max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm">
+                                    Sydney is thinking<span className="animate-ping">...</span>
+                                </div>
+                            )}
                         </div>
 
 
@@ -322,7 +355,7 @@ function ChatBox({ isGroup }: ChatBoxProps) {
                 </div>
             ) : (
                 <div className="w-full h-full flex flex-col justify-center items-center">
-                    <p className="text-center text-base font-semibold text-gray-800">Open a Chat</p>
+                    <p className="text-center text-base font-semibold text-gray-800">{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
         </div>
