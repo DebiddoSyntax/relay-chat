@@ -16,6 +16,8 @@ from .serializers import MessageSerializer
 from .pagination import MessageCursorPagination
 from django.utils import timezone
 from django.db.models import Q, Count
+from .utils.decrypt import decrypt_message
+
 
 
 
@@ -51,7 +53,11 @@ def start_ai_chat(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+            decrypt_message(chat.last_message.content, chat.last_message.iv)
+            if chat.last_message and chat.last_message.iv
+            else chat.last_message.content if chat.last_message else None
+        ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK
@@ -99,7 +105,11 @@ def get_aichat_view(request):
                 }
                 for u in chat.users.all()
             ],
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+            decrypt_message(chat.last_message.content, chat.last_message.iv)
+            if chat.last_message and chat.last_message.iv
+            else chat.last_message.content if chat.last_message else None
+        ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
             "unread_count": chat.unread_count,
         }
@@ -110,6 +120,64 @@ def get_aichat_view(request):
     return Response(data, status=status.HTTP_200_OK)
 
 
+
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def ai_chat_view(request):
+    user = request.user
+    ai_user = User.objects.get(email="ai@system.local")
+
+    # Try to get the AI chat
+    chat = (
+        Chat.objects
+        .filter(is_group=False, is_ai=True, users=user)
+        .filter(users=ai_user)
+        .distinct()
+        .first()
+    )
+
+    # If chat does not exist, create it
+    if not chat:
+        chat = Chat.objects.create(is_group=False, is_ai=True)
+        UserChat.objects.bulk_create([
+            UserChat(user=user, chat=chat),
+            UserChat(user=ai_user, chat=chat),
+        ])
+
+    # Annotate unread count
+    chat.unread_count = (
+        Message.objects
+        .filter(chat=chat)
+        .exclude(sender=user)
+        .exclude(
+            id__in=MessageReadBy.objects.filter(user=user).values("message_id")
+        )
+        .count()
+    )
+
+    # Prepare response
+    data = {
+        "chat_id": chat.id,
+        "users": [
+            {
+                "id": u.id,
+                "firstname": u.firstname,
+                "lastname": u.lastname,
+                "email": u.email,
+            }
+            for u in chat.users.all()
+        ],
+        "last_message": (
+            decrypt_message(chat.last_message.content, chat.last_message.iv)
+            if chat.last_message and chat.last_message.iv
+            else chat.last_message.content if chat.last_message else None
+        ),
+        "last_message_time": chat.last_message.created_at if chat.last_message else None,
+        "unread_count": chat.unread_count,
+    }
+
+    return Response(data, status=status.HTTP_200_OK)
 
 
 
@@ -142,12 +210,7 @@ def chat_message_list_view(request, chat_id):
         context={'request': request}
     )
 
-    # 5. Mark messages as read (only paginated ones)
-    # unread_messages = (
-    #     Message.objects
-    #     .filter(id__in=[msg.id for msg in page])
-    #     .exclude(read_by=request.user)
-    # )
+
     unread_messages = (
         Message.objects
         .filter(chat=chat)
@@ -257,7 +320,11 @@ def start_chat_view(request):
                 }
                 for u in chat.users.all()
             ],
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+            decrypt_message(chat.last_message.content, chat.last_message.iv)
+            if chat.last_message and chat.last_message.iv
+            else chat.last_message.content if chat.last_message else None
+        ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK
@@ -306,7 +373,11 @@ def get_chat_view(request):
                 }
                 for u in chat.users.all()
             ],
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+                decrypt_message(chat.last_message.content, chat.last_message.iv)
+                if chat.last_message and chat.last_message.iv
+                else chat.last_message.content if chat.last_message else None
+            ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
             "unread_count": chat.unread_count,
         }
@@ -401,7 +472,11 @@ def start_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+                decrypt_message(chat.last_message.content, chat.last_message.iv)
+                if chat.last_message and chat.last_message.iv
+                else chat.last_message.content if chat.last_message else None
+            ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK
@@ -440,7 +515,11 @@ def get_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+                decrypt_message(chat.last_message.content, chat.last_message.iv)
+                if chat.last_message and chat.last_message.iv
+                else chat.last_message.content if chat.last_message else None
+            ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
             "unread_count": chat.unread_count,
         }
@@ -479,7 +558,11 @@ def join_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+                decrypt_message(chat.last_message.content, chat.last_message.iv)
+                if chat.last_message and chat.last_message.iv
+                else chat.last_message.content if chat.last_message else None
+            ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK
@@ -535,7 +618,11 @@ def addmember_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
-            "last_message": chat.last_message.content if chat.last_message else None,
+            "last_message": (
+            decrypt_message(chat.last_message.content, chat.last_message.iv)
+            if chat.last_message and chat.last_message.iv
+            else chat.last_message.content if chat.last_message else None
+        ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK

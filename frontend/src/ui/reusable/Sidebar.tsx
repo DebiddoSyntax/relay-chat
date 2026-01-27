@@ -12,6 +12,7 @@ import { HiUser } from "react-icons/hi2";
 import { PiChatTeardropDotsFill } from "react-icons/pi";
 import { useAuth } from '@/src/functions/auth/Store';
 import { RiChatSmileAiFill } from "react-icons/ri";
+import { IoCheckmarkDoneCircle } from "react-icons/io5";
 
 
 
@@ -81,7 +82,10 @@ function Sidebar() {
                     <Link href="/sydneyai">
                         <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/sydneyai')}`}>
                             <RiChatSmileAiFill className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/sydneyai')}`} />
-                            <p className="text-sm 2xl:text-base font-bold">Sydney AI</p>
+                            <div className='flex gap-1 items-center text-sm'>
+                                <p className="text-sm 2xl:text-base font-bold">Sydney AI</p>
+                                <IoCheckmarkDoneCircle className='text-blue-700' />
+                            </div>
                         </div>
                     </Link>
 

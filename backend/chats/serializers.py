@@ -3,6 +3,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Chat, UserChat, Message
+from .utils.decrypt import decrypt_message
 
 
 User = get_user_model()
@@ -113,6 +114,7 @@ class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.UUIDField(source='sender.id', read_only=True)
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
     is_read = serializers.SerializerMethodField()
+    content = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
@@ -127,6 +129,18 @@ class MessageSerializer(serializers.ModelSerializer):
             'is_read',
         ]
 
+
+    def get_content(self, obj):
+        if not obj.iv:
+            return obj.content
+
+        try:
+            return decrypt_message(obj.content, obj.iv)
+        except Exception as e:
+            print("Decryption failed:", e)
+            return None
+
+    
     def get_is_read(self, obj):
         user = self.context['request'].user
         return obj.read_by.filter(id=user.id).exists()

@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Wrapper from "../ui/reusable/Wrapper";
-import AuthInit from "../functions/auth/useAuthInit";
-import AppWrapper from "../functions/chats/SocketWrapper";
+import Wrapper from "../functions/global/Wrapper";
+import AuthInit from "../functions/global/useAuthInit";
 
 export const metadata: Metadata = {
   title: "RelayChat",
@@ -10,7 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode; }>) {
-	// useGlobalSocket()
 
 	return (
 		<html lang="en">

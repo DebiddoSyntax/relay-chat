@@ -34,9 +34,8 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
                 return
             }
 
-            const fetchPath = isGroup ? '/groupchat/all/' : isAI ? '/chat/ai/' : '/chat/all/'
+            const fetchPath = isGroup ? '/groupchat/all/' : '/chat/all/'
             
-            console.log('init')
             try{
                 const response = await api.get(`${fetchPath}`)
                 console.log('chat overview', response.data)
@@ -62,6 +61,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
         (a, b) => new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
     );
 
+    // const searchChats = chats.filter((chat) => chat.chat_name)
    
 
 
@@ -70,7 +70,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
             <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-gray-300'>
                 <div className='flex justify-between items-center'>
                     <p className='text-xl font-semibold'>
-                        {isGroup ? 'Groups' : isAI ? 'Sydney' : 'Chats'}
+                        {isGroup ? 'Groups' : 'Chats'}
                     </p>
 
                     <AddNewChat isGroup={isGroup} isAI={isAI} />

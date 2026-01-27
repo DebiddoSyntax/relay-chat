@@ -11,6 +11,8 @@ import AddMember from "./AddMember";
 import ViewMemebers from "./ViewMemebers";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
 import { formatAIReply } from "@/src/functions/chats/formatAIReply";
+import { IoCheckmarkDoneCircle } from "react-icons/io5";
+
 
 
 
@@ -260,15 +262,18 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         <div  className={`flex-1 w-full h-screen bg-gray-100`}>
             {chatOpen ? (
                 <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-screen bg-gray-100`}>
-                    <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-sm'>
+                    <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-50'>
                         <div className='w-full flex gap-3 items-center'>
                             <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />
 
                             <div className='w-full flex justify-between items-center z-50'>
                                 <div>
-                                    <p className='text-lg font-semibold' onClick={()=>  console.log('mssgs', messages)}>
-                                        {chatName}
-                                    </p>
+                                    <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
+                                        <p className='text-lg font-semibold'>
+                                            {chatName}
+                                        </p>
+                                        {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
+                                    </div>
 
                                     <p className={`text-xs ${status == 'disconnected' && 'text-red-700'} text-green-700`}>{status}</p>
                                 </div>

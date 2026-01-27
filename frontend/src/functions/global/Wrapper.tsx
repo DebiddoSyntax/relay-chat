@@ -1,7 +1,7 @@
 "use client"
 import React from 'react'
 import { usePathname } from 'next/navigation'
-import Navbar from './Navbar'
+import Navbar from '../../ui/reusable/Navbar'
 import { useGlobalSocket } from '@/src/functions/chats/useGlobalSocket'
 
 function Wrapper({ children }: { children: React.ReactNode }) {

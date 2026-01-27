@@ -8,7 +8,8 @@ urlpatterns = [
     path('chat/start/', views.start_chat_view),
     path("chat/<uuid:chat_id>/messages/", views.chat_message_list_view),
     path('chat/ai/start/', views.start_ai_chat),
-    path('chat/ai/', views.get_aichat_view),
+    path('chat/ai/all', views.get_aichat_view),
+    path('chat/ai/', views.ai_chat_view),
     
     # group urls 
     path('groupchat/all/', views.get_groupchat_view),

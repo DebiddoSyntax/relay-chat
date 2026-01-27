@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "./Store";
+import { useAuth } from "../auth/Store";
 import { useEffect, useRef } from "react";
 import { areInterceptorsActive, EjectInterceptors, InitializedInterceptor } from "@/src/functions/auth/AxiosConfig";
 import { usePathname } from "next/navigation";
@@ -7,7 +7,10 @@ import { useChat } from "../chats/chatStore";
 
 
 export default function AuthInit() {
-    const { accessToken, authInitialized, refreshAccessToken } = useAuth();
+    const accessToken = useAuth((state)=> state.accessToken);
+    const refreshAccessToken = useAuth((state)=> state.refreshAccessToken);
+    const authInitialized = useAuth((state)=> state.authInitialized);
+    const setChats = useChat((state)=> state.setChats)
 
     const refreshRef = useRef(refreshAccessToken);
 
@@ -43,6 +46,7 @@ export default function AuthInit() {
     useEffect(()=> {
         setActiveId(null)
         setChatOpen(false)
+        setChats([])
     }, [pathname])
 
 

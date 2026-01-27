@@ -18,7 +18,7 @@ interface AddNewChatProps {
 }
 
 
-function AddNewChat({ isGroup, isAI }: AddNewChatProps ) {
+function AddNewChat({ isGroup }: AddNewChatProps ) {
 
 
     const setActiveId = useChat((state)=> state.setActiveId)
@@ -79,45 +79,10 @@ function AddNewChat({ isGroup, isAI }: AddNewChatProps ) {
 
     }
 
-    const handleAiChat = async () => {
-        
-        try{
-            
-            const response = await api.post('/chat/ai/start/')
-            console.log('start chat', response.data)
-            const newdata = response.data
-            setChats(prev => {
-                if (!prev) return [newdata] 
-
-                const exists = prev.find(chat => chat.chat_id == newdata.id)
-
-                if (exists) {
-                    return [
-                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.id),
-                    ]
-                }
-
-                return [newdata, ...prev]
-            })
-
-            setNewChat(false)
-
-            setActiveId(newdata.id)
-        } catch (err) {
-			if (axios.isAxiosError(err)) {
-				console.error("error", err.response?.data);
-				setErrorMessage(err.response?.data?.detail || "Something went wrong");
-			} else {
-				console.error("unexpected error", err);
-				// setErrorMessage("An unexpected error occurred");
-			}
-		}
-    }
 
 
     // handle new chat toggle 
     const handleNewChatToggle = () => {
-        if(isAI && chats.length > 0){ return }
         setNewChat(true)
     }
 

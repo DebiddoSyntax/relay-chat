@@ -3,14 +3,26 @@ import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 from django.db.models import Q
 from ..models import Chat, Message, MessageReadBy, UserChat
 import asyncio
-# from asgiref.sync import sync_to_async
 from django.utils import timezone
 import uuid
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+import os
+import binascii
+from os import urandom
+from ..utils.decrypt import decrypt_message
 
+
+
+
+key_hex = os.environ.get("SERVER_AES_KEY")
+if not key_hex:
+    raise ValueError("SERVER_AES_KEY not set in environment variables")
+
+SERVER_AES_KEY = binascii.unhexlify(key_hex) 
+aesgcm = AESGCM(SERVER_AES_KEY)
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -114,6 +126,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 content,
                 message_type
             )
+
+            decrypt_content = decrypt_message(message.content, message.iv)
             
             # Prepare payload
             payload = {
@@ -125,7 +139,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'email': message.sender.email,
                 },
                 'sender_id': str(message.sender.id),
-                'content': message.content,
+                'content': decrypt_content,
+                # 'content': message.content,
                 'message_type': message.type,
                 'created_at': message.created_at.isoformat(),
             }
@@ -151,7 +166,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             "payload": {
                                 "type": "new_message",
                                 "chat_id": str(self.chat_id),
-                                "content": message.content,
+                                "content": decrypt_content,
                                 "created_at": message.created_at.isoformat(),
                                 "sender_id": str(self.user.id),
                             }
@@ -207,9 +222,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 Keep replies short unless the user asks for depth.
                 Stay in character at all times.
         """
-        prompt = user_message.content.strip()
+      
+        try:
+            decrypt_prompt = decrypt_message(user_message.content, user_message.iv)
+        except Exception as e:
+            logger.warning(f"Failed to decrypt user message: {e}")
+            return
+        
+        prompt = decrypt_prompt.strip()
         if not prompt:
             return
+
+        
 
 
         failed_payload = {
@@ -256,6 +280,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             # Save AI message
             message = await self.save_message(self.chat_id, ai_user.id, ai_text, "text")
 
+            decrypt_content = decrypt_message(message.content, message.iv)
+
             payload = {
                 'type': 'message',
                 'id': str(message.id),
@@ -265,7 +291,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'email': ai_user.email,
                 },
                 'sender_id': str(ai_user.id),
-                'content': message.content,
+                'content': decrypt_content,
                 'message_type': message.type,
                 'created_at': message.created_at.isoformat(),
             }
@@ -284,7 +310,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             "payload": {
                                 "type": "new_message",
                                 "chat_id": str(self.chat_id),
-                                "content": message.content,
+                                "content": decrypt_content,
                                 "created_at": message.created_at.isoformat(),
                                 "sender_id": str(self.user.id),
                             }
@@ -333,7 +359,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send_error("Failed to mark message as read")
 
    
-    # Event handlers (called by channel layer)
+    # Event handlers
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
 
@@ -359,7 +385,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Message.DoesNotExist:
             return
 
-    
+
 
     # Database operations
     @database_sync_to_async
@@ -385,10 +411,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         chat = Chat.objects.get(id=chat_id)
         sender = User.objects.get(id=sender_id)
         
+        iv = urandom(12)
+        ciphertext = aesgcm.encrypt(iv, content.encode(), None)
+
         message = Message.objects.create(
             chat=chat,
             sender=sender,
-            content=content,
+            content=binascii.hexlify(ciphertext).decode(),
+            iv=binascii.hexlify(iv).decode(),
             type=message_type
         )
         

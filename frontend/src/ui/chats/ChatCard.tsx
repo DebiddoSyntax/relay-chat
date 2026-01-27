@@ -5,8 +5,8 @@ import profileImage from '@/src/assets/profile.png'
 import { useChat } from '@/src/functions/chats/chatStore';
 import { useEffect } from 'react';
 import { useAuth } from '@/src/functions/auth/Store';
-import { FaBrain } from "react-icons/fa6";
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
+import { FaUserCircle } from "react-icons/fa";
 
 
 interface ChatCardProps { 
@@ -54,7 +54,8 @@ function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
     return (
         <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-200"} rounded-sm  w-full cursor-pointer`}>
             <div className='flex gap-3 w-full'>
-                <Image src={profileImage} width={200} height={200} alt='profileImage' className='w-12 h-12 rounded-full'/>
+                {/* <Image src={profileImage} width={200} height={200} alt='profileImage' className='w-12 h-12 rounded-full'/> */}
+                <FaUserCircle className='w-12 h-12 rounded-full'/>
                 <div className='flex flex-col gap-2 w-full'>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>

@@ -31,6 +31,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     firstname = models.CharField(max_length=255, null=True)
     lastname = models.CharField(max_length=255, null=True)
     username = models.CharField(max_length=255)
+    image_url = models.URLField(max_length=255, null=True)
     
     # Role field
     ROLE_CHOICES = (
@@ -96,6 +97,7 @@ class Message(models.Model):
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name='messages')
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
     content = models.TextField()
+    iv = models.CharField(max_length=24, null=True, blank=True)
     type = models.CharField(max_length=50, default='text')
     created_at = models.DateTimeField(default=timezone.now)
     read_by = models.ManyToManyField(User, through='MessageReadBy', related_name='messages_read')
