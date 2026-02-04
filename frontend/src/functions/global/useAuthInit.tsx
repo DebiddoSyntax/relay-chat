@@ -10,7 +10,15 @@ export default function AuthInit() {
     const accessToken = useAuth((state)=> state.accessToken);
     const refreshAccessToken = useAuth((state)=> state.refreshAccessToken);
     const authInitialized = useAuth((state)=> state.authInitialized);
-    const setChats = useChat((state)=> state.setChats)
+
+    const setChatOpen = useChat((state)=> state.setChatOpen)
+    // const setPrivateChats = useChat((state)=> state.setPrivateChats)
+    // const setGroupChats = useChat((state)=> state.setGroupChats)
+    // const setAiChatId = useChat((state)=> state.setAiChatId)
+    const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
+    const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
+
+    const pathname = usePathname()
 
     const refreshRef = useRef(refreshAccessToken);
 
@@ -39,14 +47,14 @@ export default function AuthInit() {
         }
     }, [accessToken, authInitialized]);
     
-    const pathname = usePathname()
-    const setActiveId = useChat((state)=> state.setActiveId)
-    const setChatOpen = useChat((state)=> state.setChatOpen)
 
     useEffect(()=> {
-        setActiveId(null)
         setChatOpen(false)
-        setChats([])
+        setActiveGroupId(null)
+        setActivePrivateId(null)
+        // setAiChatId(null)
+        // setGroupChats([])
+        // setPrivateChats([])
     }, [pathname])
 
 

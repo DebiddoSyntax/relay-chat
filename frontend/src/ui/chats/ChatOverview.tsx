@@ -17,13 +17,29 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
     // chat overview states
     const authInitialized = useAuth((state)=> state.authInitialized)
 
-    const activeId = useChat((state)=> state.activeId)
-    const setActiveId = useChat((state)=> state.setActiveId)
-    const setChatName = useChat((state)=> state.setChatName)
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
-    const chats = useChat((state)=> state.chats)
-    const setChats = useChat((state)=> state.setChats)
+
+    const privateChats = useChat((state)=> state.privateChats)
+    const groupChats = useChat((state)=> state.groupChats)
+    
+    const setPrivateChats = useChat((state)=> state.setPrivateChats)
+    const setGroupChats = useChat((state)=> state.setGroupChats)
+    
+    const activePrivateId = useChat((state)=> state.activePrivateId)
+    const activeGroupId = useChat((state)=> state.activeGroupId)
+    const aiChatId = useChat((state)=> state.aiChatId)
+
+    const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
+    const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
+    const setAiChatId = useChat((state)=> state.setAiChatId)
+    
+
+    const chats = isGroup ? groupChats : privateChats
+    const setChats = isGroup ? setGroupChats : setPrivateChats
+    const activeId = isGroup ? activeGroupId : isAI ? aiChatId : activePrivateId
+    const setActiveId = isGroup ? setActiveGroupId : isAI ? setAiChatId : setActivePrivateId
+  
     
 
     // fetch user chats effects 
@@ -38,7 +54,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
             
             try{
                 const response = await api.get(`${fetchPath}`)
-                console.log('chat overview', response.data)
+                // console.log('chat overview', response.data)
                 setChats(response.data)
             }catch(error){
                 console.log('overview error', error)
@@ -49,19 +65,20 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
     }, [authInitialized])
 
     
-    // open a single chat function 
-    const handleChatOpen = (a: OverviewDataProps) =>{
+
+    const handleChatOpen = (a: OverviewDataProps) => {
+        setAiChatId(null)
         setActiveId(a.chat_id)
-        setChatName(a.chat_name)
+        // setChatName(a.chat_name)
         setChatOpen(true)
     }
 
 
-    const sortedChats = chats.sort(
+
+    const sortedChats = [...chats].sort(
         (a, b) => new Date(b.last_message_time).getTime() - new Date(a.last_message_time).getTime()
     );
 
-    // const searchChats = chats.filter((chat) => chat.chat_name)
    
 
 
@@ -73,7 +90,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
                         {isGroup ? 'Groups' : 'Chats'}
                     </p>
 
-                    <AddNewChat isGroup={isGroup} isAI={isAI} />
+                    <AddNewChat isGroup={isGroup} setActiveId ={setActiveId} isAI={isAI}/>
                 </div>
             </div>
 

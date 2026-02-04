@@ -9,22 +9,28 @@ import { IoClose } from "react-icons/io5";
 import { NewchatInputType } from '@/src/functions/types/ChatType';
 import api from '@/src/functions/auth/AxiosConfig';
 import { useChat } from '@/src/functions/chats/chatStore';
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 
 
 interface AddNewChatProps { 
     isGroup: boolean
     isAI: boolean
+    setActiveId: (val: number | null) => void
 }
 
 
-function AddNewChat({ isGroup }: AddNewChatProps ) {
+function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
 
 
-    const setActiveId = useChat((state)=> state.setActiveId)
-    const setChats = useChat((state)=> state.setChats)
-    const chats = useChat((state)=> state.chats)
+    const setChatOpen = useChat((state)=> state.setChatOpen)
+
+    const setPrivateChats = useChat((state)=> state.setPrivateChats)
+    const setGroupChats = useChat((state)=> state.setGroupChats)
+    const setChats = isGroup ? setGroupChats : setPrivateChats
+
     const [newChat, setNewChat] = useState(false)
+    const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
 
 
@@ -45,28 +51,31 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
     const handleNewChat = async (data: NewchatInputType) => {
         
         try{
+            setLoading(true)
             const fetchPath = isGroup ? '/groupchat/start/' : '/chat/start/'
 
             const response = await api.post(`${fetchPath}`, data)
             console.log('start chat', response.data)
             const newdata = response.data
+
             setChats(prev => {
                 if (!prev) return [newdata] 
 
-                const exists = prev.find(chat => chat.chat_id == newdata.id)
+                const exists = prev.find(chat => chat.chat_id == newdata.chat_id)
 
                 if (exists) {
                     return [
-                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.id),
+                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.chat_id),
                     ]
                 }
 
                 return [newdata, ...prev]
             })
 
+            
+            setActiveId(newdata.chat_id)
+            setChatOpen(true)
             setNewChat(false)
-
-            setActiveId(newdata.id)
         } catch (err) {
 			if (axios.isAxiosError(err)) {
 				console.error("error", err.response?.data);
@@ -74,8 +83,11 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
 			} else {
 				console.error("unexpected error", err);
 				setErrorMessage("An unexpected error occurred");
+
 			}
-		}
+		}finally{
+            setLoading(false)
+        }
 
     }
 
@@ -95,10 +107,10 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
 
             {newChat && (
                 <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
-                    <div className={`flex flex-col relative ${isAI ? 'w-80 md:w-[440px]' : 'w-96 md:w-[640px]'} h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
+                    <div className={`flex flex-col relative w-96 md:w-[640px] h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
                         <div className='flex justify-between items-center'>
-                            <p className={`text-lg font-semibold ${isAI && 'text-center'}`}>
-                                {isGroup ? 'Create new group' : isAI ? 'Start talking to Sydney AI' : 'Add new chat'}
+                            <p className={`text-lg font-semibold`}>
+                                {isGroup ? 'Create new group' : 'Add new chat'}
                             </p>
                             <IoClose 
                                 onClick={()=> setNewChat(false)} 
@@ -106,7 +118,7 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
                             />
                         </div>
 
-                        {!isAI && (
+                  
                             <form onSubmit={handleSubmit(handleNewChat)} className=''>
 
                                 {isGroup && (
@@ -164,23 +176,11 @@ function AddNewChat({ isGroup }: AddNewChatProps ) {
 
                                 <div className='mt-5 flex justify-end'>
                                     <button type="submit" className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
-                                        Start
+                                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Start'}
                                     </button>
                                 </div>
                             </form>
-                        )}
-
-                        {isAI && (
-                            <div>
-                                {/* <p className='text-center'>Start talking to Sydney</p> */}
-                                <div className='mt-5 flex justify-center'>
-                                    <button type="button" onClick={handleAiChat} className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
-                                        Start
-                                    </button>
-                                </div>
-                            </div>
-
-                        )}
+                        
                     </div>
                 </div>
             )}

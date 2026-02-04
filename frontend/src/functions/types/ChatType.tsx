@@ -1,3 +1,4 @@
+import { UserType } from "./UserType"
 export interface OverviewDataProps {
     last_message: string, 
     last_message_time: string, 
@@ -5,12 +6,8 @@ export interface OverviewDataProps {
     chat_id: number
     chat_name: string
     unread_count: number
-    users: {
-        firstname: string
-        lastname: string
-        email: string
-        id: string
-    }[]
+    image: string
+    users: UserType[]
 }
 
 export interface NewchatInputType{

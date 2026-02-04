@@ -3,12 +3,12 @@ from . import views
 
 
 urlpatterns = [
+    path('image/auth/', views.image_auth),
+
     # chats urls 
     path('chat/all/', views.get_chat_view),
     path('chat/start/', views.start_chat_view),
     path("chat/<uuid:chat_id>/messages/", views.chat_message_list_view),
-    path('chat/ai/start/', views.start_ai_chat),
-    path('chat/ai/all', views.get_aichat_view),
     path('chat/ai/', views.ai_chat_view),
     
     # group urls 

@@ -14,10 +14,7 @@ interface AddMemberInputType{
 }
 
 
-function AddMember() {
-
-
-	const activeId = useChat((state)=> state.activeId)
+function AddMember({ activeId }: { activeId: number | null}) {
 
 	const [newMember, setNewMember] = useState(false)
 	const [updateModal, setUpdateModal] = useState(false)

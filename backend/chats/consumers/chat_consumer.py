@@ -157,6 +157,16 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
             participants = await self.get_chat_participants(self.chat_id)
 
+            chat = await database_sync_to_async(Chat.objects.get)(id=self.chat_id)
+
+            if await self.is_ai_chat(self.chat_id):
+                chat_type = "ai"
+            elif chat.is_group:
+                chat_type = "group"
+            else:
+                chat_type = "private"
+
+
             for user_id in participants:
                 if user_id != self.user.id:
                     await self.channel_layer.group_send(
@@ -166,6 +176,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             "payload": {
                                 "type": "new_message",
                                 "chat_id": str(self.chat_id),
+                                "chat_type": chat_type,
                                 "content": decrypt_content,
                                 "created_at": message.created_at.isoformat(),
                                 "sender_id": str(self.user.id),
@@ -391,6 +402,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def is_ai_chat(self, chat_id):
         return Chat.objects.filter(id=chat_id, is_ai=True).exists()
+
 
     @database_sync_to_async
     def get_ai_user(self):

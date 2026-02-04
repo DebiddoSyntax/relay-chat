@@ -1,159 +1,136 @@
-// "use client"
-// import React, { useState, useRef } from 'react'
-// import { GrGallery } from "react-icons/gr";
-// import { IKContext, IKUpload } from "imagekitio-react";
-// import api from '@/functions/context/user/AxiosConfig';
-// import Image from 'next/image';
-// import { sanitizeName } from '@/functions/hooks/sanitizeName';
+"use client"
+import api from "@/src/functions/auth/AxiosConfig";
+import { ImageKitAbortError, ImageKitInvalidRequestError, ImageKitServerError, ImageKitUploadNetworkError, upload } from "@imagekit/react";
+import { useRef, useState } from "react";
+import { BiUpload } from "react-icons/bi";
+import { MdOutlineClear } from "react-icons/md";
 
 
-// interface ImageURLProps {
-//   onSelect: (val: string) => void
+interface ImageURLProps {
+  onSelect: (val: string) => void
+  setDisplayImage: (val: string | undefined)=> void
+  userImage: string | undefined
 //   collection: string
 //   setImgErrorMessage?: (val: string)=> void
 //   productName: string
 //   setProductErrorMessage?: (val: string)=> void
-// }
-
-// const publicKey = process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY;
-// const urlEndpoint = process.env.NEXT_PUBLIC_IMAGEKIT_ENDPOINT;
+}
 
 
-// function Upload({ onSelect, collection, setImgErrorMessage, productName, setProductErrorMessage }: ImageURLProps) {
+function Upload({ onSelect, setDisplayImage, userImage }: ImageURLProps) {
+    const [progress, setProgress] = useState(0);
+    const abortController = new AbortController();
 
-//     const [imagePreview, setImagePreview] = useState<string | null>(null);
-//     const imageInputRef = useRef<HTMLInputElement | null>(null);
-//     const [uploading, setUploading] = useState(false);
-   
+
+    const authenticator = async () => {
+        try {
+            const response = await api("/image/auth/");
+            const { signature, expire, token, publicKey } = response.data;
+            return { signature, expire, token, publicKey };
+        } catch (error) {
+            // Log the original error for debugging before rethrowing a new error.
+            console.error("Authentication error:", error);
+            throw new Error("Authentication request failed");
+        }
+    };
 
     
+    const handleUpload = async (file: File) => {
 
-//     const handleBoxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const file = event.target.files?.[0];
-//         if (file) {
-//             setImagePreview(URL.createObjectURL(file));
-//         }
-//     };
+        setProgress(0);
 
-//     const handleBoxClick = () => {
-//         if(!collection && setImgErrorMessage){
-//             setImgErrorMessage('Select collection before uploading')
-//             return
-//         }
+        let authParams;
+        try {
+            authParams = await authenticator();
+        } catch (authError) {
+            console.error("Failed to authenticate for upload:", authError);
+            return;
+        }
+        const { signature, expire, token, publicKey } = authParams;
 
-//         if(!productName && setProductErrorMessage){
-//             setProductErrorMessage('Enter product name before uploading')
-//             return
-//         }
+        try {
+            const uploadResponse = await upload({
+                expire,
+                token,
+                signature,
+                publicKey,
+                file,
+                fileName: file.name, 
+                folder: 'relayChat',
 
-//         imageInputRef.current?.click();
-//     };
+                onProgress: (event) => {
+                    setProgress(Math.ceil((event.loaded / event.total) * 100));
+                },
+                
+                abortSignal: abortController.signal,
+            });
+
+            console.log("Upload response:", uploadResponse);
+            if(uploadResponse.url){
+                onSelect(uploadResponse.url)
+                setDisplayImage(uploadResponse.url)
+            }
+
+        } catch (error) {
+            if (error instanceof ImageKitAbortError) {
+                console.error("Upload aborted:", error.reason);
+            } else if (error instanceof ImageKitInvalidRequestError) {
+                console.error("Invalid request:", error.message);
+            } else if (error instanceof ImageKitUploadNetworkError) {
+                console.error("Network error:", error.message);
+            } else if (error instanceof ImageKitServerError) {
+                console.error("Server error:", error.message);
+            } else {
+                console.error("Upload error:", error);
+            }
+        }
+    };
+
+    const [fileName, setFileName] = useState("Upload file");
 
 
+    const handleImageClear = () => {
+        if(userImage){
+            setDisplayImage(userImage)
+        }else{
+            setDisplayImage(undefined)
+        }
+    }
 
+    return (
+        <div className="flex gap-3 items-center">
+            <div className="border-2 border-gray-200 py-2 px-3 rounded-4xl cursor-pointer w-36 flex justify-center">
 
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <BiUpload />
+                    <input
+                        type="file"
+                        // ref={fileInputRef} 
+                        className="hidden"
+                        onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
 
-//     const authenticator = async() => {
-//         // if(!collection && setImgErrorMessage){
-//         //     setImgErrorMessage('Select collection before uploading')
-//         //     return
-//         // }
-//         // if(!productName && setProductErrorMessage){
-//         //     setProductErrorMessage('Enter product name before uploading')
-//         //     return
-//         // }
-
-//         try {
-//             const response = await api("/admin/products/imagekit");
-//             return response.data;
-//         } catch (err) {
-//             if(setImgErrorMessage){
-//                 setImgErrorMessage('Failed to upload')
-//             }
-//         }
-//         // const response = await api('/admin/products/imagekit')
-//         // // console.log("successful upload", response.data)
-//         // return response.data
-//     }
-
-
-//     const handleUploadStart = () => {
-//         setUploading(true);
-//     };
-
-//     const handleUploadSuccess = (res: {url: string}) => {
-//         // console.log("✅ Upload Success:", res);
-//         setUploading(false);
-//         onSelect(res.url)
-//     };
-
-//     // const handleUploadError = (err: {message: string}) => {
-//     const handleUploadError = () => {
-//         setUploading(false);
-//         if(setImgErrorMessage){
-//             setImgErrorMessage('Failed to upload')
-//         }
-//         // console.log("❌ Upload Error:", err);
-//     };
-
-//     return (
-//         <div className='h-52'>
-//             <IKContext
-//                 publicKey={publicKey}
-//                 urlEndpoint={urlEndpoint}
-//                 authenticator={authenticator}
-//             >
-//                 <div className='py-5 px-5 border-2 flex justify-center border-blue-700 border-dashed rounded-sm cursor-pointer h-full w-full' onClick={handleBoxClick}>
-//                     <div className='flex flex-col gap-3 items-center my-auto h-full w-full'>
-//                         {uploading ? (
-//                              <div className='h-full w-full flex flex-col gap-3 justify-center'>
-//                                 <div className='text-blue-700 mx-auto'>
-//                                     <GrGallery />
-//                                 </div>
-//                                 <p className="text-blue-700 text-center text-sm font-semibold animate-pulse">
-//                                     Uploading...
-//                                 </p>
-//                             </div> 
+                            setFileName(file.name);
+                            handleUpload(file);
                             
-//                             ) :imagePreview ? (
-//                             <div className='h-full w-full'>
-//                                 <Image
-//                                     src={imagePreview}
-//                                     width={400}
-//                                     height={400}
-//                                     alt="Preview"
-//                                     className="w-full h-full object-contain rounded-md"
-//                                 />
-//                             </div>
-//                         ) : (
-//                             <div className='h-full w-full flex flex-col gap-3 justify-center'>
-//                                 <div className='text-blue-700 mx-auto'>
-//                                     <GrGallery />
-//                                 </div>
-//                                 <p className='text-sm text-blue-700 font-semibold text-center'>Click to upload</p>
-//                             </div>                             
-//                         )}
-//                     </div>
+                            setFileName(e.target.files?.[0]?.name || "Upload file")
+                        }}
+                    />
+                    <span className="text-sm font-medium truncate w-20">
+                        {fileName}
+                    </span>
+                </label>
+            </div>
+            {/* {progress > 0 && <progress value={progress} max={100}></progress>} */}
+            {progress > 0 && (
+                <span className="text-xs font-medium text-gray-600">
+                    {progress == 100 ? <MdOutlineClear className="text-2xl cursor-pointer" onClick={handleImageClear} /> : `${progress}%`}
+                </span>
+            )}
 
-//                     {/* Hidden ImageKit upload component */}
-//                     <IKUpload
-//                         ref={imageInputRef}
-//                         style={{ display: "none" }}
-//                         fileName={sanitizeName(productName || "untitled")}
-//                         folder={sanitizeName(collection || "uncategorized")}
-//                         accept="image/*"
-//                         onUploadStart={handleUploadStart}
-//                         onSuccess={handleUploadSuccess}
-//                         onError={handleUploadError}
-//                         onChange={handleBoxChange}
-//                         useUniqueFileName={true}
-//                     />
-//                 </div>
-//             </IKContext>
+        </div>
+    );
+};
 
-//         </div>
- 
-//   )
-// }
-
-// export default Upload
+export default Upload;

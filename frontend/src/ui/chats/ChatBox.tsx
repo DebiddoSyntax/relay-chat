@@ -2,7 +2,6 @@
 import { IoMdMore, IoIosArrowBack } from "react-icons/io";
 import MessageCard from './MessageCard';
 import { IoSend } from "react-icons/io5";
-import { MdGroupAdd } from "react-icons/md";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/functions/auth/Store";
 import api from "@/src/functions/auth/AxiosConfig";
@@ -12,6 +11,10 @@ import ViewMemebers from "./ViewMemebers";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
 import { formatAIReply } from "@/src/functions/chats/formatAIReply";
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
+import profileImage from '@/src/assets/profile.png'
+import Image from "next/image";
+import { FaUserCircle } from "react-icons/fa";
+import { RiChatSmileAiFill } from "react-icons/ri";
 
 
 
@@ -36,10 +39,20 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
     const token = useAuth((state)=> state.accessToken)
 
+    const activePrivateId = useChat((state)=> state.activePrivateId)
+    const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
+    const privateChats = useChat((state)=> state.privateChats)
+    
+    const groupChats = useChat((state)=> state.groupChats)
+    const activeGroupId = useChat((state)=> state.activeGroupId)
+    const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
+    
+    const aiChatId = useChat((state)=> state.aiChatId)
+    const setAiChatId = useChat((state)=> state.setAiChatId)
 
-    const chats = useChat((state)=> state.chats)
-    const activeId = useChat((state)=> state.activeId)
-    const setActiveId = useChat((state)=> state.setActiveId)
+    const chats = isGroup ? groupChats : privateChats
+    const activeId = isGroup ? activeGroupId : isAI ? aiChatId : activePrivateId
+
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
     const updateLastMessage = useChat((state) => state.updateLastMessage)
@@ -47,46 +60,57 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     
     const socketRef = useRef<WebSocket | null>(null);
     const [messages, setMessages] = useState<MessageType[]>([]);
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
     const [input, setInput] = useState("");
     const [aiTyping, setAiTyping] = useState(false);
     const [status, setStatus] = useState("connecting");
     const [nextUrl, setNextUrl] = useState<string | null>(null);
     
     const [moreOPtion, setMoreOPtion] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const shouldScrollRef = useRef(true);
 
     // mobile back button 
     const handleBackButton = () => {
         setChatOpen(false);
-        setActiveId(null)
+        setActiveGroupId(null)
+        setActivePrivateId(null)
+        setAiChatId(null)
     }
 
 
     // get current open chat 
-    const chat = chats.find(
+    const chat = [...chats].find(
         (chat) => activeId == chat.chat_id
     )
     
     // set chat name
-    const chatName = isGroup ? chat?.chat_name : isAI ? 'Sydney AI' : handlePrivateChatName(isGroup, chat)
+    const otherUser = handlePrivateChatName(isGroup, chat)
+    const chatName = isGroup ? chat?.chat_name : isAI ? 'Sydney AI' : otherUser?.name
+
+    // set current chat type 
+    const type = isGroup ? 'group' : 'private'
 
 
     // fetch chat messages 
     const fetchMessages = async() => {
         try{
+            setLoading(true)
             const response = await api.get(`/chat/${activeId}/messages/`)
-            console.log('fetched mess', response.data)
+            // console.log('fetched mess', response.data)
             setNextUrl(response.data.next)
             setMessages(response.data.results)
-            resetUnread(activeId)
+            resetUnread(type, activeId)
         }catch(error){
             console.log('fetch messages', error)
+            setError('Failed to load messages')
+        }finally{
+            setLoading(false)
         }
     }
 
-
-    const containerRef = useRef<HTMLDivElement>(null);
-    const [loadingMore, setLoadingMore] = useState(false);
-    const shouldScrollRef = useRef(true);
 
 
     // fetch more chat messages
@@ -101,7 +125,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
             setLoadingMore(true);
             
             const res = await api.get(nextUrl);
-            console.log('fetched more messages', res.data)
+            // console.log('fetched more messages', res.data)
 
             setMessages(prev => [
                 ...res.data.results,
@@ -159,7 +183,9 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
     // ====== handle web socket connections =====
     useEffect(() => {
-        if(!chatOpen){ return }
+        if(!chatOpen || !activeId){ 
+            return 
+        }
 
         fetchMessages()
         
@@ -169,19 +195,18 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         socketRef.current = socket;
 
         socket.onopen = () => {
-            console.log("WebSocket connected");
             setStatus("connected");
         };
 
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            if (data.type === "connection") {
-                console.log("Connected:", data);
-            }
+            // if (data.type === "connection") {
+            //     console.log("Connected:", data);
+            // }
 
             if (data.type === "typing" && data.user === "ai") {
-                console.log("ai typing");
+                // console.log("ai typing");
                 setAiTyping(data.typing);
             }
 
@@ -190,8 +215,6 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                 shouldScrollRef.current = true;
                 setMessages((prev) => [...prev, data]);
 
-                console.log("message entering", data);
-                // Only mark real messages as read
                 if (!data.meta?.ephemeral) {
                     socket.send(
                         JSON.stringify({
@@ -202,17 +225,16 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                 }
             }
 
-            if (data.type === "read") {
-                console.log("Message read:", data);
-            }
+            // if (data.type === "read") {
+            //     console.log("Message read:", data);
+            // }
 
-            if (data.type === "error") {
-                console.error(data.error);
-            }
+            // if (data.type === "error") {
+            //     console.error(data.error);
+            // }
         };
 
         socket.onclose = () => {
-            console.log("WebSocket closed");
             setStatus("disconnected");
         };
 
@@ -221,7 +243,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         };
 
         return () => socket.close();
-    }, [activeId, token]);
+    }, [activeId, token, chatOpen]);
     
 
     // send message function 
@@ -237,6 +259,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         );
 
         updateLastMessage(
+            type,
             activeId!,
             input,
             new Date().toISOString()
@@ -254,9 +277,13 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     };
 
 
-    const sortedMessages = messages.sort(
+    const sortedMessages = [...messages].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
+
+    const ImageSrc = isGroup ? chat?.image : otherUser?.image
+    const [imgError, setImgError] = useState(false)
+    const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
 
     return (
         <div  className={`flex-1 w-full h-screen bg-gray-100`}>
@@ -267,22 +294,30 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                             <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />
 
                             <div className='w-full flex justify-between items-center z-50'>
-                                <div>
-                                    <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
-                                        <p className='text-lg font-semibold'>
-                                            {chatName}
-                                        </p>
-                                        {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
-                                    </div>
+                                <div className={`${'flex gap-2 items-center'}`}>
+                                    {ImageSrc && !imgError ? 
+                                        <img src={ImageSrc} alt='user image' className='w-11 h-11 rounded-full' onError={() => setImgError(true)} /> 
+                                        : 
+                                        <IconDisplay className='w-10 h-10 rounded-full'/>
+                                    }
+                                    <div>
+                                        <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
+                                                <p className='text-lg font-semibold'>
+                                                    {chatName}
+                                                </p>
+                                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
+                                        </div>
 
-                                    <p className={`text-xs ${status == 'disconnected' && 'text-red-700'} text-green-700`}>{status}</p>
+
+                                        <p className={`text-xs ${status == 'disconnected' && 'text-red-700'} text-green-700`}>{status}</p>
+                                    </div>
                                 </div>
                                 
                                 <div className="relative inline-block text-left">
                                     <IoMdMore className='text-2xl cursor-pointer' onClick={()=> setMoreOPtion(true)}/>
                                     {isGroup && moreOPtion && (
                                         <div className={`w-32 absolute right-0 z-10 mt-3 origin-top-left rounded-sm bg-background shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none text-xs font-bold`}>
-                                            <AddMember />
+                                            <AddMember activeId={activeId} />
                                             <ViewMemebers />
                                         </div>
                                     )}

@@ -10,5 +10,10 @@ export const handlePrivateChatName = (isGroup: boolean, chat: OverviewDataProps 
         const otherUser = chat?.users?.find(
             (u) => u.id !== user?.id
         )
-        return `${otherUser?.firstname} ${otherUser?.lastname}`.trim() || otherUser?.email
+
+        const returnData = { 
+            name: `${otherUser?.firstname} ${otherUser?.lastname}`.trim() || otherUser?.email,
+            image: `${otherUser?.image}`
+        }
+        return returnData
     }

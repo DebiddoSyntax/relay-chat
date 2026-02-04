@@ -11,15 +11,13 @@ import { FaUserCircle } from "react-icons/fa";
 
 interface ChatCardProps { 
     data: OverviewDataProps,
-    activeId: null | number
+    activeId: number | null
     isGroup: boolean
     isAI: boolean
 }
 
 
 function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
-
-    // const lastMessageDateSplit = data.last_message_time?.split("T")[0];
 
     const user = useAuth((state)=> state.user)
 
@@ -55,7 +53,7 @@ function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
         <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-200"} rounded-sm  w-full cursor-pointer`}>
             <div className='flex gap-3 w-full'>
                 {/* <Image src={profileImage} width={200} height={200} alt='profileImage' className='w-12 h-12 rounded-full'/> */}
-                <FaUserCircle className='w-12 h-12 rounded-full'/>
+                {otherUser?.image ? <img src={otherUser?.image} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-12 h-12 rounded-full'/>}
                 <div className='flex flex-col gap-2 w-full'>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>

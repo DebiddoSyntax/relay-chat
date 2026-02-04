@@ -1,19 +1,11 @@
 "use client"
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { MdShop } from "react-icons/md";
 import { useState } from 'react';
-import { BsFillInboxesFill } from "react-icons/bs";
-import { FaUsers } from "react-icons/fa";
-// import useClicktoClose from '@/functions/hooks/useClicktoClose';
+import useClicktoClose from '@/src/functions/global/useClicktoClose';
 import { IoIosArrowBack } from "react-icons/io";
 import { TbLayoutSidebarRightCollapseFilled } from "react-icons/tb";
-import { HiUser } from "react-icons/hi2";
-import { PiChatTeardropDotsFill } from "react-icons/pi";
 import { useAuth } from '@/src/functions/auth/Store';
-import { RiChatSmileAiFill } from "react-icons/ri";
-import { IoCheckmarkDoneCircle } from "react-icons/io5";
-
+import Paths from './Paths';
 
 
 
@@ -44,11 +36,11 @@ function Sidebar() {
 		}
 	};
 
-	// const navCloseRef = useClicktoClose(()=> {
-	// 	setNav(false)
-	// })
+	const navCloseRef = useClicktoClose(()=> {
+		setNav(false)
+	})
 
-	 const handleLogout = () => {
+	const handleLogout = () => {
         logout()
     }
 
@@ -58,50 +50,36 @@ function Sidebar() {
 			{/* Sidebar */}
 			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 bg-dashboard-sidebar border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
 				
-                <h3 className='font-cherryBombOne font-black text-2xl md:text-3xl lg:text-4xl pl-5 md:pl-0 pb-5 md:py-0'>RelayChat</h3>
-				
-                {/* <div className='mt-20 hidden md:block'> */}
-                <div className='hidden md:block mt-10 md:mt-20'>
-                    {/* chats */}
-                    <Link href="/chats">
-                        <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/chats')}`}>
-                            <PiChatTeardropDotsFill className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/chats')}`} />
-                            <p className="text-sm 2xl:text-base font-bold">Chats</p>
-                        </div>
-                    </Link>
+                <div className='flex gap-1 items-center pl-5 md:pl-0 pb-5 md:py-0'>
+                    <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-blue-700 cursor-pointer' onClick={handleNav}>
+                        <TbLayoutSidebarRightCollapseFilled />
+                    </div>
+                    <h3 className='font-cherryBombOne font-black text-3xl md:text-3xl lg:text-3xl'>RelayChat</h3>
+                </div>
 
-                    {/* groups */}
-                    <Link href="/groups">
-                        <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/groups')}`}>
-                            <FaUsers className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/groups')}`} />
-                            <p className="text-sm 2xl:text-base font-bold">Groups</p>
-                        </div>
-                    </Link>
-
-                    {/* aichat */}
-                    <Link href="/sydneyai">
-                        <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/sydneyai')}`}>
-                            <RiChatSmileAiFill className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/sydneyai')}`} />
-                            <div className='flex gap-1 items-center text-sm'>
-                                <p className="text-sm 2xl:text-base font-bold">Sydney AI</p>
-                                <IoCheckmarkDoneCircle className='text-blue-700' />
+                {/* Mobile toggle */}
+                <div className='flex text-2xl items-center ml-0 mr-0 md:hidden mb-5'>
+					<div className={ nav ? `left-0 ease-in-out duration-800 fixed inset-0 flex bg-black/50 justify-center items-center z-50` : `-left-full`}>
+						<div className={nav ? 'z-50 fixed left-0 w-[50%] h-full bg-white pl-5 pr-8 py-10 shadow-xl ease-in duration-600 md:hidden' : 'fixed -left-full'} ref={navCloseRef}>
+							<div className='mt-10 z-50 absolute left-[94%] p-2 rounded-full bg-black cursor-pointer' onClick={handleNav}>
+								<IoIosArrowBack className='text-base stroke-2 text-white'/>
+							</div>
+						
+                            <div className='mt-10 md:mt-20'>
+                                <Paths getLinkClass={getLinkClass} />
                             </div>
-                        </div>
-                    </Link>
 
-                    {/* Profile */}
-                    <Link href="/profile">
-                        <div className={`flex items-center gap-1 lg:gap-2 mb-5 cursor-pointer py-4 px-2 xl:px-4 w-full rounded-md mt-5 ${getLinkClass('/profile')}`}>
-                            <HiUser className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/profile')}`} />
-                            <p className="text-sm 2xl:text-base font-bold">Profile</p>
                         </div>
-                    </Link>
+                    </div>
+			    </div>
+
+                <div className='hidden md:block mt-10 md:mt-20'>
+                    <Paths getLinkClass={getLinkClass} />
                 </div>
 
-				<div className=''>
-                    <p onClick={handleLogout}>logout</p>
-                    {/* <p onClick={handleRefresh}>refresh Token</p> */}
-                </div>
+				{/* <button type="button" className="px-3 py-3 bg-red-600 text-white rounded-md text-sm md:text-base font-semibold cursor-pointer" onClick={handleLogout}>
+						Log Out
+					</button>  */}
 
 			</div>
 		</div>

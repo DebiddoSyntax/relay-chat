@@ -17,107 +17,29 @@ from .pagination import MessageCursorPagination
 from django.utils import timezone
 from django.db.models import Q, Count
 from .utils.decrypt import decrypt_message
+import os
+from imagekitio import ImageKit
 
 
 
 
 User = get_user_model()
 
+imagekit = ImageKit(
+    private_key=os.environ.get("IMAGEKIT_PRIVATE_KEY")
+)
 
-# start ai chat 
-@api_view(['POST'])
+@api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
-def start_ai_chat(request):
-    ai_user = User.objects.get(email="ai@system.local")
-
-    sender = request.user
-
-    chat = Chat.objects.filter(
-        is_group=False, is_ai=True,
-        users=sender
-    ).filter(
-        users=ai_user
-    ).distinct().first()
-
-    if not chat:
-        chat = Chat.objects.create(
-            is_group=False, is_ai=True
-        )
-
-        UserChat.objects.bulk_create([
-            UserChat(user=sender, chat=chat),
-            UserChat(user=ai_user, chat=chat),
-        ])
-
-    return Response(
-        {
-            "chat_id": chat.id,
-            "chat_name": chat.name,
-            "last_message": (
-            decrypt_message(chat.last_message.content, chat.last_message.iv)
-            if chat.last_message and chat.last_message.iv
-            else chat.last_message.content if chat.last_message else None
-        ),
-            "last_message_time": chat.last_message.created_at if chat.last_message else None,
-        },
-        status=status.HTTP_200_OK
-    )
-
-
-
-# get ai chat
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def get_aichat_view(request):
-    user = request.user
-
-    chats = (
-        Chat.objects
-        .filter(is_group=False, is_ai=True, users=user)
-        .annotate(
-            unread_count=Count(
-                "messages",
-                filter=~Q(messages__sender=user)
-                    & ~Q(
-                        messages__id__in=MessageReadBy.objects.filter(
-                            user=user
-                        ).values("message_id")
-                    )
-            )
-        )
-    )
-
-    if not chats.exists():
-        return Response(
-            {"detail": "No chats found"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    data = [
-        {
-            "chat_id": chat.id,
-            "users": [
-                {
-                    "id": u.id,
-                    "firstname": u.firstname,
-                    "lastname": u.lastname,
-                    "email": u.email,
-                }
-                for u in chat.users.all()
-            ],
-            "last_message": (
-            decrypt_message(chat.last_message.content, chat.last_message.iv)
-            if chat.last_message and chat.last_message.iv
-            else chat.last_message.content if chat.last_message else None
-        ),
-            "last_message_time": chat.last_message.created_at if chat.last_message else None,
-            "unread_count": chat.unread_count,
-        }
-        for chat in chats
-    ]
-
-
-    return Response(data, status=status.HTTP_200_OK)
+def image_auth(request):
+    auth_params = imagekit.helper.get_authentication_parameters()
+    
+    return Response({
+        'token': auth_params['token'],
+        'expire': auth_params['expire'],
+        'signature': auth_params['signature'],
+        'publicKey': os.environ.get('IMAGEKIT_PUBLIC_KEY')
+    })
 
 
 
@@ -275,19 +197,19 @@ def start_chat_view(request):
     chat = Chat.objects.filter(is_group=False, users=sender).filter(users=receiver).distinct().first()
 
     if not chat:
-        first = receiver.firstname or ""
-        last = receiver.lastname or ""
+        # first = receiver.firstname or ""
+        # last = receiver.lastname or ""
 
-        chat_name = f"{first} {last}".strip()
+        # chat_name = f"{first} {last}".strip()
 
-        if not chat_name:
-            chat_name = receiver.email
-        # chat_name = f"{receiver.firstname} {receiver.lastname}".strip()
+        # if not chat_name:
+        #     chat_name = receiver.email
+        # # chat_name = f"{receiver.firstname} {receiver.lastname}".strip()
 
         chat = Chat.objects.create(
             is_group=False,
             is_ai=False,
-            name=chat_name
+            # name=chat_name
         )
 
         UserChat.objects.bulk_create([
@@ -321,10 +243,10 @@ def start_chat_view(request):
                 for u in chat.users.all()
             ],
             "last_message": (
-            decrypt_message(chat.last_message.content, chat.last_message.iv)
-            if chat.last_message and chat.last_message.iv
-            else chat.last_message.content if chat.last_message else None
-        ),
+                decrypt_message(chat.last_message.content, chat.last_message.iv)
+                if chat.last_message and chat.last_message.iv
+                else chat.last_message.content if chat.last_message else None
+            ),
             "last_message_time": chat.last_message.created_at if chat.last_message else None,
         },
         status=status.HTTP_200_OK
