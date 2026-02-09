@@ -2,9 +2,14 @@
 import { create } from "zustand";
 import { OverviewDataProps } from "../types/ChatType";
 
-
+export interface IncomingType{ isCalling: boolean, callerName: string, chatId: number }
 interface ChatStore {
     
+    incomingCall: IncomingType | null
+    setIncomingCall: (
+        val: IncomingType | null | ((prev: IncomingType | null) => IncomingType | null)
+    ) => void
+
     chatOpen: boolean
 
     activePrivateId: number | null;
@@ -42,7 +47,8 @@ export const useChat = create<ChatStore>()(
         chatOpen: false,
         privateChats: [],
         groupChats: [],
-
+        incomingCall: null,
+        
 
         setPrivateChats: (chatsOrUpdater) =>
             set((state) => ({
@@ -110,7 +116,11 @@ export const useChat = create<ChatStore>()(
         setActiveGroupId: (activeGroupId)=> set({ activeGroupId: activeGroupId}),
         setAiChatId: (aiChatId)=> set({ aiChatId: aiChatId}),
 
-        setChatOpen: (chatOpen)=> set({ chatOpen: chatOpen}),  
+        setChatOpen: (chatOpen)=> set({ chatOpen: chatOpen}),      
+        setIncomingCall: (val) => set((state) => ({
+            incomingCall: typeof val === "function" ? val(state.incomingCall) : val
+        })),
+
     }),
 
 );

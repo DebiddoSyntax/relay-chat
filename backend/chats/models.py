@@ -72,6 +72,8 @@ class Chat(models.Model):
     is_ai = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
     users = models.ManyToManyField(User, through='UserChat', related_name='chats')
+    image_url = models.URLField(max_length=255, null=True)
+
     
     last_message = models.ForeignKey(
         'Message', 

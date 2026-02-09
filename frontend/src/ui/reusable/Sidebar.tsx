@@ -50,7 +50,7 @@ function Sidebar() {
 			{/* Sidebar */}
 			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 bg-dashboard-sidebar border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
 				
-                <div className='flex gap-1 items-center pl-5 md:pl-0 pb-5 md:py-0'>
+                <div className='flex gap-1 items-center pl-5 md:pl-0 pb-2 md:pb-5 md:py-0'>
                     <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-blue-700 cursor-pointer' onClick={handleNav}>
                         <TbLayoutSidebarRightCollapseFilled />
                     </div>
@@ -59,14 +59,14 @@ function Sidebar() {
 
                 {/* Mobile toggle */}
                 <div className='flex text-2xl items-center ml-0 mr-0 md:hidden mb-5'>
-					<div className={ nav ? `left-0 ease-in-out duration-800 fixed inset-0 flex bg-black/50 justify-center items-center z-50` : `-left-full`}>
-						<div className={nav ? 'z-50 fixed left-0 w-[50%] h-full bg-white pl-5 pr-8 py-10 shadow-xl ease-in duration-600 md:hidden' : 'fixed -left-full'} ref={navCloseRef}>
+					<div className={ nav ? `left-0 ease-in-out duration-400 fixed inset-0 flex bg-black/50 justify-center items-center z-50` : `-left-full`}>
+						<div className={nav ? 'z-50 fixed left-0 w-[50%] h-full bg-white pl-5 pr-8 py-10 shadow-xl ease-in-out duration-400 md:hidden' : 'fixed -left-full'} ref={navCloseRef}>
 							<div className='mt-10 z-50 absolute left-[94%] p-2 rounded-full bg-black cursor-pointer' onClick={handleNav}>
 								<IoIosArrowBack className='text-base stroke-2 text-white'/>
 							</div>
 						
                             <div className='mt-10 md:mt-20'>
-                                <Paths getLinkClass={getLinkClass} />
+                                <Paths getLinkClass={getLinkClass} setNav={setNav}/>
                             </div>
 
                         </div>
@@ -74,7 +74,7 @@ function Sidebar() {
 			    </div>
 
                 <div className='hidden md:block mt-10 md:mt-20'>
-                    <Paths getLinkClass={getLinkClass} />
+                    <Paths getLinkClass={getLinkClass} setNav={setNav}/>
                 </div>
 
 				{/* <button type="button" className="px-3 py-3 bg-red-600 text-white rounded-md text-sm md:text-base font-semibold cursor-pointer" onClick={handleLogout}>

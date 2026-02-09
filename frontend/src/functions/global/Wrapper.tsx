@@ -11,7 +11,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     return (
         <>
             {!paths && <Navbar />}
-            <main>{ children }</main>
+            <main className='h-screen'>{ children }</main>
         </>
     )
 }

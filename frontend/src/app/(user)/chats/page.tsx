@@ -1,8 +1,8 @@
-import Chats from '@/src/ui/chats/Chats'
+import Chats from '@/src/ui/chats/main/Chats'
 
 const chat = () => {
     return (
-        <div>
+        <div className='max-h-screen'>
             <Chats />
         </div>
     )

@@ -1,20 +1,21 @@
 "use client"
-import { IoMdMore, IoIosArrowBack } from "react-icons/io";
+import api from "@/src/functions/auth/AxiosConfig";
 import MessageCard from './MessageCard';
 import { IoSend } from "react-icons/io5";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/functions/auth/Store";
-import api from "@/src/functions/auth/AxiosConfig";
 import { useChat } from "@/src/functions/chats/chatStore";
-import AddMember from "./AddMember";
-import ViewMemebers from "./ViewMemebers";
+import AddMember from "./group/AddMember";
+import ViewMemebers from "./group/ViewMemebers";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
-import { formatAIReply } from "@/src/functions/chats/formatAIReply";
-import { IoCheckmarkDoneCircle } from "react-icons/io5";
-import profileImage from '@/src/assets/profile.png'
-import Image from "next/image";
-import { FaUserCircle } from "react-icons/fa";
+import useClicktoClose from "@/src/functions/global/useClicktoClose";
 import { RiChatSmileAiFill } from "react-icons/ri";
+import { IoMdMore, IoIosArrowBack } from "react-icons/io";
+import { FaUserCircle } from "react-icons/fa";
+import { IoVideocam, IoCheckmarkDoneCircle } from "react-icons/io5";
+import { FaPhone } from "react-icons/fa6";
+import VideoCall from "./call/VideoCall"
+import PhoneCall from "./call/PhoneCall"
 
 
 
@@ -27,13 +28,13 @@ export interface MessageType {
     is_read: string, 
     chat: string,
     type: string,
-
 }
 
 interface ChatBoxProps{
     isGroup: boolean
     isAI: boolean
 }
+
 
 function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
@@ -189,7 +190,8 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
         fetchMessages()
         
-        const wsUrl = `ws://localhost:8000/ws/chat/${activeId}/?token=${token}`;
+        const wsUrl = `ws://192.168.0.129:8000/ws/chat/${activeId}/?token=${token}`;
+        // const wsUrl = `ws://localhost:8000/ws/chat/${activeId}/?token=${token}`;
         const socket = new WebSocket(wsUrl);
 
         socketRef.current = socket;
@@ -281,22 +283,50 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-    const ImageSrc = isGroup ? chat?.image : otherUser?.image
-    const [imgError, setImgError] = useState(false)
+    const ImageSrc = isGroup ? chat?.image : otherUser?.image_url
     const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
+    const [canShowImage, setCanShowImage] = useState(false);
+
+
+    useEffect(() => {
+        if (!ImageSrc) {
+            setCanShowImage(false);
+            return;
+        }
+
+        const img = new window.Image();
+        img.src = ImageSrc;
+
+        img.onload = () => setCanShowImage(true);
+        img.onerror = () => setCanShowImage(false);
+
+        return () => {
+            img.onload = null;
+            img.onerror = null;
+        };
+    }, [ImageSrc]);
+
+    const moreOptionCloseRef = useClicktoClose(()=> {
+		setMoreOPtion(true)
+	})
+
+    const toggleOptions = () => {
+        setMoreOPtion(!moreOPtion)
+    }
+
 
     return (
         <div  className={`flex-1 w-full h-screen bg-gray-100`}>
             {chatOpen ? (
                 <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-screen bg-gray-100`}>
-                    <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-50'>
+                    <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-20'>
                         <div className='w-full flex gap-3 items-center'>
-                            <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />
+                            {!isAI && <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />}
 
-                            <div className='w-full flex justify-between items-center z-50'>
+                            <div className='w-full flex justify-between items-center z-20'>
                                 <div className={`${'flex gap-2 items-center'}`}>
-                                    {ImageSrc && !imgError ? 
-                                        <img src={ImageSrc} alt='user image' className='w-11 h-11 rounded-full' onError={() => setImgError(true)} /> 
+                                    {canShowImage ? 
+                                        <img src={ImageSrc} alt='user image' className='w-11 h-11 rounded-full' /> 
                                         : 
                                         <IconDisplay className='w-10 h-10 rounded-full'/>
                                     }
@@ -314,11 +344,19 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 </div>
                                 
                                 <div className="relative inline-block text-left">
-                                    <IoMdMore className='text-2xl cursor-pointer' onClick={()=> setMoreOPtion(true)}/>
+                                    <div className="flex items-center gap-3">
+                                        {!isGroup && !isAI && 
+                                            <>
+                                                <VideoCall activeId={activeId}/>
+                                                <PhoneCall />
+                                            </>
+                                        }
+                                          {isGroup && <IoMdMore className='text-2xl cursor-pointer' onClick={toggleOptions}/>}
+                                    </div>
                                     {isGroup && moreOPtion && (
                                         <div className={`w-32 absolute right-0 z-10 mt-3 origin-top-left rounded-sm bg-background shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none text-xs font-bold`}>
                                             <AddMember activeId={activeId} />
-                                            <ViewMemebers />
+                                            <ViewMemebers activeId={activeId}/>
                                         </div>
                                     )}
                                 </div>
@@ -327,7 +365,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                     </div>
 
 
-                    <div className='relative flex-1 h-full w-full pb-80 md:pb-[220px]'>
+                    <div className='relative flex-1 h-full w-full pb-[380px] sm:pb-80 md:pb-[220px]'>
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
                             {sortedMessages.map((m, index) => {
                                 const currentDate = new Date(m.created_at);
@@ -372,7 +410,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                         </div>
 
 
-                        <div className="w-full flex gap-6 py-10 px-5 lg:px-8 bg-white">
+                        <div className="w-full flex gap-6 py-10 px-5 lg:px-8 bg-white ">
                             <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
@@ -394,8 +432,8 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
                 </div>
             ) : (
-                <div className="w-full h-full flex flex-col justify-center items-center">
-                    <p className="text-center text-base font-semibold text-gray-800">{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
+                <div className="hidden w-full h-full md:flex flex-col justify-center items-center">
+                    <p className={` ${isAI && 'hidden'} text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
         </div>

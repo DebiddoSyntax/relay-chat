@@ -13,7 +13,7 @@ export const handlePrivateChatName = (isGroup: boolean, chat: OverviewDataProps 
 
         const returnData = { 
             name: `${otherUser?.firstname} ${otherUser?.lastname}`.trim() || otherUser?.email,
-            image: `${otherUser?.image}`
+            image_url: `${otherUser?.image_url}`
         }
         return returnData
     }

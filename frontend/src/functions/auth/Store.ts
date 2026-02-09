@@ -14,6 +14,7 @@ interface AuthStore {
     authInitialized: boolean;
 
     setAuth: (user: UserType, token: string, rtoken: string) => void;
+    setUser: (user: UserType) => void;
     logout: () => Promise<void>;
     setIsLoading: (loading: boolean) => void;
     setAuthInitialized: (initialized: boolean) => void;
@@ -39,6 +40,7 @@ export const useAuth = create<AuthStore>()(
             //set state
             setAuthInitialized: (initialized) => set({ authInitialized: initialized }),
 
+            setUser: (user) => set({ user: user }),
             
             //set user auth data
             setAuth: (user, token, rtoken) => {

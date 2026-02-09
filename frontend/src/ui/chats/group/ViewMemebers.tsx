@@ -1,10 +1,8 @@
 import api from '@/src/functions/auth/AxiosConfig';
-import { useChat } from '@/src/functions/chats/chatStore';
 import { useEffect, useState } from 'react'
 import { IoClose } from "react-icons/io5";
 
-function ViewMemebers() {
-    const activeId = useChat((state)=> state.activeId)
+function ViewMemebers({ activeId }: { activeId: number | null}) {
     const [viewMember, setViewMember] = useState(false)
     const [members, setMembers] = useState<{id: string, email: string}[] | null>(null)
   

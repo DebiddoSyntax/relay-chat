@@ -24,7 +24,7 @@ function Upload({ onSelect, setDisplayImage, userImage }: ImageURLProps) {
 
     const authenticator = async () => {
         try {
-            const response = await api("/image/auth/");
+            const response = await api.get("/image/auth/");
             const { signature, expire, token, publicKey } = response.data;
             return { signature, expire, token, publicKey };
         } catch (error) {

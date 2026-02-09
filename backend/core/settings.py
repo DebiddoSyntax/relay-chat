@@ -17,7 +17,7 @@ SECRET_KEY = config('DJANGO_SECRETKEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost', '192.168.0.129']
 
 
 # Application definition
@@ -46,6 +46,7 @@ REST_FRAMEWORK = {
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    'http://192.168.0.129:3000'
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -68,6 +69,7 @@ CORS_ALLOW_METHODS = [
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    'http://192.168.0.129:3000'
 ]
 
 

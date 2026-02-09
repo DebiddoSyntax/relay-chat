@@ -29,7 +29,9 @@ imagekit = ImageKit(
     private_key=os.environ.get("IMAGEKIT_PRIVATE_KEY")
 )
 
-@api_view(['GET', 'POST'])
+
+# message view 
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def image_auth(request):
     auth_params = imagekit.helper.get_authentication_parameters()
@@ -43,8 +45,8 @@ def image_auth(request):
 
 
 
-
-@api_view(['GET', 'POST'])
+# ai chat 
+@api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def ai_chat_view(request):
     user = request.user
@@ -197,19 +199,10 @@ def start_chat_view(request):
     chat = Chat.objects.filter(is_group=False, users=sender).filter(users=receiver).distinct().first()
 
     if not chat:
-        # first = receiver.firstname or ""
-        # last = receiver.lastname or ""
-
-        # chat_name = f"{first} {last}".strip()
-
-        # if not chat_name:
-        #     chat_name = receiver.email
-        # # chat_name = f"{receiver.firstname} {receiver.lastname}".strip()
-
+        
         chat = Chat.objects.create(
             is_group=False,
             is_ai=False,
-            # name=chat_name
         )
 
         UserChat.objects.bulk_create([
@@ -239,6 +232,7 @@ def start_chat_view(request):
                     "firstname": u.firstname,
                     "lastname": u.lastname,
                     "email": u.email,
+                    "image_url": u.image_url,
                 }
                 for u in chat.users.all()
             ],
@@ -292,6 +286,7 @@ def get_chat_view(request):
                     "firstname": u.firstname,
                     "lastname": u.lastname,
                     "email": u.email,
+                    "image_url": u.image_url,
                 }
                 for u in chat.users.all()
             ],
@@ -394,6 +389,7 @@ def start_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
+            "image_url": chat.image_url,
             "last_message": (
                 decrypt_message(chat.last_message.content, chat.last_message.iv)
                 if chat.last_message and chat.last_message.iv
@@ -437,6 +433,7 @@ def get_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
+            "image_url": chat.image_url,
             "last_message": (
                 decrypt_message(chat.last_message.content, chat.last_message.iv)
                 if chat.last_message and chat.last_message.iv
@@ -480,6 +477,7 @@ def join_groupchat_view(request):
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
+            "image_url": chat.image_url,
             "last_message": (
                 decrypt_message(chat.last_message.content, chat.last_message.iv)
                 if chat.last_message and chat.last_message.iv
@@ -620,6 +618,8 @@ def signup_view(request):
         'email': user.email,
         'firstname': user.firstname,
         'lastname': user.lastname,
+        "image_url": user.image_url,
+
     }
 
     response = Response(
@@ -667,6 +667,7 @@ def login_view(request):
                 'email': user.email,
                 'firstname': user.firstname,
                 'lastname': user.lastname,
+                "image_url": user.image_url,
             }
         },
         status=status.HTTP_200_OK
@@ -733,3 +734,91 @@ def refresh_token_view(request):
             {"message": "Invalid or expired refresh token"},
             status=status.HTTP_401_UNAUTHORIZED
         )
+
+
+
+
+# change pass view 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_pass_view(request):
+    data = request.data
+    user = request.user
+
+    required_fields = ["password", "newPassword", "confirmNewPassword"]
+    missing = [f for f in required_fields if not data.get(f)]
+
+    if missing:
+        return Response(
+            {"detail": f"Missing required fields: {', '.join(missing)}"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not user.check_password(data["password"]):
+        return Response(
+            {"detail": "Current password is incorrect"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if data["newPassword"] != data["confirmNewPassword"]:
+        return Response(
+            {"detail": "New passwords do not match"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user.set_password(data["newPassword"])
+    user.save()
+
+    return Response(
+        {"detail": "Password changed successfully"},
+        status=status.HTTP_200_OK
+    )
+
+
+
+# change profile details view 
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_profile_view(request):
+    user = request.user
+    data = request.data
+
+    firstname = data.get("firstname")
+    lastname = data.get("lastname")
+    email = data.get("email")
+    image_url = data.get("image_url")
+
+
+    if email and User.objects.exclude(id=user.id).filter(email=email).exists():
+        return Response(
+            {"detail": "Email is already in use"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if firstname is not None:
+        user.firstname = firstname
+
+    if lastname is not None:
+        user.lastname = lastname
+
+    if email is not None:
+        user.email = email
+
+    if image_url is not None:
+        user.image_url = image_url
+
+    user.save()
+
+    return Response(
+        {
+            "detail": "Profile updated successfully",
+            "user": {
+                "id": user.id,
+                "firstname": user.firstname,
+                "lastname": user.lastname,
+                "email": user.email,
+                "image_url": user.image_url,
+            }
+        },
+        status=status.HTTP_200_OK
+    )

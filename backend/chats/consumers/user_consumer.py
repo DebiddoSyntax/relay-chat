@@ -14,13 +14,14 @@ class UserConsumer(AsyncWebsocketConsumer):
             return
 
         self.group_name = f"user_{self.user.id}"
+        
+        await self.accept()
 
         await self.channel_layer.group_add(
             self.group_name,
             self.channel_name
         )
 
-        await self.accept()
 
     async def disconnect(self, close_code):
         if isinstance(self.group_name, str):
@@ -30,4 +31,9 @@ class UserConsumer(AsyncWebsocketConsumer):
             )
 
     async def notify(self, event):
-        await self.send(text_data=json.dumps(event["payload"]))
+        # await self.send(text_data=json.dumps(event["payload"]))
+        payload = event.get("payload")
+        if payload is None:
+            return
+
+        await self.send(text_data=json.dumps(payload))

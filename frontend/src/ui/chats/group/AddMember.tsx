@@ -2,7 +2,7 @@
 import api from '@/src/functions/auth/AxiosConfig';
 import axios from 'axios';
 import { useState } from 'react'
-import LoadingModal from '../reusable/LoadingModal';
+import LoadingModal from '../../reusable/LoadingModal';
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"

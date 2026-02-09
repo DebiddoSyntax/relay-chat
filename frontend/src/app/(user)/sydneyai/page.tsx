@@ -1,4 +1,4 @@
-import SydneyAI from "@/src/ui/chats/SydneyAI"
+import SydneyAI from "@/src/ui/chats/main/SydneyAI"
 
 function sydneyai() {
     return (

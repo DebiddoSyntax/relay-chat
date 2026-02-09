@@ -52,8 +52,7 @@ function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
     return (
         <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-200"} rounded-sm  w-full cursor-pointer`}>
             <div className='flex gap-3 w-full'>
-                {/* <Image src={profileImage} width={200} height={200} alt='profileImage' className='w-12 h-12 rounded-full'/> */}
-                {otherUser?.image ? <img src={otherUser?.image} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-12 h-12 rounded-full'/>}
+                {otherUser?.image_url ? <img src={otherUser?.image_url} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-14 h-14 rounded-full'/>}
                 <div className='flex flex-col gap-2 w-full'>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
@@ -63,7 +62,7 @@ function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
                         <p className={`${data.unread_count < 1 && 'hidden'} py-1 px-2 rounded-full bg-blue-700 text-xs text-white font-semibold`}>{data.unread_count}</p>
                     </div>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
-                        <p className='w-48 lg:w-24 2xl:w-40 overflow-hidden truncate'>{isAI ? 'click to view messages' : data.last_message}</p>
+                        <p className='w-20 sm:w-24 md:w-28 lg:w-24 2xl:w-40 overflow-hidden truncate'>{isAI ? 'click to view messages' : data.last_message}</p>
                         <p className="">{displayDate}</p>
                     </div>
                 </div>
