@@ -6,8 +6,9 @@ export interface OverviewDataProps {
     chat_id: number
     chat_name: string
     unread_count: number
-    image: string
+    image_url: string
     users: UserType[]
+    my_role: string
 }
 
 export interface NewchatInputType{

@@ -161,7 +161,7 @@ function ProfileDetails() {
             </div>
 
             <div className="">
-                <div className="mt-6 grid grid-cols-2 md:grid-cols-2 gap-6 items-start text-left w-full px-5 md:px-10">
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left w-full px-5 md:px-10">
                     <div className="mt-0">
                         <label htmlFor='firstname' className="text-sm font-semibold">First Name</label>
                         {!editProfile && (
@@ -172,7 +172,7 @@ function ProfileDetails() {
                         {editProfile && (
                             <>
                                 <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your firstname'
-                                    className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
+                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
                                     {...register('firstname')}
                                 />
                                 <p className="text-red-700 text-sm mt-0">
@@ -185,14 +185,14 @@ function ProfileDetails() {
                     <div className="mt-0">
                         <label htmlFor='lastname' className="text-sm font-semibold">Last Name</label>
                         {!editProfile && (
-                            <p className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium">
+                            <p className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium">
                                 {user?.lastname  || "Not Available"}
                             </p>
                         )}
                         {editProfile && (
                             <>
                                 <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your lastname'
-                                    className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
                                     {...register('lastname')}
                                 />
                                 <p className="text-red-700 text-sm mt-0">

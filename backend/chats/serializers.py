@@ -52,9 +52,10 @@ class SignupSerializer(serializers.ModelSerializer):
         fields = [ 'firstname', 'lastname', 'email', 'password', ]
 
     def validate_email(self, value):
-        if User.objects.filter(email=value).exists():
+        email = value.lower()
+        if User.objects.filter(email=email).exists():
             raise serializers.ValidationError('Email already exists')
-        return value
+        return email
 
     def create(self, validated_data): 
         user = User(
@@ -81,10 +82,9 @@ class LoginSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        user = authenticate(
-            username=data['email'],
-            password=data['password']
-        )
+        email = data['email'].lower()
+        password = data['password']
+        user = authenticate(username=email, password=password)
 
         if not user:
             raise AuthenticationFailed('Invalid email or password')

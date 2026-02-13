@@ -45,7 +45,6 @@ function ToggleReducer(state: StateDataType, action: ActionType) {
 function Security() {
 
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
-    const [errorMessage, setErrorMessage] = useState('')
     const [loading, setLoading] = useState(false)
     const [toast, setToast] = useState<ToastType>(null)
     
@@ -54,7 +53,6 @@ function Security() {
     const schema = yup.object({
         password: yup.string().required("Enter your current password").min(6, "Password must be at least 6 characters"),
         newPassword: yup.string().required("Enter your new password").min(6, "Password must be at least 6 characters"),
-        confirmNewPassword: yup.string().required("Confirm your new password").min(6, "Password must be at least 6 characters"),
     })
 
     type SecurityType = yup.InferType<typeof schema>;
@@ -63,17 +61,8 @@ function Security() {
         resolver: yupResolver(schema),
     });
 
-    
-    
-    const newPass = getValues('newPassword')
-    const confirmPass = getValues('confirmNewPassword')
-    
 
     const onSubmit = async(data: SecurityType) => {
-        if(newPass !== confirmPass){
-            setErrorMessage('New passwords must be the same')
-            return
-        }
         
         console.log(data)
 
@@ -95,12 +84,6 @@ function Security() {
         }
     }
 
-    useEffect(()=>{
-        if(newPass == confirmPass){
-            setErrorMessage('')
-        }
-    }, [newPass, confirmPass])
-
 
 
     return (
@@ -116,7 +99,7 @@ function Security() {
             <div className="mt-5 md:mt-10 w-full px-5 md:px-10 border-t-2 border-gray-100 pt-10">
                 <h5 className="text-base md:text-lg xl:text-xl font-bold">Security</h5>
 
-                <div className="mt-5 grid grid-cols-2 md:grid-cols-2 gap-6 items-start text-left w-full">
+                <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left w-full">
 
                     <div className="w-full">
                         <label htmlFor="password" className="text-sm font-semibold">Current Password</label>
@@ -154,26 +137,6 @@ function Security() {
                         </div>
                         <p className="text-red-700 text-sm mt-2">
                             {errors.newPassword?.message && String(errors.newPassword.message)}
-                        </p>
-                    </div>
-
-
-                    <div className="w-full">
-                        <label htmlFor="confirmNewPassword" className="text-sm font-semibold">Confirm New Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
-                            <input type={state.confirmNewPasswordToggle ? "text" : "password"}
-                                id="confirmNewPassword"
-                                placeholder='Enter a unique password'
-                                className=" w-full focus:outline-0 focus:border-0 focus:placeholder:opacity-0 placeholder:text-sm md:placeholder:text-xs"
-                                {...register('confirmNewPassword')}
-                            />
-
-                            <span onClick={()=> toggle("confirmNewPasswordToggle")} className='hover:cursor-pointer'>
-                                {state.confirmNewPasswordToggle ? <FaEyeSlash /> : <FaEye/>}
-                            </span>
-                        </div>
-                        <p className="text-red-700 text-sm mt-2">
-                            {errors.confirmNewPassword?.message ? String(errors.confirmNewPassword.message) : errorMessage ? errorMessage : ''}
                         </p>
                     </div>
                 

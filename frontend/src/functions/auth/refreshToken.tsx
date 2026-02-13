@@ -1,7 +1,4 @@
-import axios from "axios";
 import api from "./AxiosConfig";
-
-const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 
 export const refreshTokenAction = async (set: any, get: any) => {

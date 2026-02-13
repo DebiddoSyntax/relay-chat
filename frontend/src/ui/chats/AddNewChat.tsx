@@ -15,16 +15,13 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 interface AddNewChatProps { 
     isGroup: boolean
-    isAI: boolean
     setActiveId: (val: number | null) => void
 }
 
 
-function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
-
+function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
 
     const setChatOpen = useChat((state)=> state.setChatOpen)
-
     const setPrivateChats = useChat((state)=> state.setPrivateChats)
     const setGroupChats = useChat((state)=> state.setGroupChats)
     const setChats = isGroup ? setGroupChats : setPrivateChats
@@ -43,7 +40,7 @@ function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
     }) as yup.ObjectSchema<NewchatInputType>;
 
     
-    const { register, handleSubmit, formState: { errors } } = useForm<NewchatInputType>({
+    const { register, handleSubmit, formState: { errors }, reset } = useForm<NewchatInputType>({
         resolver: yupResolver(schema)
     });
 
@@ -64,9 +61,7 @@ function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
                 const exists = prev.find(chat => chat.chat_id == newdata.chat_id)
 
                 if (exists) {
-                    return [
-                        newdata, ...prev.filter(chat => chat.chat_id !== newdata.chat_id),
-                    ]
+                    return [newdata, ...prev.filter(chat => chat.chat_id !== newdata.chat_id)]
                 }
 
                 return [newdata, ...prev]
@@ -74,6 +69,7 @@ function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
 
             
             setActiveId(newdata.chat_id)
+            reset()
             setChatOpen(true)
             setNewChat(false)
         } catch (err) {
@@ -99,6 +95,12 @@ function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
     }
 
 
+    const closeModal = () => {
+        setNewChat(false)
+        reset()
+        setErrorMessage("");
+    }
+
 
     return (
         <div>
@@ -113,7 +115,7 @@ function AddNewChat({ isGroup, setActiveId, isAI }: AddNewChatProps ) {
                                 {isGroup ? 'Create new group' : 'Add new chat'}
                             </p>
                             <IoClose 
-                                onClick={()=> setNewChat(false)} 
+                                onClick={closeModal} 
                                 className='text-xl cursor-pointer'
                             />
                         </div>

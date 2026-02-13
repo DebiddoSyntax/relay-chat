@@ -11,6 +11,8 @@ export function useGlobalSocket() {
     const activePrivateId = useChat((state)=> state.activePrivateId)
     const activeGroupId = useChat((state)=> state.activeGroupId)
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
+    const incomingCall = useChat((state)=> state.incomingCall)
+    const setActiveCall = useChat((state)=> state.setActiveCall)
 
     useEffect(() => {
         if (!token) return
@@ -30,12 +32,35 @@ export function useGlobalSocket() {
             }
 
             if (data.type === "new_call") {
-                console.log('global d', data)
-                setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name})
+                // console.log('global d', data)
+                setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url})
+                // if(!incomingCall?.isCalling){
+                //     setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url})
+                //     setActiveCall(true)
+                // }else{
+                //     socket.send(JSON.stringify({
+                //         "type": "notify",
+                //         "payload": {
+                //             "type": "active_call"
+                //         }
+                //     }))
+                // }
             }
+
+            if (data.type === "stop_call") {
+                // console.log('global d', data)
+                setIncomingCall(null)
+            }
+
+            if (data.type === "active_call") {
+                // console.log('global d', data)
+                setActiveCall(true)
+            }
+
+            
         }
 
-        socket.onopen = () => console.log('Global socket connected')
+        // socket.onopen = () => console.log('Global socket connected')
         // socket.onclose = () => console.log('Global socket disconnected')
         // socket.onerror = (err) => console.error('Global socket error', err)
 

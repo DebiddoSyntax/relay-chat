@@ -1,38 +1,46 @@
 "use client"
 import api from '@/src/functions/auth/AxiosConfig';
 import axios from 'axios';
-import { useState } from 'react'
-import LoadingModal from '../../reusable/LoadingModal';
+import { useState, Dispatch, SetStateAction } from 'react'
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
 import { IoClose } from "react-icons/io5";
-import { useChat } from '@/src/functions/chats/chatStore';
+import { FiPlus } from "react-icons/fi";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { MembersType } from './GroupInfo';
 
-interface AddMemberInputType{
-	receiver: string
+
+
+interface Props{
+	activeId: number | null, 
+	setMembers: Dispatch<SetStateAction<MembersType[]>>
 }
 
-
-function AddMember({ activeId }: { activeId: number | null}) {
+function AddMember({ activeId, setMembers }: Props) {
 
 	const [newMember, setNewMember] = useState(false)
-	const [updateModal, setUpdateModal] = useState(false)
-	const [updatingState, setUpdatingState] = useState<"idle" | "loading" | "success" | "failure">("idle");
+	const [loading, setLoading] = useState(false)
 	const [errorMessage, setErrorMessage] = useState('')
+	const [successMessage, setSuccessMessage] = useState('')
 
-
-
-	const schema = yup.object().shape({
+	const schema = yup.object({
 		receiver: yup.string().required("Who do you want to add?").email('Enter a valid email'),
-	}) as yup.ObjectSchema<AddMemberInputType>;
+	})
 
+	type AddMemberInputType= yup.InferType<typeof schema>;
 	
-	const { register, handleSubmit, formState: { errors } } = useForm<AddMemberInputType>({
+	
+	const { register, handleSubmit, formState: { errors }, reset } = useForm<AddMemberInputType>({
 		resolver: yupResolver(schema)
 	});
         
-    const handleEditProduct = async(data: AddMemberInputType) => {
+    const handleAddNewMember = async(data: AddMemberInputType) => {
+
+		if(!activeId) {
+			setErrorMessage('No id provided')
+			return
+		}
 
 		const payload = {
 			...data,
@@ -40,82 +48,75 @@ function AddMember({ activeId }: { activeId: number | null}) {
 		}
 
         try{
-            setUpdateModal(true);
-            setUpdatingState('loading')
+            setLoading(true);
             const response = await api.put(`/groupchat/add/`, payload);
-            console.log('edit', response.data?.detail)
+            // console.log('edit', response.data)
             if(response.status === 200){
-                // reset()
-                setUpdatingState('success')
+                reset()
+				
+				setMembers((prev) => {
+					const exists = prev.some(m => m.id === response.data.id);
+					if (exists) return prev;
+					return [...prev, { id: response.data.id, email: response.data.email }];
+				});
+
+                setSuccessMessage('Member added')
             }
 
         } catch (err) {
 			if (axios.isAxiosError(err)) {
 				console.error("error", err.response?.data);
-				setUpdatingState("failure");
 				setErrorMessage(err.response?.data?.detail || "Something went wrong");
 			} else {
 				console.error("unexpected error", err);
-				setUpdatingState("failure");
 				setErrorMessage("An unexpected error occurred");
 			}
+		}finally{
+			setLoading(false);
 		}
     }
 
 	return (
-		<div>
+		
+		<div className='mt-10'>
 
-			<p className="px-5 py-3 cursor-pointer hover:bg-blue-700 hover:text-white" onClick={()=> setNewMember(true)}>Add Member</p>
+			{!newMember &&
+				<div className='flex gap-2 items-center text-sm cursor-pointer text-blue-700'>
+					<FiPlus className='text-base'/>
+					<p className="" onClick={()=> setNewMember(true)}>Add Member</p>
+				</div>
+			}
 
+			{newMember &&
+				<form onSubmit={handleSubmit(handleAddNewMember)} className='w-full'>
+					<p className="text-red-700 text-xs text-center mt-0">
+						{errors.receiver?.message ? String(errors.receiver.message) : errorMessage ? errorMessage : ''}
+					</p>
+					<p className="text-green-700 text-xs text-center mt-0">
+						{successMessage}
+					</p>
 
-			{newMember && (
-				<div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
-					<div className={`flex flex-col relative w-96 md:w-[640px] h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
-						<div className='flex justify-between items-center'>
-							<p className='text-lg font-semibold'>
-								{'Add new member'}
-							</p>
-							<IoClose 
-								onClick={()=> setNewMember(false)} 
-								className='text-xl cursor-pointer'
+					<div className='flex gap-2 items-center text-sm w-full'>
+						<div className="mb-5 mt-5 items-start text-left w-full">
+							<input autoComplete="off" type="text" id="receiver" placeholder='Enter the new member email'
+								className=" w-full p-3 bg-gray-100 mt-0 rounded-sm focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
+								{...register('receiver')}
 							/>
+							
 						</div>
 
-						<form onSubmit={handleSubmit(handleEditProduct)} className=''>
-							<div className="mb-5 mt-5 items-start text-left w-full">
-								<label htmlFor="receiver" className="text-sm font-semibold">
-									Email
-								</label>
-								<input autoComplete="off" type="text" id="receiver" placeholder='Enter the new member email'
-									className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-									{...register('receiver')}
-								/>
-								<p className="text-red-700 text-sm mt-2">
-									{errors.receiver?.message && String(errors.receiver.message)}
-								</p>
-							</div>
+						<button type='submit' className='py-3 px-8 w-40 text-xs text-center bg-blue-700 text-white rounded-sm cursor-pointer'>
+							{loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Add'} 
+						</button>
 
-							<div className='mt-10 flex justify-end'>
-								<LoadingModal 
-									modalOpen={updateModal} 
-									setModalOpen={setUpdateModal} 
-									modalState={updatingState}
-									errorMessage={errorMessage}
-									FailedMessage={'Failed to add member'}
-									LoadingMessage={'Adding member'}
-									SuccessMessage={'Member added'}
-									ButtonText={'Add Member'}
-									ButtonTextColor={'text-white'}
-									ButtonColor={'bg-blue-700'}
-									ButtonType={'submit'}
-								/>
-							</div>
+						<IoClose 
+							onClick={()=> setNewMember(false)} 
+							className='text-3xl cursor-pointer'
+						/>
 
-						</form>
 					</div>
-				</div>
-			)}
-				
+				</form>
+			}
 		</div>
 	)
 }

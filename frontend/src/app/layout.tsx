@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Wrapper from "../functions/global/Wrapper";
 import AuthInit from "../functions/global/useAuthInit";
-import IncomingCall from "../ui/reusable/IncomingCall";
 import VideoCall from "../ui/chats/call/VideoCall";
 
 

@@ -10,14 +10,11 @@ interface ImageURLProps {
   onSelect: (val: string) => void
   setDisplayImage: (val: string | undefined)=> void
   userImage: string | undefined
-//   collection: string
-//   setImgErrorMessage?: (val: string)=> void
-//   productName: string
-//   setProductErrorMessage?: (val: string)=> void
+  reset?: ()=> void
 }
 
 
-function Upload({ onSelect, setDisplayImage, userImage }: ImageURLProps) {
+function Upload({ onSelect, setDisplayImage, userImage, reset }: ImageURLProps) {
     const [progress, setProgress] = useState(0);
     const abortController = new AbortController();
 
@@ -90,6 +87,9 @@ function Upload({ onSelect, setDisplayImage, userImage }: ImageURLProps) {
 
 
     const handleImageClear = () => {
+        setProgress(0)
+        setFileName('Upload file')
+        if(reset){ reset() }
         if(userImage){
             setDisplayImage(userImage)
         }else{

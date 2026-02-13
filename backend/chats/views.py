@@ -30,7 +30,7 @@ imagekit = ImageKit(
 )
 
 
-# message view 
+# image auth view 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def image_auth(request):
@@ -161,8 +161,10 @@ def chat_message_list_view(request, chat_id):
 @permission_classes([IsAuthenticated])
 def start_chat_view(request):
     sender = request.user
-    receiver_email = request.data.get('receiver')
+    request_email = request.data.get('receiver')
     content = request.data.get('firstMessage')
+
+    receiver_email = request_email.lower() if request_email else None
 
     if not receiver_email:
         return Response(
@@ -198,17 +200,18 @@ def start_chat_view(request):
 
     chat = Chat.objects.filter(is_group=False, users=sender).filter(users=receiver).distinct().first()
 
-    if not chat:
-        
-        chat = Chat.objects.create(
-            is_group=False,
-            is_ai=False,
+    if chat:
+        return Response(
+            {"detail": f"You already have a chat with {receiver.firstname} {receiver.lastname}"},
+            status=status.HTTP_400_BAD_REQUEST
         )
+        
+    chat = Chat.objects.create(is_group=False, is_ai=False,)
 
-        UserChat.objects.bulk_create([
-            UserChat(user=sender, chat=chat),
-            UserChat(user=receiver, chat=chat),
-        ])
+    UserChat.objects.bulk_create([
+        UserChat(user=sender, chat=chat),
+        UserChat(user=receiver, chat=chat),
+    ])
 
     message = Message.objects.create(
         chat=chat,
@@ -310,9 +313,11 @@ def get_chat_view(request):
 @permission_classes([IsAuthenticated])
 def start_groupchat_view(request):
     sender = request.user
-    receiver_email = request.data.get('receiver')
+    request_email = request.data.get('receiver')
     content = request.data.get('firstMessage').strip()
     group_name = request.data.get('groupName').strip()
+
+    receiver_email = request_email.lower() if request_email else None
 
     if not receiver_email:
         return Response(
@@ -352,37 +357,37 @@ def start_groupchat_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    chat = Chat.objects.filter(
+    # chat = Chat.objects.filter(
+    #     is_group=True,
+    #     users=sender
+    # ).filter(
+    #     users=receiver
+    # ).distinct().first()
+
+    
+    chat_name = f"{group_name}".strip()
+
+    chat = Chat.objects.create(
         is_group=True,
-        users=sender
-    ).filter(
-        users=receiver
-    ).distinct().first()
+        name=chat_name
+    )
 
-    if not chat:
-        chat_name = f"{group_name}".strip()
+    UserChat.objects.bulk_create([
+        UserChat(user=sender, chat=chat),
+        UserChat(user=receiver, chat=chat),
+    ])
 
-        chat = Chat.objects.create(
-            is_group=True,
-            name=chat_name
-        )
-
-        UserChat.objects.bulk_create([
-            UserChat(user=sender, chat=chat),
-            UserChat(user=receiver, chat=chat),
-        ])
-
-        message = Message.objects.create(
-            chat=chat,
-            sender=sender,
-            content=content,
-            type='text'
-        )
-        
-        # Update chat's last message and timestamp
-        chat.last_message = message
-        chat.updated_at = timezone.now()
-        chat.save(update_fields=['last_message', 'updated_at'])
+    message = Message.objects.create(
+        chat=chat,
+        sender=sender,
+        content=content,
+        type='text'
+    )
+    
+    # Update chat's last message and timestamp
+    chat.last_message = message
+    chat.updated_at = timezone.now()
+    chat.save(update_fields=['last_message', 'updated_at'])
 
 
     return Response(
@@ -428,12 +433,16 @@ def get_groupchat_view(request):
             {"detail": "No chats found"},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+    user_chats = UserChat.objects.filter(user=user, chat__in=chats).select_related('chat')
+    chat_roles = {uc.chat.id: uc.role for uc in user_chats}
 
     data = [
         {
             "chat_id": chat.id,
             "chat_name": chat.name,
             "image_url": chat.image_url,
+            "my_role": chat_roles.get(chat.id, "member"),
             "last_message": (
                 decrypt_message(chat.last_message.content, chat.last_message.iv)
                 if chat.last_message and chat.last_message.iv
@@ -454,6 +463,7 @@ def get_groupchat_view(request):
 @permission_classes([IsAuthenticated])
 def join_groupchat_view(request):
     user = request.user
+    request_group_id = request.data.get('groupId')
     group_id = request.data.get('groupId').strip()
 
     if not group_id:
@@ -536,14 +546,8 @@ def addmember_groupchat_view(request):
 
     return Response(
         {
-            "chat_id": chat.id,
-            "chat_name": chat.name,
-            "last_message": (
-            decrypt_message(chat.last_message.content, chat.last_message.iv)
-            if chat.last_message and chat.last_message.iv
-            else chat.last_message.content if chat.last_message else None
-        ),
-            "last_message_time": chat.last_message.created_at if chat.last_message else None,
+            "id": receiver.id,
+            "email": receiver.email
         },
         status=status.HTTP_200_OK
     )
@@ -558,13 +562,16 @@ def viewmember_groupchat_view(request, chat_id):
     chat = get_object_or_404(Chat, id=chat_id)
 
     if not chat.users.filter(id=request.user.id).exists():
-        return Response([], status=403)
+        return Response(
+            {"detail": "You are not allowed to view the members of this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
 
     try:
         chat = Chat.objects.get(id=chat_id, is_group=True)
     except Chat.DoesNotExist:
         return Response(
-            {"detail": "Chat with this id does not exist"},
+            {"detail": "Chat does not exist"},
             status=status.HTTP_404_NOT_FOUND
         )
 
@@ -574,19 +581,100 @@ def viewmember_groupchat_view(request, chat_id):
             status=status.HTTP_403_FORBIDDEN
         )
     
-    members = chat.users.all()
-
+    members = UserChat.objects.filter(chat=chat).select_related('user')
 
     return Response(
         [
             {
-                # "id": m.id,
-                "email": m.email
+                "id": m.user.id,
+                "email": m.user.email,
+                "role": m.role,
             }
             for m in members
         ],
         status=status.HTTP_200_OK
     )
+
+
+
+# change group image view 
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_groupImage_view(request):
+    data = request.data
+
+    chat_id = data.get("chat_id")
+    image_url = data.get("image_url")
+
+    chat = get_object_or_404(Chat, id=chat_id)
+
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response(
+            {"detail": "You are not allowed to change the image of this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+    try:
+        chat = Chat.objects.get(id=chat_id, is_group=True)
+    except Chat.DoesNotExist:
+        return Response(
+            {"detail": "Chat does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    if image_url is not None:
+        chat.image_url = image_url
+
+    chat.save()
+
+    return Response(
+        {
+            "detail": "Image uploaded",
+            "image_url": chat.image_url,
+            "chat_id": chat.id,
+        },
+        status=status.HTTP_200_OK
+    )
+
+
+
+# delete group view 
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def delete_group_view(request, chat_id):
+
+    chat = get_object_or_404(Chat, id=chat_id)
+
+    if not chat.is_group:
+        return Response(
+            {"detail": "This chat is not a group"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response(
+            {"detail": "You are not allowed to delete this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # user_chat = UserChat.objects.select_related('chat').get(chat=chat, user=request.user)
+
+    user_chat = UserChat.objects.filter(chat=chat, user=request.user).first()
+    
+    if not user_chat or user_chat.role != 'admin':
+        return Response(
+            {"detail": "You are not allowed to delete this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+
+    chat.delete()
+
+    return Response(
+        {"detail": "Group deleted"},
+        status=status.HTTP_200_OK
+    )
+
 
 
 
@@ -745,7 +833,7 @@ def change_pass_view(request):
     data = request.data
     user = request.user
 
-    required_fields = ["password", "newPassword", "confirmNewPassword"]
+    required_fields = ["password", "newPassword"]
     missing = [f for f in required_fields if not data.get(f)]
 
     if missing:
@@ -757,12 +845,6 @@ def change_pass_view(request):
     if not user.check_password(data["password"]):
         return Response(
             {"detail": "Current password is incorrect"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    if data["newPassword"] != data["confirmNewPassword"]:
-        return Response(
-            {"detail": "New passwords do not match"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -785,9 +867,10 @@ def update_profile_view(request):
 
     firstname = data.get("firstname")
     lastname = data.get("lastname")
-    email = data.get("email")
+    request_email = data.get("email")
     image_url = data.get("image_url")
 
+    email = request_email.lower() if request_email else None
 
     if email and User.objects.exclude(id=user.id).filter(email=email).exists():
         return Response(
@@ -795,16 +878,16 @@ def update_profile_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    if firstname is not None:
+    if firstname:
         user.firstname = firstname
 
-    if lastname is not None:
+    if lastname:
         user.lastname = lastname
 
-    if email is not None:
+    if email:
         user.email = email
 
-    if image_url is not None:
+    if image_url:
         user.image_url = image_url
 
     user.save()

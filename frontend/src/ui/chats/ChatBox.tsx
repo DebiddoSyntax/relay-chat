@@ -16,6 +16,8 @@ import { IoVideocam, IoCheckmarkDoneCircle } from "react-icons/io5";
 import { FaPhone } from "react-icons/fa6";
 import VideoCall from "./call/VideoCall"
 import PhoneCall from "./call/PhoneCall"
+import GroupInfo from "./group/GroupInfo";
+import { AiFillInfoCircle } from "react-icons/ai";
 
 
 
@@ -283,7 +285,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
-    const ImageSrc = isGroup ? chat?.image : otherUser?.image_url
+    const ImageSrc = isGroup ? chat?.image_url : otherUser?.image_url
     const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
     const [canShowImage, setCanShowImage] = useState(false);
 
@@ -351,13 +353,10 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                                 <PhoneCall />
                                             </>
                                         }
-                                          {isGroup && <IoMdMore className='text-2xl cursor-pointer' onClick={toggleOptions}/>}
+                                          {isGroup && <AiFillInfoCircle className='text-2xl cursor-pointer' onClick={toggleOptions}/>}
                                     </div>
                                     {isGroup && moreOPtion && (
-                                        <div className={`w-32 absolute right-0 z-10 mt-3 origin-top-left rounded-sm bg-background shadow-lg ring-1 ring-gray-300 ring-opacity-5 focus:outline-none text-xs font-bold`}>
-                                            <AddMember activeId={activeId} />
-                                            <ViewMemebers activeId={activeId}/>
-                                        </div>
+                                        <GroupInfo activeId={activeId} setMoreOPtion={setMoreOPtion} />
                                     )}
                                 </div>
                             </div>

@@ -43,8 +43,8 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
 
 
     return (
-        <div className='w-full h-full'>
-            <button type={ButtonType} disabled={modalState == 'loading'}  onClick={ConfirmOrFetch} className={`flex gap-2 item-center cursor-pointer py-3 px-5 ${ButtonColor} ${ButtonTextColor} text-sm font-semibold rounded-sm`}>
+        <div className='flex flex-col justify-center text-center items-center w-full h-full'>
+            <button type={ButtonType} disabled={modalState == 'loading'}  onClick={ConfirmOrFetch} className={`flex gap-2 item-center cursor-pointer w-28 justify-center py-3 px-5 ${ButtonColor} ${ButtonTextColor} text-sm font-semibold rounded-sm`}>
                 <p className='text-sm'>{ButtonText}</p>
             </button>
 

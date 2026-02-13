@@ -1,10 +1,5 @@
 "use client"
-import Image from 'next/image';
 import { OverviewDataProps } from '@/src/functions/types/ChatType';
-import profileImage from '@/src/assets/profile.png'
-import { useChat } from '@/src/functions/chats/chatStore';
-import { useEffect } from 'react';
-import { useAuth } from '@/src/functions/auth/Store';
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
 import { FaUserCircle } from "react-icons/fa";
 
@@ -12,20 +7,13 @@ import { FaUserCircle } from "react-icons/fa";
 interface ChatCardProps { 
     data: OverviewDataProps,
     activeId: number | null
-    isGroup: boolean
     isAI: boolean
+    chatName: string | undefined
+    showImage: string | undefined
 }
 
 
-function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
-
-    const user = useAuth((state)=> state.user)
-
-    const otherUser = data?.users?.find(
-        (u) => u.id !== user?.id
-    )
-
-    const chatName = isGroup ? data?.chat_name : isAI ? 'Sydney AI' : `${otherUser?.firstname} ${otherUser?.lastname}`.trim() || otherUser?.email
+function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps ) {
 
     const currentDate = new Date(data.last_message_time);
     
@@ -52,7 +40,7 @@ function ChatCard({ data, activeId, isGroup, isAI } : ChatCardProps ) {
     return (
         <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-200"} rounded-sm  w-full cursor-pointer`}>
             <div className='flex gap-3 w-full'>
-                {otherUser?.image_url ? <img src={otherUser?.image_url} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-14 h-14 rounded-full'/>}
+                {showImage ? <img src={showImage} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-14 h-14 rounded-full'/>}
                 <div className='flex flex-col gap-2 w-full'>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>

@@ -74,6 +74,7 @@ class Chat(models.Model):
     users = models.ManyToManyField(User, through='UserChat', related_name='chats')
     image_url = models.URLField(max_length=255, null=True)
 
+
     
     last_message = models.ForeignKey(
         'Message', 
@@ -88,7 +89,7 @@ class UserChat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     chat = models.ForeignKey(Chat, on_delete=models.CASCADE)
-    role = models.CharField(max_length=50, null=True, blank=True)
+    role = models.CharField(max_length=20, default='member')
     joined_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
