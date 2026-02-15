@@ -357,13 +357,6 @@ def start_groupchat_view(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    # chat = Chat.objects.filter(
-    #     is_group=True,
-    #     users=sender
-    # ).filter(
-    #     users=receiver
-    # ).distinct().first()
-
     
     chat_name = f"{group_name}".strip()
 
@@ -373,9 +366,11 @@ def start_groupchat_view(request):
     )
 
     UserChat.objects.bulk_create([
-        UserChat(user=sender, chat=chat),
+        UserChat(user=sender, chat=chat, role='admin'),
         UserChat(user=receiver, chat=chat),
     ])
+
+    user_chat = UserChat.objects.filter(chat=chat, user=request.user).first()
 
     message = Message.objects.create(
         chat=chat,
@@ -395,6 +390,7 @@ def start_groupchat_view(request):
             "chat_id": chat.id,
             "chat_name": chat.name,
             "image_url": chat.image_url,
+            "my_role": user_chat.role or '',
             "last_message": (
                 decrypt_message(chat.last_message.content, chat.last_message.iv)
                 if chat.last_message and chat.last_message.iv
@@ -656,8 +652,6 @@ def delete_group_view(request, chat_id):
             {"detail": "You are not allowed to delete this group"},
             status=status.HTTP_403_FORBIDDEN
         )
-    
-    # user_chat = UserChat.objects.select_related('chat').get(chat=chat, user=request.user)
 
     user_chat = UserChat.objects.filter(chat=chat, user=request.user).first()
     
@@ -671,7 +665,10 @@ def delete_group_view(request, chat_id):
     chat.delete()
 
     return Response(
-        {"detail": "Group deleted"},
+        {
+            "detail": "Group deleted",
+            "chat_id": chat_id,
+        },
         status=status.HTTP_200_OK
     )
 

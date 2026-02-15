@@ -1,23 +1,20 @@
 "use client"
 import api from "@/src/functions/auth/AxiosConfig";
-import MessageCard from './MessageCard';
-import { IoSend } from "react-icons/io5";
+import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/functions/auth/Store";
 import { useChat } from "@/src/functions/chats/chatStore";
-import AddMember from "./group/AddMember";
-import ViewMemebers from "./group/ViewMemebers";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
-import useClicktoClose from "@/src/functions/global/useClicktoClose";
-import { RiChatSmileAiFill } from "react-icons/ri";
-import { IoMdMore, IoIosArrowBack } from "react-icons/io";
-import { FaUserCircle } from "react-icons/fa";
-import { IoVideocam, IoCheckmarkDoneCircle } from "react-icons/io5";
-import { FaPhone } from "react-icons/fa6";
-import VideoCall from "./call/VideoCall"
-import PhoneCall from "./call/PhoneCall"
+import Call from "./call/Call"
+import MessageCard from './MessageCard';
 import GroupInfo from "./group/GroupInfo";
 import { AiFillInfoCircle } from "react-icons/ai";
+import { RiChatSmileAiFill } from "react-icons/ri";
+import { IoIosArrowBack } from "react-icons/io";
+import { FaUserCircle } from "react-icons/fa";
+import { IoCheckmarkDoneCircle } from "react-icons/io5";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { IoSend } from "react-icons/io5";
 
 
 
@@ -39,41 +36,54 @@ interface ChatBoxProps{
 
 
 function ChatBox({ isGroup, isAI }: ChatBoxProps) {
-
+    // token state
     const token = useAuth((state)=> state.accessToken)
 
+    // private chat states 
     const activePrivateId = useChat((state)=> state.activePrivateId)
     const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
     const privateChats = useChat((state)=> state.privateChats)
     
+    // groupchat states
     const groupChats = useChat((state)=> state.groupChats)
     const activeGroupId = useChat((state)=> state.activeGroupId)
     const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
     
+    // ai chat states
     const aiChatId = useChat((state)=> state.aiChatId)
     const setAiChatId = useChat((state)=> state.setAiChatId)
 
+    // set current chats and id states 
     const chats = isGroup ? groupChats : privateChats
     const activeId = isGroup ? activeGroupId : isAI ? aiChatId : activePrivateId
 
+    // other chat ui handlers 
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
     const updateLastMessage = useChat((state) => state.updateLastMessage)
     const resetUnread = useChat((state) => state.resetUnread)
     
+    // socket states 
     const socketRef = useRef<WebSocket | null>(null);
     const [messages, setMessages] = useState<MessageType[]>([]);
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
     const [input, setInput] = useState("");
     const [aiTyping, setAiTyping] = useState(false);
     const [status, setStatus] = useState("connecting");
     const [nextUrl, setNextUrl] = useState<string | null>(null);
-    
-    const [moreOPtion, setMoreOPtion] = useState(false);
+
+    // scroll refs 
     const containerRef = useRef<HTMLDivElement>(null);
-    const [loadingMore, setLoadingMore] = useState(false);
     const shouldScrollRef = useRef(true);
+    
+    // fetch messages states 
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState("")
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [audioSet, setAudioSet] = useState<boolean | null>(null);
+    const [errorMore, setErrorMore] = useState("")
+    
+    // group info states 
+    const [groupInfo, setGroupInfo] = useState(false);
 
     // mobile back button 
     const handleBackButton = () => {
@@ -84,7 +94,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     }
 
 
-    // get current open chat 
+    // get current open chat object
     const chat = [...chats].find(
         (chat) => activeId == chat.chat_id
     )
@@ -106,9 +116,15 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
             setNextUrl(response.data.next)
             setMessages(response.data.results)
             resetUnread(type, activeId)
-        }catch(error){
-            console.log('fetch messages', error)
-            setError('Failed to load messages')
+            setError('')
+        }catch(err){
+            if (axios.isAxiosError(err)) {
+                console.error("error", err.response?.data);
+                setError('Failed to load messages')
+            } else {
+                console.error("unexpected error", err);
+                setError('An unexpected error occurred')
+            }
         }finally{
             setLoading(false)
         }
@@ -120,36 +136,32 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const fetchMoreMessages = async () => {
         if (!nextUrl || loadingMore) return;
 
-        
         const container = containerRef.current;
         const previousHeight = container?.scrollHeight || 0;
         
         try{
             setLoadingMore(true);
-            
             const res = await api.get(nextUrl);
             // console.log('fetched more messages', res.data)
-
-            setMessages(prev => [
-                ...res.data.results,
-                ...prev,
-            ]);
-    
+            setMessages(prev => [...res.data.results, ...prev,]);
             setNextUrl(res.data.next);
-        }catch(error){
-            console.log('error')
+            setErrorMore('')
+        }catch(err){
+            if (axios.isAxiosError(err)) {
+                console.error("error", err.response?.data);
+                setErrorMore('Failed to load more messages')
+            } else {
+                console.error("unexpected error", err);
+                setErrorMore('An unexpected error occurred')
+            }
         }finally{
             setLoadingMore(false);
             shouldScrollRef.current = false;
         }
 
-
-
-
         requestAnimationFrame(() => {
             if (container) {
-                container.scrollTop =
-                    container.scrollHeight - previousHeight;
+                container.scrollTop = container.scrollHeight - previousHeight;
             }
         });
 
@@ -165,7 +177,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     }, [messages, aiTyping]);
 
 
-
+    // handle scroll position 
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !nextUrl) return;
@@ -178,22 +190,19 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [nextUrl]);
+    }, [nextUrl, activeId]);
 
 
 
-
+    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
 
     // ====== handle web socket connections =====
     useEffect(() => {
-        if(!chatOpen || !activeId){ 
-            return 
-        }
+        if(!chatOpen || !activeId)return 
 
         fetchMessages()
         
-        const wsUrl = `ws://192.168.0.129:8000/ws/chat/${activeId}/?token=${token}`;
-        // const wsUrl = `ws://localhost:8000/ws/chat/${activeId}/?token=${token}`;
+        const wsUrl = `${socketURL}/chat/${activeId}/?token=${token}`;
         const socket = new WebSocket(wsUrl);
 
         socketRef.current = socket;
@@ -205,12 +214,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
 
-            // if (data.type === "connection") {
-            //     console.log("Connected:", data);
-            // }
-
             if (data.type === "typing" && data.user === "ai") {
-                // console.log("ai typing");
                 setAiTyping(data.typing);
             }
 
@@ -228,14 +232,6 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                     );
                 }
             }
-
-            // if (data.type === "read") {
-            //     console.log("Message read:", data);
-            // }
-
-            // if (data.type === "error") {
-            //     console.error(data.error);
-            // }
         };
 
         socket.onclose = () => {
@@ -262,12 +258,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
             })
         );
 
-        updateLastMessage(
-            type,
-            activeId!,
-            input,
-            new Date().toISOString()
-        )
+        updateLastMessage(type, activeId!, input, new Date().toISOString())
 
         setInput("");
     };
@@ -280,16 +271,17 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         }
     };
 
-
+    // sorted messages 
     const sortedMessages = [...messages].sort(
         (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
 
+    // immage states 
     const ImageSrc = isGroup ? chat?.image_url : otherUser?.image_url
     const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
     const [canShowImage, setCanShowImage] = useState(false);
 
-
+    // set image 
     useEffect(() => {
         if (!ImageSrc) {
             setCanShowImage(false);
@@ -308,12 +300,10 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         };
     }, [ImageSrc]);
 
-    const moreOptionCloseRef = useClicktoClose(()=> {
-		setMoreOPtion(true)
-	})
 
-    const toggleOptions = () => {
-        setMoreOPtion(!moreOPtion)
+    // group info 
+    const toggleGroupInfo = () => {
+        setGroupInfo(!groupInfo)
     }
 
 
@@ -321,6 +311,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         <div  className={`flex-1 w-full h-screen bg-gray-100`}>
             {chatOpen ? (
                 <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-screen bg-gray-100`}>
+                    {/* top bar */}
                     <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-20'>
                         <div className='w-full flex gap-3 items-center'>
                             {!isAI && <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />}
@@ -349,14 +340,14 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                     <div className="flex items-center gap-3">
                                         {!isGroup && !isAI && 
                                             <>
-                                                <VideoCall activeId={activeId}/>
-                                                <PhoneCall />
+                                                <Call activeId={activeId} isAudio={false} />
+                                                <Call activeId={activeId} isAudio={true} />
                                             </>
                                         }
-                                          {isGroup && <AiFillInfoCircle className='text-2xl cursor-pointer' onClick={toggleOptions}/>}
+                                          {isGroup && <AiFillInfoCircle className='text-2xl cursor-pointer' onClick={toggleGroupInfo}/>}
                                     </div>
-                                    {isGroup && moreOPtion && (
-                                        <GroupInfo activeId={activeId} setMoreOPtion={setMoreOPtion} />
+                                    {isGroup && groupInfo && (
+                                        <GroupInfo activeId={activeId} setGroupInfo={setGroupInfo} />
                                     )}
                                 </div>
                             </div>
@@ -365,7 +356,16 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
 
                     <div className='relative flex-1 h-full w-full pb-[380px] sm:pb-80 md:pb-[220px]'>
-                        <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pb-5'>
+                        {/* messages  */}
+                        <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pt-10 pb-5'>
+                            {errorMore && 
+                                <div className="text-red-700 text-sm font-semibold text-center">
+                                    {errorMore} 
+                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMoreMessages}>retry</p>  
+                                </div>
+                            }
+                            {loadingMore &&<AiOutlineLoading3Quarters className='mx-auto stroke-1 text-xl text-center animate-spin'/>}
+
                             {sortedMessages.map((m, index) => {
                                 const currentDate = new Date(m.created_at);
                                 const prevDate = index > 0 ? new Date(sortedMessages[index - 1].created_at) : null;
@@ -406,9 +406,17 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                     Sydney is thinking<span className="animate-ping">...</span>
                                 </div>
                             )}
+                            {loading && <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-xl text-center animate-spin'/>}
+                            {error && 
+                                <div className="text-red-700 text-sm font-semibold text-center">
+                                    {error} 
+                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMessages}>retry</p>  
+                                </div>
+                            }
                         </div>
 
-
+                        
+                        {/* message input  */}
                         <div className="w-full flex gap-6 py-10 px-5 lg:px-8 bg-white ">
                             <textarea
                                 value={input}
@@ -419,8 +427,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 className=" min-h-16 max-h-16 resize-none flex-1 py-3 px-4 bg-gray-100 rounded-sm focus:placeholder:opacity-0 focus:outline-none placeholder:text-sm placeholder:font-medium"
                                 rows={1}
                             /> 
-                            
-                    
+
                             <button onClick={sendMessage} className="bg-blue-700 text-white px-4 py-3 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>

@@ -15,27 +15,31 @@ interface ChatOverviewProps{
 
 
 function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
-    // chat overview states
+    // auth states 
     const authInitialized = useAuth((state)=> state.authInitialized)
     const user = useAuth((state)=> state.user)
 
+    // chat ui handlers 
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
 
+    // private chats states 
     const privateChats = useChat((state)=> state.privateChats)
-    const groupChats = useChat((state)=> state.groupChats)
-    
     const setPrivateChats = useChat((state)=> state.setPrivateChats)
-    const setGroupChats = useChat((state)=> state.setGroupChats)
-    
     const activePrivateId = useChat((state)=> state.activePrivateId)
-    const activeGroupId = useChat((state)=> state.activeGroupId)
-    const aiChatId = useChat((state)=> state.aiChatId)
-
-    const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
     const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
+
+    // group chats states 
+    const groupChats = useChat((state)=> state.groupChats)
+    const setGroupChats = useChat((state)=> state.setGroupChats)
+    const activeGroupId = useChat((state)=> state.activeGroupId)
+    const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
+    
+    // ai chat state
+    const aiChatId = useChat((state)=> state.aiChatId)
     const setAiChatId = useChat((state)=> state.setAiChatId)
 
+    // handle current chat states 
     const chats = isGroup ? groupChats : privateChats
     const setChats = isGroup ? setGroupChats : setPrivateChats
     const activeId = isGroup ? activeGroupId : isAI ? aiChatId : activePrivateId

@@ -22,10 +22,13 @@ interface AddNewChatProps {
 function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
 
     const setChatOpen = useChat((state)=> state.setChatOpen)
+
+    // chats states 
     const setPrivateChats = useChat((state)=> state.setPrivateChats)
     const setGroupChats = useChat((state)=> state.setGroupChats)
     const setChats = isGroup ? setGroupChats : setPrivateChats
 
+    // new chat states
     const [newChat, setNewChat] = useState(false)
     const [loading, setLoading] = useState(false)
     const [errorMessage, setErrorMessage] = useState('')
@@ -45,6 +48,7 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
     });
 
 
+    // handle new chat api call 
     const handleNewChat = async (data: NewchatInputType) => {
         
         try{
@@ -52,7 +56,7 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
             const fetchPath = isGroup ? '/groupchat/start/' : '/chat/start/'
 
             const response = await api.post(`${fetchPath}`, data)
-            console.log('start chat', response.data)
+            // console.log('start chat', response.data)
             const newdata = response.data
 
             setChats(prev => {
@@ -60,9 +64,7 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
 
                 const exists = prev.find(chat => chat.chat_id == newdata.chat_id)
 
-                if (exists) {
-                    return [newdata, ...prev.filter(chat => chat.chat_id !== newdata.chat_id)]
-                }
+                if (exists) return [newdata, ...prev.filter(chat => chat.chat_id !== newdata.chat_id)]
 
                 return [newdata, ...prev]
             })

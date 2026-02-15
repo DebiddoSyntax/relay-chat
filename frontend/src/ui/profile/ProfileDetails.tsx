@@ -90,6 +90,11 @@ function ProfileDetails() {
     }
 
 
+    const handleCancel = () => {
+        user?.image_url ? setDisplayImage(user?.image_url) : setDisplayImage(undefined)
+        setEditProfile(false)
+    }
+
 
     return (
         <form onSubmit={handleSubmit(onSubmit)} className="">
@@ -129,6 +134,7 @@ function ProfileDetails() {
                                     <Upload 
                                         setDisplayImage={setDisplayImage}
                                         userImage={user?.image_url}
+                                        setToast={setToast}
                                         onSelect={(selected) => field.onChange(selected)}
                                     />
                                 )}
@@ -150,7 +156,7 @@ function ProfileDetails() {
 
                 {editProfile && (
                     <div className='flex gap-2 items-center'>
-                        <div className='text-sm font-medium py-2 px-5 border-2 border-gray-200 rounded-4xl w-auto cursor-pointer' onClick={()=> setEditProfile(false)}>
+                        <div className='text-sm font-medium py-2 px-5 border-2 border-gray-200 rounded-4xl w-auto cursor-pointer' onClick={handleCancel}>
                             <p>cancel</p>
                         </div>
                         <button type="submit" disabled={loading} className='text-sm text-white font-medium py-2 px-5 w-40 bg-black border-2 border-gray-200 rounded-4xl cursor-pointer'>

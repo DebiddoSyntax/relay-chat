@@ -1,4 +1,4 @@
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import { Dispatch, SetStateAction, useEffect, useState } from 'react'
 import AddMember from './AddMember'
 import ViewMemebers from './ViewMemebers'
 import { IoClose } from "react-icons/io5";
@@ -10,7 +10,7 @@ export interface MembersType{
     email: string
 }
 
-function GroupInfo({ activeId, setMoreOPtion }: { activeId: number | null, setMoreOPtion: Dispatch<SetStateAction<boolean>>}) {
+function GroupInfo({ activeId, setGroupInfo }: { activeId: number | null, setGroupInfo: Dispatch<SetStateAction<boolean>>}) {
 
     const [members, setMembers] = useState<MembersType[]>([])
     
@@ -22,14 +22,14 @@ function GroupInfo({ activeId, setMoreOPtion }: { activeId: number | null, setMo
                         Group Info
                     </p>
                     <IoClose 
-                        onClick={()=> setMoreOPtion(false)} 
+                        onClick={()=> setGroupInfo(false)} 
                         className='text-xl cursor-pointer'
                     />
                 </div>
                 
                 <GroupImage activeId={activeId} />
                 <AddMember activeId={activeId} setMembers={setMembers} />
-                <ViewMemebers activeId={activeId} setMembers={setMembers} members={members}/>  
+                <ViewMemebers activeId={activeId} setMembers={setMembers} members={members} setGroupInfo={setGroupInfo}/>  
             </div>
         </div>
     )

@@ -62,7 +62,7 @@ const Loginpage = () => {
 
         try{
             setLoading(true)
-            const response = await axios.post(`http://192.168.0.129:8000/api/auth/login/`, payload)
+            const response = await axios.post(`${apiURL}/auth/login/`, payload)
             // const response = await axios.post(`${apiURL}/auth/login/`, payload)
             // console.log("logged in", response.data.message)
             const authData = response.data

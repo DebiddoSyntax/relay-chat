@@ -10,15 +10,18 @@ interface Props{
     activeId: number | null, 
     setMembers: Dispatch<SetStateAction<MembersType[]>>
     members: MembersType[]
+    setGroupInfo: Dispatch<SetStateAction<boolean>>
 }
 
-function ViewMemebers({ activeId, setMembers, members }: Props) {
+function ViewMemebers({ activeId, setMembers, members, setGroupInfo }: Props) {
     const [loading, setLoading] = useState(false)
     const [delLoading, setDelLoading] = useState(false)
     const [delState, setDelState] = useState<"idle" | "loading" | "success" | "failure" | "confirm">("idle");
     const [errorMessage, setErrorMessage] = useState('')
 
     const groupChats = useChat((state)=> state.groupChats)
+    const setChatOpen = useChat((state)=> state.setChatOpen)
+    const setGroupChats = useChat((state)=> state.setGroupChats)
     
 
     const currentChat = groupChats?.find(
@@ -58,16 +61,17 @@ function ViewMemebers({ activeId, setMembers, members }: Props) {
         try {
             setDelLoading(true)
             setDelState('loading')
-            const response = await api.delete(`/groupchat/delete/${activeId}`);
+            const response = await api.delete(`/groupchat/delete/${activeId}/`);
             // console.log(response);
-            if(response.status === 200){
-                setDelState('success')
-                setDelLoading(false);
-            }
+            setDelState('success')
+            setDelLoading(false);
+            setGroupInfo(false)
+            setChatOpen(false)
+            setGroupChats(prev => {
+                if (!prev) return [] 
+                return [...prev.filter(chat => chat.chat_id !== response.data.chat_id)]
+            })
             
-            setTimeout(()=> {
-                window.location.reload();
-            }, 1000)
         } catch (err) {
             if (axios.isAxiosError(err)) {
                 console.error("error", err.response?.data?.message);
@@ -106,6 +110,7 @@ function ViewMemebers({ activeId, setMembers, members }: Props) {
         
             {currentChat?.my_role === 'admin' && 
                 <div className='w-full h-full mt-5'>
+                    <p className='text-center text-sm mb-3'>{errorMessage}</p>
                     <LoadingModal 
                         modalOpen={delLoading} 
                         setModalOpen={setDelLoading} 
@@ -122,7 +127,6 @@ function ViewMemebers({ activeId, setMembers, members }: Props) {
                         ButtonColor={'bg-red-700'}
                         ButtonType={'button'}
                     />
-                    <p className='text-center text-sm'>{errorMessage}</p>
                 </div>
             }
         </div>

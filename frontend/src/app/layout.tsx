@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Wrapper from "../functions/global/Wrapper";
 import AuthInit from "../functions/global/useAuthInit";
-import VideoCall from "../ui/chats/call/VideoCall";
+import Call from "../ui/chats/call/Call";
+import CallAlert from "../ui/chats/CallAlert";
 
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 			<body>
 				<Wrapper>
 					{/* <IncomingCall /> */}
-					<VideoCall />
+					<CallAlert />
 					<AuthInit />
 					{children}
 				</Wrapper>

@@ -1,28 +1,26 @@
 "use client"
-import { useAuth } from '@/src/functions/auth/Store'
-import { useEffect, useState } from 'react';
-import { FaUserCircle } from "react-icons/fa";
+import api from '@/src/functions/auth/AxiosConfig';
+import axios from 'axios';
 import { useForm, Controller } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
-import { FiEdit } from "react-icons/fi";
 import Upload from '../../profile/Upload';
 import { useChat } from '@/src/functions/chats/chatStore';
+import { useEffect, useState } from 'react';
+import { FaUserCircle } from "react-icons/fa";
 import { IoMdCheckmark } from "react-icons/io";
-import api from '@/src/functions/auth/AxiosConfig';
-import axios from 'axios';
 
 
 
 function GroupImage({ activeId }: { activeId: number | null}) {
 
-    const [loading, setLoading] = useState(false)
+    // image upload states 
+    // const [loading, setLoading] = useState(false)
     const groupChats = useChat((state)=> state.groupChats)
     const setGroupChats = useChat((state)=> state. setGroupChats)
     const [displayImage, setDisplayImage] = useState<string | undefined>('')
     const [errorMessage, setErrorMessage] = useState('')
 	const [successMessage, setSuccessMessage] = useState('')
-	const [check, setCheck] = useState(false)
 
     
 
@@ -38,13 +36,14 @@ function GroupImage({ activeId }: { activeId: number | null}) {
     type EditGroupImageType = yup.InferType<typeof schema>;
 
 
-    const { register, handleSubmit, control, formState: { errors }, reset } = useForm<EditGroupImageType>({
+    const { handleSubmit, control, formState: { errors }, reset } = useForm<EditGroupImageType>({
         resolver: yupResolver(schema),
         defaultValues: { 
             image_url: currentChat?.image_url
         },
     });
 
+    // set current image state
     useEffect(() => {
         if (currentChat) {
             reset({ image_url: currentChat?.image_url });
@@ -53,27 +52,22 @@ function GroupImage({ activeId }: { activeId: number | null}) {
     }, [currentChat, reset]);
 
 
+    // image save to db call 
     const onSubmit = async(data: EditGroupImageType) =>{
         if(!activeId) {
             setErrorMessage('No id provided')
             return
         }
 
-        const payload = {
-            ...data,
-            chat_id: activeId
-        }
+        const payload = {...data, chat_id: activeId}
 
         try{
-            setLoading(true)
+            // setLoading(true)
             const res = await api.patch('/groupchat/image/', payload)
             console.log(res.data)
-            setCheck(true)
             setGroupChats(prev => {
                 const exists = prev.find(chat => chat.chat_id === res.data.chat_id);
-                if (exists) {
-                    return [{...exists, image_url: res.data.image_url}, ...prev.filter(chat => chat.chat_id !== res.data.chat_id)];
-                }
+                if (exists) return [{...exists, image_url: res.data.image_url}, ...prev.filter(chat => chat.chat_id !== res.data.chat_id)];
                 return prev;
             });
 
@@ -88,7 +82,7 @@ function GroupImage({ activeId }: { activeId: number | null}) {
                 setErrorMessage("An unexpected error occurred");
             }
         }finally{
-            setLoading(false);
+            // setLoading(false);
         }
     }
 
@@ -112,6 +106,8 @@ function GroupImage({ activeId }: { activeId: number | null}) {
                                         setDisplayImage={setDisplayImage}
                                         userImage={currentChat?.image_url}
                                         reset={reset}
+                                        setSuccessMessage={setSuccessMessage}
+                                        setErrorMessage={setErrorMessage}
                                         onSelect={(selected) => field.onChange(selected)}
                                     />
                                 )}

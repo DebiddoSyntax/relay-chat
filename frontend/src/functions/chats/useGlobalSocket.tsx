@@ -14,16 +14,18 @@ export function useGlobalSocket() {
     const incomingCall = useChat((state)=> state.incomingCall)
     const setActiveCall = useChat((state)=> state.setActiveCall)
 
+    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
+
     useEffect(() => {
         if (!token) return
 
-        const socket = new WebSocket(`ws://192.168.0.129:8000/ws/user/?token=${token}`)
+        const socket = new WebSocket(`${socketURL}/user/?token=${token}`)
 
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data)
 
             if (data.type === "new_message") {
-                console.log('global message d', data)
+                // console.log('global message d', data)
                 updateLastMessage(data.chat_type, data.chat_id, data.content, data.created_at)
                 const activeId = data.chat_type == 'group' ? activeGroupId : activePrivateId
                 if (data.chat_id !== activeId) {
@@ -32,8 +34,8 @@ export function useGlobalSocket() {
             }
 
             if (data.type === "new_call") {
-                // console.log('global d', data)
-                setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url})
+                console.log('global d', data)
+                setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio})
                 // if(!incomingCall?.isCalling){
                 //     setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url})
                 //     setActiveCall(true)
@@ -60,9 +62,9 @@ export function useGlobalSocket() {
             
         }
 
-        // socket.onopen = () => console.log('Global socket connected')
-        // socket.onclose = () => console.log('Global socket disconnected')
-        // socket.onerror = (err) => console.error('Global socket error', err)
+        socket.onopen = () => console.log('Global socket connected')
+        socket.onclose = () => console.log('Global socket disconnected')
+        socket.onerror = (err) => console.error('Global socket error', err)
 
         return () => socket.close()
     }, [token, updateLastMessage, incrementUnread, activeGroupId, activePrivateId])

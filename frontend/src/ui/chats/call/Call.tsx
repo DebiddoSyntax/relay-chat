@@ -1,7 +1,7 @@
 "use client"
 import api from '@/src/functions/auth/AxiosConfig';
 import { useAuth } from '@/src/functions/auth/Store';
-import { useReducer, useRef, useState } from 'react'
+import { useEffect, useReducer, useRef, useState } from 'react'
 import { useChat } from '@/src/functions/chats/chatStore';
 import { ImPhoneHangUp } from "react-icons/im";
 import { MdCameraswitch } from "react-icons/md";
@@ -9,7 +9,7 @@ import { HiSpeakerXMark, HiSpeakerWave } from "react-icons/hi2";
 import { FaUserCircle } from "react-icons/fa";
 import { IoClose, IoVideocam } from "react-icons/io5";
 import { IoMdMicOff, IoMdMic } from "react-icons/io";
-
+import { FaPhone } from "react-icons/fa6";
 
 type ActionType =
   | { type: "TOGGLE"; field: keyof CallStateType }
@@ -19,6 +19,7 @@ type ActionType =
 interface CallStateType {
     callModal: boolean
     remoteVideoActive: boolean
+    remoteAudioActive: boolean
     switchVid: boolean
     muteSound: boolean
     muteMic: boolean
@@ -30,6 +31,7 @@ interface CallStateType {
 const initialState: CallStateType = {
     callModal: false,
     remoteVideoActive: false,
+    remoteAudioActive: false,
     switchVid: false,
     muteSound: false,
     muteMic: false,
@@ -56,7 +58,7 @@ interface FailedStateType {
 }
 
 
-function VideoCall({ activeId }: { activeId?: number | null}) {
+function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolean | null}) {
        
     const token = useAuth((state)=> state.accessToken)
     const refreshToken = useAuth((state)=> state.refreshToken)
@@ -73,6 +75,8 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
 
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
     const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+    const localAudioRef = useRef<HTMLAudioElement | null>(null);
+    const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
     const peerRef = useRef<RTCPeerConnection | null>(null);
     const socketRef = useRef<WebSocket | null>(null);
     const streamRef = useRef<MediaStream | null>(null);
@@ -98,7 +102,7 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
         } 
     }
 
-
+    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
   
     const cleanupCall = async () => {
         console.log("🧹 Starting cleanup...");
@@ -118,6 +122,12 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
         }
         if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = null;
+        }
+        if (localAudioRef.current) {
+            localAudioRef.current.srcObject = null;
+        }
+        if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = null;
         }
 
         if (unansweredTimeoutRef.current) {
@@ -185,8 +195,12 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
             });
 
             streamRef.current = stream;
-            if (localVideoRef.current) {
+            if (!isAudio && localVideoRef.current) {
                 localVideoRef.current.srcObject = stream;
+            }
+
+            if (isAudio && localAudioRef.current) {
+                localAudioRef.current.srcObject = stream;
             }
 
             const peer = new RTCPeerConnection({
@@ -204,10 +218,15 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
 
             // Handle incoming remote tracks
             peer.ontrack = (event) => {
-                if (event.streams && event.streams[0]) {
+                if (!isAudio && event.streams && event.streams[0]) {
                     if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = event.streams[0];
                         toggle('remoteVideoActive')
+                    }
+                } else if(isAudio && event.streams && event.streams[0]) {
+                    if (remoteAudioRef.current) {
+                        remoteAudioRef.current.srcObject = event.streams[0];
+                        toggle('remoteAudioActive')
                     }
                 } else {
                     console.warn("⚠️ No stream in track event");
@@ -215,7 +234,7 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
             };
 
 
-            const socket = new WebSocket(`ws://192.168.0.129:8000/ws/video/${currentId}/?token=${token}`);
+            const socket = new WebSocket(`${socketURL}/video/${currentId}/?token=${token}&audio=${isAudio}`);
             socketRef.current = socket;
 
             let remoteOfferSet = false;
@@ -379,6 +398,7 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
     };
     
 
+
     const leaveCall = async () => {
         // console.log("📞 Leaving call...");
         
@@ -422,9 +442,15 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
 
     
     const toggleMuteVid = () => {
-        const vid = remoteVideoRef?.current
-        if (!vid) return
-        vid.muted = !vid.muted
+        if(isAudio){
+            const audio = remoteAudioRef?.current
+            if (!audio) return
+            audio.muted = !audio.muted
+        }else{
+            const vid = remoteVideoRef?.current
+            if (!vid) return
+            vid.muted = !vid.muted
+        }
         toggle('muteSound')
     }
 
@@ -435,9 +461,12 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
         toggle('muteMic')
     }
 
+
+    const IconToShow = isAudio ? FaPhone : IoVideocam
+
     return (
         <div>
-            {activeId && <IoVideocam className='text-2xl cursor-pointer' onClick={handleJoinCall} />}
+            {activeId && <IconToShow className={`${isAudio ? 'text-base' : 'text-2xl'} cursor-pointer`} onClick={handleJoinCall} />}
 
             {incomingCall?.isCalling && (
 				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
@@ -454,7 +483,7 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
                                     {incomingCall.callerName}
                                 </p>
                                 <p className="mt-0 text-xs md:text-sm font-semibold text-gray-600">
-                                    Incoming video call
+                                    {incomingCall.isAudio ? 'Incoming voice call' : 'Incoming video call'}
                                 </p>
                             </div>
                         </div>
@@ -496,18 +525,31 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
                                 <div className="relative w-full h-full bg-black">
                 
                                     {/* Remote video */}
-                                    <video ref={remoteVideoRef} autoPlay playsInline
-                                        className={`object-cover transition-all duration-300 ${state.switchVid
-                                            ? "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"
-                                            : "w-full h-full" }`}
-                                    />
+                                    {!isAudio ? 
+                                        <video ref={remoteVideoRef} autoPlay playsInline
+                                            className={`object-cover transition-all duration-300 ${state.switchVid
+                                                ? "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"
+                                                : "w-full h-full" }`}
+                                        />
+                                    :
+
+                                        <audio ref={remoteAudioRef} autoPlay playsInline
+                                            style={{ display: 'none' }}
+                                        />
+                                    }
                 
                                     {/* Local video */}
-                                    <video ref={localVideoRef} autoPlay playsInline muted
-                                        className={`object-cover transition-all duration-300 ${state.switchVid
-                                            ? "w-full h-full"
-                                            : "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"}`}
-                                    />
+                                    {!isAudio ? 
+                                        <video ref={localVideoRef} autoPlay playsInline muted
+                                            className={`object-cover transition-all duration-300 ${state.switchVid
+                                                ? "w-full h-full"
+                                                : "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"}`}
+                                        />
+                                        :
+                                        <audio ref={localAudioRef} autoPlay muted playsInline
+                                            style={{ display: 'none' }} 
+                                        />
+                                    }
                 
                                 </div>
                 
@@ -518,9 +560,11 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
                                         <ImPhoneHangUp />
                                     </button>
                 
-                                    <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
-                                        <MdCameraswitch />
-                                    </button>
+                                    {!isAudio && 
+                                        <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                            <MdCameraswitch />
+                                        </button>
+                                    }
                 
                                     <button onClick={()=> toggleMuteVid()} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         {state.muteSound ? <HiSpeakerXMark /> : <HiSpeakerWave />}
@@ -541,4 +585,4 @@ function VideoCall({ activeId }: { activeId?: number | null}) {
     )
 }
 
-export default VideoCall
+export default Call

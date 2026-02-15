@@ -1,9 +1,10 @@
 "use client"
 import api from "@/src/functions/auth/AxiosConfig";
 import { ImageKitAbortError, ImageKitInvalidRequestError, ImageKitServerError, ImageKitUploadNetworkError, upload } from "@imagekit/react";
-import { useRef, useState } from "react";
+import { useRef, useState, Dispatch, SetStateAction } from "react";
 import { BiUpload } from "react-icons/bi";
 import { MdOutlineClear } from "react-icons/md";
+import { ToastType } from "./ProfileDetails";
 
 
 interface ImageURLProps {
@@ -11,27 +12,47 @@ interface ImageURLProps {
   setDisplayImage: (val: string | undefined)=> void
   userImage: string | undefined
   reset?: ()=> void
+  setSuccessMessage?: Dispatch<SetStateAction<string>>
+  setErrorMessage?: Dispatch<SetStateAction<string>>
+  setToast?: Dispatch<SetStateAction<ToastType>>
 }
 
 
-function Upload({ onSelect, setDisplayImage, userImage, reset }: ImageURLProps) {
+function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, setSuccessMessage, setToast }: ImageURLProps) {
+    
+    // progress state 
     const [progress, setProgress] = useState(0);
     const abortController = new AbortController();
 
+    // file name state 
+    const [fileName, setFileName] = useState("Upload file");
 
+    // get imagekit authenticated params 
     const authenticator = async () => {
         try {
             const response = await api.get("/image/auth/");
             const { signature, expire, token, publicKey } = response.data;
             return { signature, expire, token, publicKey };
         } catch (error) {
-            // Log the original error for debugging before rethrowing a new error.
             console.error("Authentication error:", error);
             throw new Error("Authentication request failed");
         }
     };
 
-    
+
+
+    // clear all image state 
+    const handleImageClear = () => {
+        setProgress(0)
+        setFileName('Upload file')
+        reset && reset()
+        setSuccessMessage&& setSuccessMessage('')
+        setErrorMessage && setErrorMessage('')
+        userImage ? setDisplayImage(userImage) : setDisplayImage(undefined)
+    }
+
+
+    // handle upload to imagekit 
     const handleUpload = async (file: File) => {
 
         setProgress(0);
@@ -40,7 +61,10 @@ function Upload({ onSelect, setDisplayImage, userImage, reset }: ImageURLProps) 
         try {
             authParams = await authenticator();
         } catch (authError) {
-            console.error("Failed to authenticate for upload:", authError);
+            console.error("Failed to authenticate for upload:");
+            setToast && setToast({type: 'failure', show: true, message: 'Failed to upload'})
+            handleImageClear()
+            setFileName('Upload file')
             return;
         }
         const { signature, expire, token, publicKey } = authParams;
@@ -83,19 +107,8 @@ function Upload({ onSelect, setDisplayImage, userImage, reset }: ImageURLProps) 
         }
     };
 
-    const [fileName, setFileName] = useState("Upload file");
 
 
-    const handleImageClear = () => {
-        setProgress(0)
-        setFileName('Upload file')
-        if(reset){ reset() }
-        if(userImage){
-            setDisplayImage(userImage)
-        }else{
-            setDisplayImage(undefined)
-        }
-    }
 
     return (
         <div className="flex gap-3 items-center">
@@ -122,7 +135,7 @@ function Upload({ onSelect, setDisplayImage, userImage, reset }: ImageURLProps) 
                     </span>
                 </label>
             </div>
-            {/* {progress > 0 && <progress value={progress} max={100}></progress>} */}
+            
             {progress > 0 && (
                 <span className="text-xs font-medium text-gray-600">
                     {progress == 100 ? <MdOutlineClear className="text-2xl cursor-pointer" onClick={handleImageClear} /> : `${progress}%`}

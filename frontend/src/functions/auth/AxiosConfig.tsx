@@ -4,8 +4,7 @@ import { useAuth } from './Store';
 const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 const api = axios.create({
-    // baseURL: `${apiURL}`, 
-    baseURL: `http://192.168.0.129:8000/api`, 
+    baseURL: `${apiURL}`, 
     withCredentials: true, 
 });
 

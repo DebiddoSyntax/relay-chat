@@ -17,8 +17,10 @@ interface Props{
 	setMembers: Dispatch<SetStateAction<MembersType[]>>
 }
 
-function AddMember({ activeId, setMembers }: Props) {
 
+
+function AddMember({ activeId, setMembers }: Props) {
+	// new member states 
 	const [newMember, setNewMember] = useState(false)
 	const [loading, setLoading] = useState(false)
 	const [errorMessage, setErrorMessage] = useState('')
@@ -30,11 +32,11 @@ function AddMember({ activeId, setMembers }: Props) {
 
 	type AddMemberInputType= yup.InferType<typeof schema>;
 	
-	
 	const { register, handleSubmit, formState: { errors }, reset } = useForm<AddMemberInputType>({
 		resolver: yupResolver(schema)
 	});
         
+	// new member function call 
     const handleAddNewMember = async(data: AddMemberInputType) => {
 
 		if(!activeId) {
@@ -42,10 +44,7 @@ function AddMember({ activeId, setMembers }: Props) {
 			return
 		}
 
-		const payload = {
-			...data,
-			groupId: activeId
-		}
+		const payload = {...data, groupId: activeId}
 
         try{
             setLoading(true);
@@ -79,7 +78,6 @@ function AddMember({ activeId, setMembers }: Props) {
 	return (
 		
 		<div className='mt-10'>
-
 			{!newMember &&
 				<div className='flex gap-2 items-center text-sm cursor-pointer text-blue-700'>
 					<FiPlus className='text-base'/>

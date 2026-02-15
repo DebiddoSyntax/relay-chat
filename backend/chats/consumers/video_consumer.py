@@ -4,6 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 import redis.asyncio as redis
 from django.utils import timezone
+from urllib.parse import parse_qs
 
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ class VideoConsumer(AsyncWebsocketConsumer):
             await self.close(code=4001)
             return
  
+        query_params = parse_qs(self.scope["query_string"].decode())
+        
+        is_audio = query_params.get("audio", ["false"])[0].lower() == "true"
+
 
         self.chat_id = self.scope["url_route"]["kwargs"]["chat_id"]
         self.user_id = str(self.user.id)
@@ -91,7 +96,8 @@ class VideoConsumer(AsyncWebsocketConsumer):
                                 "type": "new_call",
                                 "chat_id": str(self.chat_id),
                                 "sender_name": f"{self.user.firstname} {self.user.lastname}",
-                                "image_url": image_url
+                                "image_url": image_url,
+                                "isAudio": is_audio,
                             }
                         }
                     )
