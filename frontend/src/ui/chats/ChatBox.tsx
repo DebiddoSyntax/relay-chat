@@ -441,7 +441,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
                 </div>
             ) : (
-                <div className="hidden w-full h-full md:flex flex-col justify-center items-center">
+                <div className="hidden w-full h-full lg:flex flex-col justify-center items-center">
                     <p className={` ${isAI && 'hidden'} text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
