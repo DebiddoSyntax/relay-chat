@@ -8,6 +8,7 @@ import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatNa
 import Call from "./call/Call"
 import MessageCard from './MessageCard';
 import GroupInfo from "./group/GroupInfo";
+import { connectSocket } from "@/src/functions/chats/connectSocket";
 import { AiFillInfoCircle } from "react-icons/ai";
 import { RiChatSmileAiFill } from "react-icons/ri";
 import { IoIosArrowBack } from "react-icons/io";
@@ -33,6 +34,8 @@ interface ChatBoxProps{
     isGroup: boolean
     isAI: boolean
 }
+
+
 
 
 function ChatBox({ isGroup, isAI }: ChatBoxProps) {

@@ -1,6 +1,6 @@
 "use client"
 import React from 'react'
-import Call from './call/Call'
+import Call from './Call'
 import { useChat } from '@/src/functions/chats/chatStore'
 
 function CallAlert() {

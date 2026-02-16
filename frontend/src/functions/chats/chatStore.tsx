@@ -6,9 +6,7 @@ export interface IncomingType{ isCalling: boolean, callerName: string, chatId: n
 interface ChatStore {
     // calls
     incomingCall: IncomingType | null
-    setIncomingCall: (
-        val: IncomingType | null | ((prev: IncomingType | null) => IncomingType | null)
-    ) => void
+    setIncomingCall: (val: IncomingType | null | ((prev: IncomingType | null) => IncomingType | null)) => void
 
     activeCall: boolean
     setActiveCall: (val: boolean)=> void

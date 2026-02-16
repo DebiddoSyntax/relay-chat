@@ -45,8 +45,6 @@ export const useAuth = create<AuthStore>()(
             //set user auth data
             setAuth: (user, token, rtoken) => {
                 set({ user, accessToken: token, refreshToken: rtoken, authInitialized: true });
-                // const refreshFn = get().refreshAccessToken;
-                // InitializedInterceptor(refreshFn);
             },
 
             

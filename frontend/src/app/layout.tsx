@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Wrapper from "../functions/global/Wrapper";
 import AuthInit from "../functions/global/useAuthInit";
-import Call from "../ui/chats/call/Call";
-import CallAlert from "../ui/chats/CallAlert";
+import CallAlert from "../ui/chats/call/CallAlert";
 
 
 export const metadata: Metadata = {
