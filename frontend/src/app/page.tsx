@@ -1,9 +1,11 @@
-import HomePage from "../ui/home/HomePage";
+import Loginpage from "@/src/ui/authpages/LoginPage"
 
-export default function Home() {
+function login() {
 	return (
 		<div>
-			<HomePage />
+			<Loginpage />
 		</div>
-	);
+	)
 }
+
+export default login

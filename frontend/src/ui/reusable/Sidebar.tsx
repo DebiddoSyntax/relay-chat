@@ -48,7 +48,7 @@ function Sidebar() {
     	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen'>
 
 			{/* Sidebar */}
-			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 bg-dashboard-sidebar border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
+			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
 				
                 <div className='flex gap-1 items-center pl-5 md:pl-0 pb-2 md:pb-5 md:py-0'>
                     <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-blue-700 cursor-pointer' onClick={handleNav}>
@@ -73,13 +73,9 @@ function Sidebar() {
                     </div>
 			    </div>
 
-                <div className='hidden md:block mt-10 md:mt-20'>
+                <div className='hidden md:block h-auto mt-10 md:mt-20'>
                     <Paths getLinkClass={getLinkClass} setNav={setNav}/>
                 </div>
-
-				{/* <button type="button" className="px-3 py-3 bg-red-600 text-white rounded-md text-sm md:text-base font-semibold cursor-pointer" onClick={handleLogout}>
-						Log Out
-					</button>  */}
 
 			</div>
 		</div>

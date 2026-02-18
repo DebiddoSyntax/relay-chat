@@ -29,29 +29,55 @@ logger = logging.getLogger(__name__)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    # ==== MAIN SOCKET METHODS ====
+
     # connect 
     async def connect(self):
+        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
+        self.group_name = f'chat_{self.chat_id}'
         self.user = self.scope.get('user')
         
-        # Reject unauthenticated users
-        if not self.user or self.user.is_anonymous:
-            logger.warning("Unauthenticated user attempted to connect")
+        # Check for authentication errors
+        auth_error = self.scope.get("auth_error")
+        if auth_error:
+            await self.accept()
+            error_messages = {
+                'no_token': 'No authentication token provided',
+                'token_expired': 'Your session has expired. Please login again.',
+                'invalid_token': 'Invalid authentication token',
+                'server_error': 'Server error during authentication'
+            }
+            
+            # send error message 
+            await self.send(json.dumps({
+                "type": "error",
+                "error": auth_error,
+                "message": error_messages.get(auth_error, 'Authentication failed')
+            }))
+            
             await self.close(code=4001)
             return
         
-        self.chat_id = self.scope['url_route']['kwargs']['chat_id']
-        self.group_name = f'chat_{self.chat_id}'
+        # Reject unauthenticated users
+        if not self.user or self.user.is_anonymous:
+            await self.accept()
+            await self.send(json.dumps({
+                "type": "error",
+                "error": "unauthorized",
+                "message": "You are not authenticated"
+            }))
+            await self.close(code=4001)
+            return
+        
         
 
         # Verify user has access to this chat
         try:
             has_access = await self.check_chat_access(self.chat_id, self.user.id)
             if not has_access:
-                logger.warning(f"User {self.user.id} denied access to chat {self.chat_id}")
                 await self.close(code=4003)
                 return
         except Exception as e:
-            logger.error(f"Error checking chat access: {e}")
             await self.close(code=4000)
             return
         
@@ -60,35 +86,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
         
         # Send connection confirmation with unread count
-        unread_count = await self.get_unread_count(self.chat_id, self.user.id)
+        # unread_count = await self.get_unread_count(self.chat_id, self.user.id)
         await self.send(text_data=json.dumps({
             'type': 'connection',
             'status': 'connected',
-            'chat_id': str(self.chat_id),
-            'user_id': str(self.user.id),
-            'sender_id': str(self.user.id),
-            'unread_count': unread_count
+            # 'chat_id': str(self.chat_id),
+            # 'user_id': str(self.user.id),
+            # 'sender_id': str(self.user.id),
+            # 'unread_count': unread_count
         }))
-        
-        logger.info(f"User {self.user.id} connected to chat {self.chat_id}")
-
 
 
     # disconnect 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
-        
-        logger.info(f"User {self.user.id} disconnected from chat {self.chat_id}")
 
 
-
-    # receive new websocket message
+    # receive
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
             message_type = data.get('type', 'message')
             
-            # Route to appropriate handler based on type
             if message_type == 'message':
                 await self.handle_message(data)
             elif message_type == 'read':
@@ -99,10 +118,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             await self.send_error("Invalid JSON format")
         except Exception as e:
-            logger.error(f"Error in receive: {e}", exc_info=True)
             await self.send_error("An error occurred processing your request")
 
+    # ==== MAIN SOCKET METHODS END ====
 
+
+
+
+    # ==== EVENT HANDLERS ====
 
     # handle new users message 
     async def handle_message(self, data):
@@ -114,18 +137,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.send_error("Message content cannot be empty")
             return
         
-        if len(content) > 10000:  # Max message length
+        if len(content) > 10000:
             await self.send_error("Message is too long (max 10000 characters)")
             return
         
         # Save message to database
         try:
-            message = await self.save_message(
-                self.chat_id, 
-                self.user.id, 
-                content,
-                message_type
-            )
+            message = await self.save_message(self.chat_id, self.user.id, content, message_type)
 
             decrypt_content = decrypt_message(message.content, message.iv)
             
@@ -140,7 +158,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 },
                 'sender_id': str(message.sender.id),
                 'content': decrypt_content,
-                # 'content': message.content,
                 'message_type': message.type,
                 'created_at': message.created_at.isoformat(),
             }
@@ -154,12 +171,17 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 }
             )
 
-
+            # get all chat users
             participants = await self.get_chat_participants(self.chat_id)
 
+            # get chat object 
             chat = await database_sync_to_async(Chat.objects.get)(id=self.chat_id)
 
-            if await self.is_ai_chat(self.chat_id):
+
+            # check chat type and set it
+            is_ai_chat = await self.is_ai_chat(self.chat_id)
+
+            if is_ai_chat:
                 chat_type = "ai"
             elif chat.is_group:
                 chat_type = "group"
@@ -167,6 +189,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 chat_type = "private"
 
 
+            # broadcast to all users in the chat 
             for user_id in participants:
                 if user_id != self.user.id:
                     await self.channel_layer.group_send(
@@ -184,7 +207,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
-            is_ai_chat = await self.is_ai_chat(self.chat_id)
 
             if is_ai_chat:
                 await self.channel_layer.group_send(
@@ -199,8 +221,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 asyncio.create_task(
                     self.handle_ai_response(message)
                 )
-
-            logger.info(f"Message {message.id} sent in chat {self.chat_id}")
             
         except Exception as e:
             logger.error(f"Error saving message: {e}", exc_info=True)
@@ -208,7 +228,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
 
-
+    # handle ai response
     async def handle_ai_response(self, user_message):
         from google import genai
         from asgiref.sync import sync_to_async
@@ -246,26 +266,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         if not prompt:
             return
 
-        
-
-
-        failed_payload = {
-            'type': 'message',
-            'id': str(uuid.uuid4()),
-            'chat_id': str(self.chat_id),
-            'sender': {
-                'id': str(ai_user.id),
-                'email': ai_user.email,
-            },
-            'sender_id': str(ai_user.id),
-            'content': "Sorry, I’m having trouble responding right now.",
-            'message_type': 'text',
-            'created_at': now.isoformat(),
-            'meta': {
-                'ephemeral': True,
-                'ai_failed': True
-            }
-        }
 
         # Notify frontend that AI is typing
         await self.channel_layer.group_send(
@@ -276,10 +276,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await asyncio.sleep(0)
 
         try:
-            final_prompt = [
-                {"role": "system", "parts": [{"text": SYSTEM_PROMPT}]},
-                {"role": "user", "parts": [{"text": prompt}]}
-            ]
+            final_prompt = [{"role": "system", "parts": [{"text": SYSTEM_PROMPT}]}, {"role": "user", "parts": [{"text": prompt}]}]
 
             response = await sync_to_async(
                 client.models.generate_content,
@@ -290,11 +287,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             if not ai_text:
                 raise ValueError("AI returned empty response")
 
-            # Save AI message
+            # Save AI message if its not empty
             message = await self.save_message(self.chat_id, ai_user.id, ai_text, "text")
 
+            # decrypt message
             decrypt_content = decrypt_message(message.content, message.iv)
 
+            # ai send payload
             payload = {
                 'type': 'message',
                 'id': str(message.id),
@@ -330,13 +329,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
+            
+            # ai failed to respond payload
+            failed_payload = {
+                'type': 'message',
+                'id': str(uuid.uuid4()),
+                'chat_id': str(self.chat_id),
+                'sender': {
+                    'id': str(ai_user.id),
+                    'email': ai_user.email,
+                },
+                'sender_id': str(ai_user.id),
+                'content': "Sorry, I’m having trouble responding right now.",
+                'message_type': 'text',
+                'created_at': now.isoformat(),
+                'meta': {
+                    'ephemeral': True,
+                    'ai_failed': True
+                }
+            }
+
+
         except Exception as e:
-            logger.warning(f"AI response failed: {e}", exc_info=True)
             # Send failed message
             await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
 
         finally:
-            # Always stop typing indicator
             await self.channel_layer.group_send(
                 self.group_name,
                 {"type": "chat.typing", "sender": "ai", "typing": False}
@@ -344,7 +362,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
 
 
-
+    # read receipt 
     async def handle_read_receipt(self, data):
         message_id = data.get('message_id')
         
@@ -368,11 +386,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
             
         except Exception as e:
-            logger.error(f"Error marking message as read: {e}")
             await self.send_error("Failed to mark message as read")
 
    
-    # Event handlers
+
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
 
@@ -399,8 +416,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
 
+    # ==== EVENT HANDLERS END ====
 
-    # Database operations
+
+
+
+    # ==== DATABASE OPERATIONS ====
+    
     @database_sync_to_async
     def is_ai_chat(self, chat_id):
         return Chat.objects.filter(id=chat_id, is_ai=True).exists()
@@ -409,7 +431,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def get_ai_user(self):
         return User.objects.get(email="ai@system.local")
-
 
 
     @database_sync_to_async
@@ -467,6 +488,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             defaults={'read_at': timezone.now()}
         )
 
+
     @database_sync_to_async
     def get_unread_count(self, chat_id, user_id):
         return Message.objects.filter(
@@ -482,4 +504,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             'type': 'error',
             'error': error_message
         }))
-        logger.warning(f"Error sent to client: {error_message}")
+        # logger.warning(f"Error sent to client: {error_message}")
+    
+    
+    # ==== DATABASE OPERATIONS END ====

@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import { OverviewDataProps } from "../types/ChatType";
 
-export interface IncomingType{ isCalling: boolean, callerName: string, chatId: number, image_url: string, isAudio: boolean | null }
+export interface IncomingType{ isCalling: boolean, callerName: string, chatId: number, image_url: string, isAudio: boolean | null, picked: boolean }
 interface ChatStore {
     // calls
     incomingCall: IncomingType | null

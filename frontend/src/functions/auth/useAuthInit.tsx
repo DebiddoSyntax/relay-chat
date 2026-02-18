@@ -1,5 +1,5 @@
 "use client";
-import { useAuth } from "../auth/Store";
+import { useAuth } from "./Store";
 import { useEffect, useRef } from "react";
 import { areInterceptorsActive, EjectInterceptors, InitializedInterceptor } from "@/src/functions/auth/AxiosConfig";
 import { usePathname } from "next/navigation";
@@ -12,9 +12,6 @@ export default function AuthInit() {
     const authInitialized = useAuth((state)=> state.authInitialized);
 
     const setChatOpen = useChat((state)=> state.setChatOpen)
-    // const setPrivateChats = useChat((state)=> state.setPrivateChats)
-    // const setGroupChats = useChat((state)=> state.setGroupChats)
-    // const setAiChatId = useChat((state)=> state.setAiChatId)
     const setActivePrivateId = useChat((state)=> state.setActivePrivateId)
     const setActiveGroupId = useChat((state)=> state.setActiveGroupId)
 
@@ -52,9 +49,6 @@ export default function AuthInit() {
         setChatOpen(false)
         setActiveGroupId(null)
         setActivePrivateId(null)
-        // setAiChatId(null)
-        // setGroupChats([])
-        // setPrivateChats([])
     }, [pathname])
 
 

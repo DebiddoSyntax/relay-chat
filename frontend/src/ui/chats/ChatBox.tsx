@@ -8,7 +8,6 @@ import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatNa
 import Call from "./call/Call"
 import MessageCard from './MessageCard';
 import GroupInfo from "./group/GroupInfo";
-import { connectSocket } from "@/src/functions/chats/connectSocket";
 import { AiFillInfoCircle } from "react-icons/ai";
 import { RiChatSmileAiFill } from "react-icons/ri";
 import { IoIosArrowBack } from "react-icons/io";
@@ -41,6 +40,7 @@ interface ChatBoxProps{
 function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     // token state
     const token = useAuth((state)=> state.accessToken)
+    const refreshAccessToken = useAuth((state)=> state.refreshAccessToken)
 
     // private chat states 
     const activePrivateId = useChat((state)=> state.activePrivateId)
@@ -82,7 +82,6 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [loadingMore, setLoadingMore] = useState(false);
-    const [audioSet, setAudioSet] = useState<boolean | null>(null);
     const [errorMore, setErrorMore] = useState("")
     
     // group info states 
@@ -133,6 +132,11 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         }
     }
 
+    
+    useEffect(()=> {
+        if (!activeId)return;
+        fetchMessages()
+    }, [activeId])
 
 
     // fetch more chat messages
@@ -172,7 +176,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     };
 
 
-
+    // handle message change and aityping effect 
     useEffect(() => {
         if (containerRef.current && chatOpen && shouldScrollRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
@@ -180,7 +184,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     }, [messages, aiTyping]);
 
 
-    // handle scroll position 
+    // handle scroll position effect
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !nextUrl) return;
@@ -201,57 +205,91 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
     // ====== handle web socket connections =====
     useEffect(() => {
-        if(!chatOpen || !activeId)return 
-
-        fetchMessages()
+        if(!chatOpen || !activeId) return 
         
-        const wsUrl = `${socketURL}/chat/${activeId}/?token=${token}`;
-        const socket = new WebSocket(wsUrl);
+        const wsUrl = `${socketURL}/chat/${activeId}/`;
+        let reconnectTimeout: NodeJS.Timeout
+        let isCleanup = false
+        
+        
+        const connect = () => {
+            const socket = new WebSocket(wsUrl);
+            socketRef.current = socket
 
-        socketRef.current = socket;
+            const handleMessage = async (event: MessageEvent) => {
+                const data = JSON.parse(event.data);
+                console.log('message', data)
 
-        socket.onopen = () => {
-            setStatus("connected");
-        };
-
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.type === "typing" && data.user === "ai") {
-                setAiTyping(data.typing);
-            }
-
-            if (data.type === "message") {
-                setAiTyping(false)
-                shouldScrollRef.current = true;
-                setMessages((prev) => [...prev, data]);
-
-                if (!data.meta?.ephemeral) {
-                    socket.send(
-                        JSON.stringify({
-                            type: "read",
-                            message_id: data.id,
-                        })
-                    );
+                if (data.type === 'error') {
+                    console.log(`❌ ${data.error}: ${data.message}`);
+                    
+                    if (data.error === 'token_expired') {
+                        try{
+                            await refreshAccessToken()
+                        }catch(err){
+                            return;
+                        }
+                    }
+                       
                 }
-            }
-        };
+                    
+                if (data.type === 'connection' && data.status === 'connected') {
+                    setStatus("connected");
+                }
 
-        socket.onclose = () => {
-            setStatus("disconnected");
-        };
+                if (data.type === "typing" && data.user === "ai") {
+                    setAiTyping(data.typing);
+                }
 
-        socket.onerror = (err) => {
-            console.error("WebSocket error", err);
-        };
+                if (data.type === "message") {
+                    setAiTyping(false)
+                    shouldScrollRef.current = true;
+                    setMessages((prev) => [...prev, data]);
 
-        return () => socket.close();
+                    if (!data.meta?.ephemeral) {
+                        socket.send(
+                            JSON.stringify({
+                                type: "read",
+                                message_id: data.id,
+                            })
+                        );
+                    }
+                }
+            };
+
+            socket.onmessage = handleMessage
+
+            socket.onclose = () => {
+                setStatus("disconnected");
+
+                if (isCleanup) return
+
+                reconnectTimeout = setTimeout(() => {
+                    console.log('Attempting to reconnect...')
+                    connect()
+                }, 5000)
+            };
+
+
+            socket.onerror = (err) => {
+                console.error("WebSocket error", err);
+            };
+        }
+
+        connect()
+        
+        return () => {
+            isCleanup = true
+            clearTimeout(reconnectTimeout)
+            socketRef.current?.close()
+        }
+
     }, [activeId, token, chatOpen]);
     
 
     // send message function 
     const sendMessage = () => {
-        if (!input.trim()) return;
+        if (!input.trim() || status !== 'connected') return;
 
         socketRef.current?.send(
             JSON.stringify({
@@ -319,7 +357,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                         <div className='w-full flex gap-3 items-center'>
                             {!isAI && <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />}
 
-                            <div className='w-full flex justify-between items-center z-20'>
+                            <div className='w-full flex justify-between items-center z-10'>
                                 <div className={`${'flex gap-2 items-center'}`}>
                                     {canShowImage ? 
                                         <img src={ImageSrc} alt='user image' className='w-11 h-11 rounded-full' /> 
@@ -431,7 +469,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 rows={1}
                             /> 
 
-                            <button onClick={sendMessage} className="bg-blue-700 text-white px-4 py-3 cursor-pointer rounded-sm">
+                            <button onClick={sendMessage} disabled={status !== 'connected'} className="bg-blue-700 disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>
                         </div>

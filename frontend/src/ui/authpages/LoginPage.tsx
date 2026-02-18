@@ -11,9 +11,10 @@ import axios from "axios";
 // import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import LeftSection from "./LeftSection";
+import api from "@/src/functions/auth/AxiosConfig";
 
 
-const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
+// const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 interface loginType {
     email: string,
@@ -62,7 +63,7 @@ const Loginpage = () => {
 
         try{
             setLoading(true)
-            const response = await axios.post(`${apiURL}/auth/login/`, payload)
+            const response = await api.post(`/auth/login/`, payload)
             // const response = await axios.post(`${apiURL}/auth/login/`, payload)
             // console.log("logged in", response.data.message)
             const authData = response.data

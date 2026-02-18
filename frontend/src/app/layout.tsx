@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Wrapper from "../functions/global/Wrapper";
-import AuthInit from "../functions/global/useAuthInit";
+import AuthInit from "../functions/auth/useAuthInit";
 import CallAlert from "../ui/chats/call/CallAlert";
 
 
@@ -16,7 +16,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 		<html lang="en">
 			<body>
 				<Wrapper>
-					{/* <IncomingCall /> */}
 					<CallAlert />
 					<AuthInit />
 					{children}

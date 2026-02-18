@@ -5,6 +5,7 @@ import { useChat } from './chatStore'
 
 export function useGlobalSocket() {
     const token = useAuth((state) => state.accessToken)
+    const refreshAccessToken = useAuth((state)=> state.refreshAccessToken)
     
     const updateLastMessage = useChat((state) => state.updateLastMessage)
     const incrementUnread = useChat((state) => state.incrementUnread)
@@ -19,15 +20,35 @@ export function useGlobalSocket() {
     useEffect(() => {
         if (!token) return
         
-        const socket = new WebSocket(`${socketURL}/user/?token=${token}`)
+        const socket = new WebSocket(`${socketURL}/user/`)
         let reconnectTimeout: NodeJS.Timeout
         
         const connect = () =>{
-            
-            const handleMessage = (event: MessageEvent) =>{
+
+            const handleMessage = async(event: MessageEvent) =>{
                 const data = JSON.parse(event.data)
+                // console.log('global', data)
+                
+                if (data.type === 'error') {
+                    console.log(`❌ ${data.error}: ${data.message}`);
+                    
+                    // handle token expiration 
+                    if (data.error === 'token_expired') {
+                        try{
+                            await refreshAccessToken()
+                        }catch(err){
+                            return;
+                        }
+                    }
+                       
+                }
+
+                if (data.type === 'connection' && data.status === 'connected') {
+                    // console.log('Global socket connected')
+                }
+
                 if (data.type === "new_message") {
-                    // console.log('global message d', data)
+                    // handle last message and unread count 
                     updateLastMessage(data.chat_type, data.chat_id, data.content, data.created_at)
                     const activeId = data.chat_type == 'group' ? activeGroupId : activePrivateId
                     if (data.chat_id !== activeId) {
@@ -36,19 +57,17 @@ export function useGlobalSocket() {
                 }
 
                 if (data.type === "new_call") {
-                    // console.log('global d', data)
-                    setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio})
-                    // if(!incomingCall?.isCalling){
-                    //     setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url})
-                    //     setActiveCall(true)
-                    // }else{
-                    //     socket.send(JSON.stringify({
-                    //         "type": "notify",
-                    //         "payload": {
-                    //             "type": "active_call"
-                    //         }
-                    //     }))
-                    // }
+                    // setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio})
+                    if(!incomingCall?.picked){
+                        setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio, picked: true})
+                    }else{
+                        socket.send(JSON.stringify({
+                            "type": "notify",
+                            "payload": {
+                                "type": "active_call"
+                            }
+                        }))
+                    }
                 }
 
                 if (data.type === "stop_call") {
@@ -61,16 +80,15 @@ export function useGlobalSocket() {
                 }
             }
 
-            socket.onopen = () => console.log('Global socket connected')
-            // socket.onerror = (err) => console.error('Global socket error', err)
+            // socket.onopen = () => console.log('Global socket open')
+            socket.onerror = (err) => console.error('Global socket error', err)
 
             socket.onmessage = handleMessage
 
             socket.onclose = () => {
                 reconnectTimeout = setTimeout(() => {
-                    // console.log('Attempting to reconnect...')
                     connect()
-                }, 10000)
+                }, 1000)
             }
         }
 
@@ -81,5 +99,5 @@ export function useGlobalSocket() {
             socket.close()
         }
  
-    }, [token, updateLastMessage, incrementUnread, activeGroupId, activePrivateId, setActiveCall, ])
+    }, [token, updateLastMessage, incrementUnread, activeGroupId, activePrivateId, setActiveCall, refreshAccessToken])
 }

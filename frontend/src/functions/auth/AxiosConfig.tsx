@@ -33,12 +33,12 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
     // Always eject existing interceptors first
     EjectInterceptors();
     
-    console.log("Setting up interceptors");
+    // console.log("Setting up interceptors");
     
     requestInterceptorId = api.interceptors.request.use(
         (config) => {
             if (config.url?.includes("/auth/refresh")) {
-                console.log("Token not added to request");
+                // console.log("Token not added to request");
                 return config
             }
 
@@ -46,7 +46,7 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
             if (RequestInterToken) {
                 config.headers = config.headers || {};
                 config.headers.Authorization = `Bearer ${RequestInterToken}`;
-                console.log("Token added to request");
+                // console.log("Token added to request");
             }
             return config;
         },
@@ -59,17 +59,17 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
     responseInterceptorId = api.interceptors.response.use(
         (response) => response,
         async (error) => {
-            console.log("Response interceptor triggered");
+            // console.log("Response interceptor triggered");
             
             if (!error.response) {
-                console.error("Network error, no response received");
+                // console.error("Network error, no response received");
                 return Promise.reject(error);
             }
 
             const originalRequest = error.config;
 
             if (originalRequest.url?.includes("/api/auth/refresh")) {
-                console.log("Refresh failed. Logging out.");
+                // console.log("Refresh failed. Logging out.");
 
                 processQueue(error, null);
                 useAuth.getState().logout();
@@ -82,15 +82,15 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
                 const token = useAuth.getState().accessToken;
                 
                 if (!token) {
-                    console.log("No token found, rejecting request");
+                    // console.log("No token found, rejecting request");
                     return Promise.reject(error);
                 }
 
                 if (isRefreshing) {
-                    console.log("Already refreshing, queueing request");
+                    // console.log("Already refreshing, queueing request");
                     return new Promise((resolve, reject) => {
                         failedQueue.push({ resolve, reject });
-						console.log('failed request queue with 401', failedQueue)
+						// console.log('failed request queue with 401', failedQueue)
                     })
                         .then(token => {
                             if (token) {
@@ -106,13 +106,13 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
                 originalRequest._retry = true;
                 isRefreshing = true;
 
-                console.log("Starting token refresh");
+                // console.log("Starting token refresh");
 
                 try {
                     const newToken = await refreshAccessToken();
                     
                     if (newToken) {
-                        console.log("Token refreshed successfully");
+                        // console.log("Token refreshed successfully");
                         originalRequest.headers.Authorization = `Bearer ${newToken}`;
                         processQueue(null, newToken);
                         return api(originalRequest);
@@ -134,7 +134,7 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
         }
     );
 
-    console.log("Interceptors initialized with IDs:", requestInterceptorId, responseInterceptorId);
+    // console.log("Interceptors initialized with IDs:", requestInterceptorId, responseInterceptorId);
 };
 
 

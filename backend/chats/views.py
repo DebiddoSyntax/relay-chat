@@ -726,6 +726,16 @@ def signup_view(request):
         path='/'
     )
 
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
     return response
 
 
@@ -768,6 +778,16 @@ def login_view(request):
         path='/'
     )
 
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
     return response
 
 
@@ -776,8 +796,9 @@ def login_view(request):
 @api_view(["POST"])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
-    # refresh_token = request.COOKIES.get("refreshToken")
-    refresh_token = request.data.get("refreshToken")
+    refresh_token = request.COOKIES.get("refreshToken")
+    print('request:', request)
+    # refresh_token = request.data.get("refreshToken")
 
     if not refresh_token:
         print('Refresh token not provided')
@@ -809,6 +830,16 @@ def refresh_token_view(request):
                 samesite="Lax",
                 max_age=60 * 60 * 24 * 30,
                 path="/"
+            )
+
+            response.set_cookie(
+                key='accessToken',
+                value=new_access_token,
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=60 * 60 * 24 * 30,
+                path='/'
             )
 
         return response
@@ -902,3 +933,18 @@ def update_profile_view(request):
         },
         status=status.HTTP_200_OK
     )
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    response = Response(
+        {"message": "Logged out successfully"},
+        status=status.HTTP_200_OK
+    )
+
+    # Delete cookies by setting them to empty and expired
+    response.delete_cookie('accessToken', path='/')
+    response.delete_cookie('refreshToken', path='/')
+
+    return response

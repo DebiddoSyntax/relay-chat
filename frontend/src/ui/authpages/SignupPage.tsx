@@ -11,10 +11,11 @@ import axios from "axios";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useAuth } from "@/src/functions/auth/Store";
 import LeftSection from "./LeftSection";
+import api from "@/src/functions/auth/AxiosConfig";
 
 
 
-const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
+// const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 
 export interface signupType {
@@ -66,7 +67,7 @@ const SignupPage = () => {
 
         try{
             setLoading(true)
-            const response = await axios.post(`${apiURL}/auth/signup/`, payload)
+            const response = await api.post(`/auth/signup/`, payload)
             console.log("signed Up", response.data)
             const authData = response.data
             setAuth(authData.user, authData.accessToken, authData.refreshToken)

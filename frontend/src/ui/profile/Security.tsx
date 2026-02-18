@@ -9,6 +9,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from 'axios';
 import { ToastType } from './ProfileDetails';
 import ToastMessage from '../reusable/ToastMessage';
+import { useAuth } from '@/src/functions/auth/Store';
 
 
 type ActionType =
@@ -44,6 +45,7 @@ function ToggleReducer(state: StateDataType, action: ActionType) {
 
 function Security() {
 
+    const logout = useAuth((state)=> state.logout)
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
     const [loading, setLoading] = useState(false)
     const [toast, setToast] = useState<ToastType>(null)
@@ -84,6 +86,10 @@ function Security() {
         }
     }
 
+
+    const handleLogout = () => {
+        logout()
+    }
 
 
     return (
@@ -143,9 +149,13 @@ function Security() {
                 </div>
             </div>
 
-            <div className="flex justify-end items-center mt-6 px-5 md:px-10">
+            <div className="flex justify-end gap-3 items-center mt-6 px-5 md:px-10">
+                <button type="button" className="px-5 py-4 w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
+                    Log Out
+                </button> 
+
                 <button type="submit" disabled={loading} className={`px-5 py-4 w-40 bg-blue-700 text-white rounded-md text-xs font-semibold cursor-pointer`}>
-                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Save new password'} 
+                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change password'} 
                 </button>
             </div>
         </form>

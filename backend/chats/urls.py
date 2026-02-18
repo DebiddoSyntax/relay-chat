@@ -23,6 +23,7 @@ urlpatterns = [
     # auth urls 
     path('auth/signup/', views.signup_view),
     path('auth/login/', views.login_view),
+    path('auth/logout/', views.logout_view),
     path('auth/refresh/', views.refresh_token_view),
     path('auth/password/update/', views.change_pass_view),
     path('auth/user/update/', views.update_profile_view),

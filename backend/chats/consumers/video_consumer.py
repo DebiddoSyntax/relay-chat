@@ -14,22 +14,56 @@ REDIS_URL = "redis://localhost:6379"
 class VideoConsumer(AsyncWebsocketConsumer):
     redis_client = None
 
+    # setup redis client 
     @classmethod
     async def get_redis(cls):
         if cls.redis_client is None:
             cls.redis_client = await redis.from_url(REDIS_URL, decode_responses=True)
         return cls.redis_client
 
+
+ # ==== MAIN SOCKET METHODS ====
+
+    # connect 
     async def connect(self):
         self.user = self.scope.get("user")
 
+        # Check for authentication errors
+        auth_error = self.scope.get("auth_error")
+        if auth_error:
+            await self.accept()
+            error_messages = {
+                'no_token': 'No authentication token provided',
+                'token_expired': 'Your session has expired. Please login again.',
+                'invalid_token': 'Invalid authentication token',
+                'server_error': 'Server error during authentication'
+            }
+            
+            # send error message 
+            await self.send(json.dumps({
+                "type": "error",
+                "error": auth_error,
+                "message": error_messages.get(auth_error, 'Authentication failed')
+            }))
+            
+            await self.close(code=4001)
+            return
+        
+        # Reject unauthenticated users
         if not self.user or self.user.is_anonymous:
             await self.accept()
+            await self.send(json.dumps({
+                "type": "error",
+                "error": "unauthorized",
+                "message": "You are not authenticated"
+            }))
             await self.close(code=4001)
             return
  
+        # get isAudio query 
         query_params = parse_qs(self.scope["query_string"].decode())
-        
+
+        # set isAudio boolean state 
         is_audio = query_params.get("audio", ["false"])[0].lower() == "true"
 
 
@@ -38,35 +72,42 @@ class VideoConsumer(AsyncWebsocketConsumer):
         self.room_name = f"video_{self.chat_id}"
         self.room_group_name = self.room_name
         
-        
+        # set activity timestamp key for redis
         self.activity_timestamp_key = f"{self.room_name}:activity:{self.channel_name}"
+
+        # user key for redis
         self.user_key = f"{self.room_name}:user:{self.user_id}"
 
+        # check user's chat access 
         if not await self.check_chat_access(self.chat_id, self.user.id):
             await self.close(code=4003)
             return
-
+        
+        # setup redis client 
         redis_client = await self.get_redis()
+
+        # set redis paticipants key 
         participants_key = f"{self.room_name}:users"
 
-
+        # get connected users and set the before joining the redis user count
         current_users = await redis_client.smembers(participants_key)
         user_count_before = len(current_users) if current_users else 0
 
 
+        # check if the user is currently connected and remove the user 
         if self.user_id in current_users:
-            # logger.info(f"User {self.user_id} reconnecting (stale connection detected)")
-            # Remove the stale connection
             old_channel_name = await redis_client.get(self.user_key)
             if old_channel_name:
                 await redis_client.delete(f"{self.room_name}:activity:{old_channel_name}")
             user_count_before -= 1
 
+        # check if connected users are more than two 
         if user_count_before >= 2:
             logger.info('more than 2 users tried to connect')
             await self.close(code=4004)
             return
 
+        # check the connected user count to assign role 
         is_first_user = user_count_before == 0
         role = "caller" if is_first_user else "callee"
 
@@ -80,6 +121,10 @@ class VideoConsumer(AsyncWebsocketConsumer):
         await redis_client.setex(self.activity_timestamp_key, 300, 'active')
 
         await self.accept()
+        await self.send(text_data=json.dumps({
+            'type': 'connection',
+            'status': 'connected',
+        }))
         await self.send(text_data=json.dumps({"role": role}))
 
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
@@ -111,10 +156,11 @@ class VideoConsumer(AsyncWebsocketConsumer):
                 {"type": "both_connected"}
             )
 
+
+    # disconnect
     async def disconnect(self, close_code):
         redis_client = await self.get_redis()
         
-        # Only proceed if the consumer was properly initialized
         if not hasattr(self, 'room_name') or not hasattr(self, 'user_id'):
             return
         
@@ -133,6 +179,7 @@ class VideoConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
 
+    # receive 
     async def receive(self, text_data):
         try:
             data = json.loads(text_data)
@@ -140,7 +187,6 @@ class VideoConsumer(AsyncWebsocketConsumer):
             await redis_client.setex(self.activity_timestamp_key, 300, "active")
 
             if data.get("disconnect"):
-                logger.info(f"👤 User {self.user_id} is leaving the call")
                 await self.channel_layer.group_send(
                     self.room_group_name,
                     {
@@ -179,23 +225,30 @@ class VideoConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error(f"❌ Error broadcasting message in room {self.room_name}: {e}", exc_info=True)
 
+    # ==== MAIN SOCKET METHODS END ====
+
+
+
+    # ==== EVENT HANDLERS ====
+
     async def user_left(self, event):
         if event["sender"] != self.channel_name:
             await self.send(text_data=json.dumps({
                 "user_left": True,
                 "message": event["message"]
             }))
-            logger.info(f"📢 Notified {self.channel_name} that other user left")
+
 
     async def signal(self, event):
         if event["sender"] != self.channel_name:
             await self.send(text_data=json.dumps(event["message"]))
 
+
     async def both_connected(self, event):
         await self.send(text_data=json.dumps({"both_connected": True}))
 
+
     async def check_stale_users(self):
-        """Remove stale participants whose activity has expired"""
         redis_client = await self.get_redis()
         participants_key = f"{self.room_name}:users"
         participants = await redis_client.smembers(participants_key)
@@ -213,6 +266,11 @@ class VideoConsumer(AsyncWebsocketConsumer):
                     await redis_client.delete(activity_key)
                 await redis_client.delete(user_key)
 
+    # ==== EVENT HANDLERS END ====
+
+
+    # ==== DATABASE OPERATIONS ====
+
     @database_sync_to_async
     def check_chat_access(self, chat_id, user_id):
         from ..models import UserChat
@@ -222,3 +280,5 @@ class VideoConsumer(AsyncWebsocketConsumer):
     def get_chat_participants(self, chat_id):
         from ..models import UserChat
         return list(UserChat.objects.filter(chat_id=chat_id).values_list("user_id", "user__image_url"))
+    
+    # ==== DATABASE OPERATIONS END ====

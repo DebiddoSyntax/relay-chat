@@ -60,10 +60,10 @@ interface FailedStateType {
 
 function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolean | null}) {
        
-    const token = useAuth((state)=> state.accessToken)
-    const refreshToken = useAuth((state)=> state.refreshToken)
     const incomingCall = useChat((state)=> state.incomingCall)
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
+    const setActiveCall = useChat((state)=> state.setActiveCall)
+    const activeCall = useChat((state)=> state.activeCall)
 
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
     const [fail, setFail] = useState<FailedStateType | null>(null)
@@ -84,13 +84,15 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
     const bothConnectedRef = useRef(false);
     const callCleanedUpRef = useRef(true); 
     const unansweredTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const inCallRef = useRef(false);
 
 
+    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
 
 
     const refreshAccess = async () => {
         try {
-            const res = await api.post(`/auth/refresh/`, { refreshToken: refreshToken });
+            const res = await api.post(`/auth/refresh/`);
             const newToken = res.data.accessToken;
             useAuth.setState({ accessToken: newToken });
             console.log('refreshed and added, websocket')
@@ -102,7 +104,6 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         } 
     }
 
-    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
   
     const cleanupCall = async () => {
         console.log("🧹 Starting cleanup...");
@@ -158,6 +159,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
         // Reset refs
         bothConnectedRef.current = false;
+        inCallRef.current = false;
         roleRef.current = "caller";
         callCleanedUpRef.current = true;
 
@@ -165,8 +167,19 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
     };
 
 
+    const setInCall = (val: boolean) => {
+        inCallRef.current = val;
+        if (val !== state.inCall) toggle('inCall');
+    };
+
+
     const joinCall = async () => {
         if (state.inCall && !activeId) return;
+
+        if(activeCall){
+            setFail({failed: true, failedMessage: 'User on a call' })
+            return
+        }
         
         if (!callCleanedUpRef.current) {
             let attempts = 0;
@@ -234,13 +247,33 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             };
 
 
-            const socket = new WebSocket(`${socketURL}/video/${currentId}/?token=${token}&audio=${isAudio}`);
+            const socket = new WebSocket(`${socketURL}/video/${currentId}/?audio=${isAudio}`);
             socketRef.current = socket;
 
             let remoteOfferSet = false;
 
             socket.onmessage = async event => {
                 const data = JSON.parse(event.data);
+
+                console.log('global', data)
+                
+                if (data.type === 'error') {
+                    console.log(`❌ ${data.error}: ${data.message}`);
+                    
+                    // handle token expiration 
+                    if (data.error === 'token_expired') {
+                        try{
+                            await refreshAccess()
+                        }catch(err){
+                            return;
+                        }
+                    }
+                       
+                }
+
+                if (data.type === 'connection' && data.status === 'connected') {
+                    console.log('call socket connected')
+                }
 
                 try {
                     if (data.role) {
@@ -263,6 +296,8 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             clearTimeout(unansweredTimeoutRef.current);
                             unansweredTimeoutRef.current = null;
                         }
+
+                        if (!inCallRef.current) setInCall(true);
 
 
                         if (roleRef.current === "caller" && peerRef.current && peerRef.current.signalingState !== "closed") {
@@ -368,6 +403,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                     setFail({failed: true, failedMessage: 'Error processing message' })
                 }
             };
+            
 
             // Send ICE candidates - verify everything is ready
             peer.onicecandidate = (e) => {
@@ -436,6 +472,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         toggle('callModal')
     }
 
+
     const handleLeaveCall = async () => {
         await leaveCall()
     }
@@ -453,6 +490,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         }
         toggle('muteSound')
     }
+    
 
     const toggleMuteMic = () => {
         const audio = streamRef?.current?.getAudioTracks()[0]
