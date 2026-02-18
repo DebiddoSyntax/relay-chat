@@ -349,9 +349,9 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
 
     return (
-        <div  className={`flex-1 w-full h-screen bg-gray-100`}>
+        <div  className={`flex-1 w-full h-[100dvh] bg-gray-100 overflow-hidden`}>
             {chatOpen ? (
-                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-screen bg-gray-100`}>
+                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-[100dvh] bg-gray-100 overflow-hidden`}>
                     {/* top bar */}
                     <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-20'>
                         <div className='w-full flex gap-3 items-center'>
@@ -396,7 +396,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                     </div>
 
 
-                    <div className='relative flex-1 h-full w-full pb-[380px] sm:pb-80 md:pb-[220px]'>
+                    <div className='relative flex-1 h-full w-full pb-[220px] sm:pb-80 md:pb-[220px]'>
                         {/* messages  */}
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pt-10 pb-5'>
                             {errorMore && 

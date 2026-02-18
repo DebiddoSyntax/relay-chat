@@ -6,6 +6,7 @@ import { IoIosArrowBack } from "react-icons/io";
 import { TbLayoutSidebarRightCollapseFilled } from "react-icons/tb";
 import { useAuth } from '@/src/functions/auth/Store';
 import Paths from './Paths';
+import { useChat } from '@/src/functions/chats/chatStore';
 
 
 
@@ -13,6 +14,8 @@ function Sidebar() {
 
 	const pathname = usePathname();
 	const logout = useAuth((state)=> state.logout)
+	const setChatOpen = useChat((state)=> state.setChatOpen)
+	const chatOpen = useChat((state)=> state.chatOpen)
 	const [nav, setNav] = useState<boolean>(false);
 	
 	const handleNav = () => setNav(!nav);
@@ -48,9 +51,9 @@ function Sidebar() {
     	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen'>
 
 			{/* Sidebar */}
-			<div className="w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300"> 
+			<div className={`${chatOpen && 'hidden md:block'} w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300`}> 
 				
-                <div className='flex gap-1 items-center pl-5 md:pl-0 pb-2 md:pb-5 md:py-0'>
+                <div className={`${chatOpen ? 'hidden md:flex' : 'flex'} gap-1 items-center pl-5 md:pl-0 pb-2 md:pb-5 md:py-0`}>
                     <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-blue-700 cursor-pointer' onClick={handleNav}>
                         <TbLayoutSidebarRightCollapseFilled />
                     </div>

@@ -3,6 +3,7 @@ import "./globals.css";
 import Wrapper from "../functions/global/Wrapper";
 import AuthInit from "../functions/auth/useAuthInit";
 import CallAlert from "../ui/chats/call/CallAlert";
+import ScrollToTop from "../functions/global/usescrollToTop";
 
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 		<html lang="en">
 			<body>
 				<Wrapper>
+					<ScrollToTop />
 					<CallAlert />
 					<AuthInit />
 					{children}

@@ -102,7 +102,7 @@ function Security() {
                 />
             )}
 
-            <div className="mt-5 md:mt-10 w-full px-5 md:px-10 border-t-2 border-gray-100 pt-10">
+            <div className="mt-5 md:mt-20 w-full px-5 md:px-10 border-t-2 border-gray-100 pt-10">
                 <h5 className="text-base md:text-lg xl:text-xl font-bold">Security</h5>
 
                 <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left w-full">
@@ -149,7 +149,7 @@ function Security() {
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 items-center mt-6 px-5 md:px-10">
+            <div className="flex justify-end gap-3 items-center mt-14 px-5 md:px-10">
                 <button type="button" className="px-5 py-4 w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
                     Log Out
                 </button> 
