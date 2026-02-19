@@ -20,7 +20,8 @@ function Wrapper({ children }: { children: React.ReactNode }) {
         <div>
             <AuthRoute>
                 {/* {!paths && <Navbar />} */}
-                <main className='h-screen'>{ children }</main>
+                <main className='h-dvh'>{ children }</main>
+                {/* <main className='h-dvh overflow-y-auto'>{ children }</main> */}
             </AuthRoute>
         </div>
     )

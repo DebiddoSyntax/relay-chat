@@ -95,7 +95,7 @@ const SignupPage = () => {
 
         <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
             <div className='w-full md:w-[400px] mx-auto mt-20'>
-                <h1 className='text-2xl font-semibold text-blue-700'>Create an account</h1>
+                <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
                 <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
                 <form onSubmit={handleSubmit(handleSignUp)} className=''>
                     <div>
@@ -157,7 +157,7 @@ const SignupPage = () => {
                         ref={recaptchaRef}
                     /> */}
                     
-                    <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-blue-700 text-white hover:bg-blue-800 rounded-md">
+                    <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
                         {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}
                     </button>
 
@@ -166,7 +166,7 @@ const SignupPage = () => {
                     </p>
                 
                 </form>
-                <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/login'><span className='text-blue-700'>Login</span></Link></p>
+                <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/login'><span className='text-primary'>Login</span></Link></p>
             </div>
         </div>
     </div>

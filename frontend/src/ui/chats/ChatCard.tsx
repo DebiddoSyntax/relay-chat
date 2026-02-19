@@ -45,12 +45,12 @@ function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps 
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
                             <p className='text-base font-semibold'>{chatName}</p>
-                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
+                            {isAI &&  <IoCheckmarkDoneCircle className='text-primary' />}
                         </div>
-                        <p className={`${data.unread_count < 1 && 'hidden'} py-1 px-2 rounded-full bg-blue-700 text-xs text-white font-semibold`}>{data.unread_count}</p>
+                        <p className={`${data.unread_count < 1 && 'hidden'} py-1 px-2 rounded-full bg-primary text-xs text-white font-semibold`}>{data.unread_count}</p>
                     </div>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
-                        <p className='w-20 sm:w-24 md:w-28 lg:w-24 2xl:w-40 overflow-hidden truncate'>{isAI ? 'click to view messages' : data.last_message}</p>
+                        <p className='w-28 sm:w-28 md:w-28 lg:w-24 2xl:w-40 overflow-hidden truncate'>{isAI ? 'click to view messages' : data.last_message}</p>
                         <p className="">{displayDate}</p>
                     </div>
                 </div>

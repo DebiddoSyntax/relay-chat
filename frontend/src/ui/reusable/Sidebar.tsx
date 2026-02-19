@@ -48,16 +48,16 @@ function Sidebar() {
     }
 
   	return (
-    	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen'>
+    	<div className='pl-0 md:px-0 pt-0 md:pt-0 md:h-screen z-50'>
 
 			{/* Sidebar */}
-			<div className={`${chatOpen && 'hidden md:block'} w-full md:w-40 lg:w-48 2xl:w-72 pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 h-full z-20 border-b-2 md:border-b-0 border-r-0 md:border-r-2 border-gray-300`}> 
+			<div className={`w-full md:w-40 lg:w-48 2xl:w-72 ${chatOpen ? 'pr-0 md:pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 border-b-0 md:border-b-0 border-r-0 md:border-r-2' : 'pr-5 lg:pr-6 2xl:pr-10 pt-5 md:pt-5 border-b-2 md:border-b-0 border-r-0 md:border-r-2'} h-full z-20  border-gray-300`}> 
 				
-                <div className={`${chatOpen ? 'hidden md:flex' : 'flex'} gap-1 items-center pl-5 md:pl-0 pb-2 md:pb-5 md:py-0`}>
-                    <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-blue-700 cursor-pointer' onClick={handleNav}>
+                <div className={`flex gap-1 items-center ${chatOpen ? 'pl-0 md:pl-0 pb-0 md:pb-0 md:py-0' : 'pl-5 md:pl-0 pb-2 md:pb-5 md:py-'}`}>
+                    <div className='mt-1 md:hidden text-[28px] stroke-2 hover:text-primary cursor-pointer' onClick={handleNav}>
                         <TbLayoutSidebarRightCollapseFilled />
                     </div>
-                    <h3 className='font-cherryBombOne font-black text-3xl md:text-3xl lg:text-3xl'>RelayChat</h3>
+                    <h3 className={`${chatOpen && 'hidden md:block'} font-cherryBombOne font-black text-3xl md:text-3xl lg:text-3xl`}>RelayChat</h3>
                 </div>
 
                 {/* Mobile toggle */}

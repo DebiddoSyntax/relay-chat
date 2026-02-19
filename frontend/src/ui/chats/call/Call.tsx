@@ -527,7 +527,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         </div>
 
 						<div className="flex gap-3 md:gap-4 mt-0">
-							<button onClick={handleJoinCall} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleJoinCall} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 
@@ -554,7 +554,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         ) : (
                             <div className="relative w-[90%] md:w-[80%] xl:w-[60%] h-[80%] bg-black rounded-xl overflow-hidden pt-18 md:pt-20 pb-20 md:pb-24 m-auto">
                                 <div className="absolute flex items-center gap-6 top-4 left-4 px-4 py-2">
-                                    <p className={`${bothConnectedRef.current == true ? 'text-green-500' : 'text-blue-700'}`}>
+                                    <p className={`${bothConnectedRef.current == true ? 'text-green-500' : 'text-primary'}`}>
                                         {bothConnectedRef.current == true ? 'connected' : 'connecting...'}
                                     </p>
                                 </div>
@@ -599,15 +599,15 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     </button>
                 
                                     {!isAudio && 
-                                        <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                        <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                             <MdCameraswitch />
                                         </button>
                                     }
                 
-                                    <button onClick={()=> toggleMuteVid()} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                    <button onClick={()=> toggleMuteVid()} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         {state.muteSound ? <HiSpeakerXMark /> : <HiSpeakerWave />}
                                     </button>
-                                    <button onClick={()=> toggleMuteMic()} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                    <button onClick={()=> toggleMuteMic()} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         {state.muteMic ? <IoMdMicOff /> : <IoMdMic />}
                                     </button>
                 

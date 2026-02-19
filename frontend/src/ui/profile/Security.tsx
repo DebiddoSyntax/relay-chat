@@ -154,7 +154,7 @@ function Security() {
                     Log Out
                 </button> 
 
-                <button type="submit" disabled={loading} className={`px-5 py-4 w-40 bg-blue-700 text-white rounded-md text-xs font-semibold cursor-pointer`}>
+                <button type="submit" disabled={loading} className={`px-5 py-4 w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
                     {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change password'} 
                 </button>
             </div>

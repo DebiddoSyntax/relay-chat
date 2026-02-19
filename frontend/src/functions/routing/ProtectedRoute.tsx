@@ -1,6 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import LoadingPage from '@/src/ui/reusable/LoadingPage'
 import { useAuth } from '../auth/Store'
 
@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const isLoading = useAuth((state) => state.isLoading)
     const authInitialized = useAuth((state) => state.authInitialized)
     const router = useRouter()
-    const pathname = usePathname()
+    // const pathname = usePathname()
 
     useEffect(() => {
         if (!authInitialized) return
@@ -20,7 +20,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!authInitialized || isLoading) return <LoadingPage />
     if (!user) return null
 
-    return <div className={`flex flex-col md:flex-row gap-0 pl-0 md:pl-6 lg:pl-10 w-full h-screen ${pathname == '/profile' ? 'overflow-y-auto' : 'overflow-hidden'}`}>{children}</div>
+    return <div className={`flex flex-col md:flex-row gap-0 pl-0 md:pl-6 lg:pl-10 w-full h-full overflow-hidden`}>{children}</div>
+    // return <div className={`flex flex-col md:flex-row gap-0 pl-0 md:pl-6 lg:pl-10 w-full h-full ${pathname === '/profile' ? 'overflow-y-auto' : 'overflow-hidden'}`}>{children}</div>
 }
 
 export default ProtectedRoute

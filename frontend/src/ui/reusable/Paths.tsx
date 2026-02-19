@@ -38,7 +38,7 @@ function Paths({ getLinkClass, setNav }: PathPropsType) {
                     <RiChatSmileAiFill className={`text-base xl:text-lg 2xl:text-xl ${getLinkClass('/sydneyai')}`} />
                     <div className='flex gap-1 items-center text-sm'>
                         <p className="text-sm 2xl:text-base font-bold">Sydney AI</p>
-                        <IoCheckmarkDoneCircle className='text-blue-700' />
+                        <IoCheckmarkDoneCircle className='text-primary' />
                     </div>
                 </div>
             </Link>

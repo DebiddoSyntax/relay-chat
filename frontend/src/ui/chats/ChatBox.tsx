@@ -15,6 +15,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoSend } from "react-icons/io5";
+import Sidebar from "../reusable/Sidebar";
 
 
 
@@ -349,13 +350,15 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
 
     return (
-        <div  className={`flex-1 w-full h-[100dvh] bg-gray-100 overflow-hidden`}>
+        <div  className={`flex-1 w-full h-full bg-gray-100 overflow-hidden`}>
             {chatOpen ? (
-                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-[100dvh] bg-gray-100 overflow-hidden`}>
+                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-dvh bg-gray-100 overflow-hidden`}>
                     {/* top bar */}
-                    <div className='bg-white w-full px-5 lg:px-6 2xl:px-8 py-5 border-b-0 border-gray-300 shadow-lg z-20'>
+                    <div className={`bg-white w-full px-5 lg:px-6 2xl:px-8 ${isAI ? 'py-2 md:py-5' : 'py-5'} border-b-0 border-gray-300 shadow-lg z-10`}>
                         <div className='w-full flex gap-3 items-center'>
                             {!isAI && <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />}
+                            {isAI && <div className="md:hidden flex flex-col justify-center items-center"><Sidebar /></div>}
+                            
 
                             <div className='w-full flex justify-between items-center z-10'>
                                 <div className={`${'flex gap-2 items-center'}`}>
@@ -369,7 +372,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                                 <p className='text-lg font-semibold'>
                                                     {chatName}
                                                 </p>
-                                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
+                                            {isAI &&  <IoCheckmarkDoneCircle className='text-primary' />}
                                         </div>
 
 
@@ -396,13 +399,13 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                     </div>
 
 
-                    <div className='relative flex-1 h-full w-full pb-[220px] sm:pb-80 md:pb-[220px]'>
+                    <div className='relative flex-1 h-full w-full pb-[220px] sm:pb-[220px] md:pb-[220px]'>
                         {/* messages  */}
                         <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pt-10 pb-5'>
                             {errorMore && 
                                 <div className="text-red-700 text-sm font-semibold text-center">
                                     {errorMore} 
-                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMoreMessages}>retry</p>  
+                                    <p className="text-primary text-sm text-center cursor-pointer" onClick={fetchMoreMessages}>retry</p>  
                                 </div>
                             }
                             {loadingMore &&<AiOutlineLoading3Quarters className='mx-auto stroke-1 text-xl text-center animate-spin'/>}
@@ -451,7 +454,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                             {error && 
                                 <div className="text-red-700 text-sm font-semibold text-center">
                                     {error} 
-                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMessages}>retry</p>  
+                                    <p className="text-primary text-sm text-center cursor-pointer" onClick={fetchMessages}>retry</p>  
                                 </div>
                             }
                         </div>
@@ -469,7 +472,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 rows={1}
                             /> 
 
-                            <button onClick={sendMessage} disabled={status !== 'connected'} className="bg-blue-700 disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
+                            <button onClick={sendMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>
                         </div>
@@ -479,8 +482,8 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
                 </div>
             ) : (
-                <div className="hidden w-full h-full lg:flex flex-col justify-center items-center">
-                    <p className={` ${isAI && 'hidden'} text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
+                <div className="hidden w-full h-dvh lg:flex flex-col justify-center items-center">
+                    <p className={` ${isAI && 'hidden'} my-auto h-full text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
         </div>

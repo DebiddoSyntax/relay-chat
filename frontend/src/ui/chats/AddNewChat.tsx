@@ -74,6 +74,7 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
             reset()
             setChatOpen(true)
             setNewChat(false)
+            setErrorMessage('')
         } catch (err) {
 			if (axios.isAxiosError(err)) {
 				console.error("error", err.response?.data);
@@ -179,7 +180,7 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
                                 </p>
 
                                 <div className='mt-5 flex justify-end'>
-                                    <button type="submit" className='bg-blue-700 py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
+                                    <button type="submit" className='bg-primary py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
                                         {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Start'}
                                     </button>
                                 </div>

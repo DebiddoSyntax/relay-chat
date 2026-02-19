@@ -79,7 +79,7 @@ function AddMember({ activeId, setMembers }: Props) {
 		
 		<div className='mt-10'>
 			{!newMember &&
-				<div className='flex gap-2 items-center text-sm cursor-pointer text-blue-700'>
+				<div className='flex gap-2 items-center text-sm cursor-pointer text-primary'>
 					<FiPlus className='text-base'/>
 					<p className="" onClick={()=> setNewMember(true)}>Add Member</p>
 				</div>
@@ -103,7 +103,7 @@ function AddMember({ activeId, setMembers }: Props) {
 							
 						</div>
 
-						<button type='submit' className='py-3 px-8 w-40 text-xs text-center bg-blue-700 text-white rounded-sm cursor-pointer'>
+						<button type='submit' className='py-3 px-8 w-40 text-xs text-center bg-primary text-white rounded-sm cursor-pointer'>
 							{loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Add'} 
 						</button>
 

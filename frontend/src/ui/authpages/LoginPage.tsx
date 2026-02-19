@@ -91,7 +91,7 @@ const Loginpage = () => {
 
             <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
                 <div className='w-full md:w-[400px] mx-auto mt-40'>
-                    <h1 className='text-2xl font-semibold text-blue-700'>Log In</h1>
+                    <h1 className='text-2xl font-semibold text-primary'>Log In</h1>
                     <h3 className='my-3 text-sm font-semibold text-gray-500'>Welcome Back! Enter your details</h3>
                     <form onSubmit={handleSubmit(handleLogin)} className=''>
                         <div className="mb-5 mt-5 items-start text-left w-full">
@@ -111,7 +111,7 @@ const Loginpage = () => {
                                 <label htmlFor="password" className="text-sm font-semibold  ">
                                     Password
                                 </label>
-                                <Link href="/reset" className="text-blue-700 underline hover:text-blue-600 transition-colors text-sm">
+                                <Link href="/reset" className="text-primary underline hover:text-blue-600 transition-colors text-sm">
                                     Forgot password?
                                 </Link>
                             </div>
@@ -140,7 +140,7 @@ const Loginpage = () => {
                             ref={recaptchaRef}
                         /> */}
                     
-                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-blue-700 text-white hover:bg-blue-800 rounded-md">
+                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Login'}
                         </button>
 
@@ -150,7 +150,7 @@ const Loginpage = () => {
                         
                     
                     </form>
-                    <p className='mx-auto text-center text-sm font-semibold mt-7'>Don’t have an account? <Link href='/signup'><span className='text-blue-700'>Create one</span></Link></p>
+                    <p className='mx-auto text-center text-sm font-semibold mt-7'>Don’t have an account? <Link href='/signup'><span className='text-primary'>Create one</span></Link></p>
                 </div>
             </div>
         </div>
