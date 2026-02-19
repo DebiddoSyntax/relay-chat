@@ -106,7 +106,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
 
 
     return (
-        <div className={`${chatOpen ? "hidden lg:flex lg:flex-col" : "flex flex-col "} w-full md:w-full lg:w-96 2xl:w-[420px] h-dvh overflow-hidden z-20 border-r-0 md:border-r-2 border-gray-300`}> 
+        <div className={`${chatOpen ? "hidden lg:flex lg:flex-col" : "flex flex-col "} w-full md:w-full lg:w-96 2xl:w-[420px] h-dvh overflow-hidden z-10 border-r-0 md:border-r-2 border-gray-300`}> 
             <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-gray-300'>
                 <div className='flex justify-between items-center'>
                     <p className='text-xl font-semibold'>

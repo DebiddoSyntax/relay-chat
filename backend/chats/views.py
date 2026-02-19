@@ -1,23 +1,23 @@
-from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import SignupSerializer, LoginSerializer
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from .models import Chat, UserChat
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-
-from .models import Message, Chat, MessageReadBy
-from .serializers import MessageSerializer
-from .pagination import MessageCursorPagination
-from django.utils import timezone
-from django.db.models import Q, Count
-from .utils.decrypt import decrypt_message
 import os
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from django.db.models import Q, Count
+from django.utils import timezone
+
+from .serializers import SignupSerializer, LoginSerializer, MessageSerializer
+from .models import Chat, UserChat, Message, MessageReadBy
+from .pagination import MessageCursorPagination
+from .utils.decrypt import decrypt_message
 from imagekitio import ImageKit
 
 
@@ -114,33 +114,22 @@ def chat_message_list_view(request, chat_id):
 
    
     if not chat.users.filter(id=request.user.id).exists():
-        return Response([], status=403)
+        return Response(
+            {"detail": "Chat does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
     
-    queryset = (
-        Message.objects
-        .filter(chat=chat)
-        .select_related('sender')
-        .prefetch_related('read_by')
-    )
+    queryset = (Message.objects.filter(chat=chat).select_related('sender').prefetch_related('read_by'))
 
     # 4. Paginate manually
     paginator = MessageCursorPagination()
     page = paginator.paginate_queryset(queryset, request)
 
-    serializer = MessageSerializer(
-        page,
-        many=True,
-        context={'request': request}
-    )
+    serializer = MessageSerializer( page, many=True, context={'request': request})
 
 
-    unread_messages = (
-        Message.objects
-        .filter(chat=chat)
-        .exclude(sender=request.user)
-        .exclude(read_by=request.user)
-    )
+    unread_messages = (Message.objects.filter(chat=chat).exclude(sender=request.user).exclude(read_by=request.user))
 
 
     MessageReadBy.objects.bulk_create(

@@ -275,6 +275,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         await asyncio.sleep(0)
 
+        # ai failed to respond payload
+        failed_payload = {
+            'type': 'message',
+            'id': str(uuid.uuid4()),
+            'chat_id': str(self.chat_id),
+            'sender': {
+                'id': str(ai_user.id),
+                'email': ai_user.email,
+            },
+            'sender_id': str(ai_user.id),
+            'content': "Sorry, I’m having trouble responding right now.",
+            'message_type': 'text',
+            'created_at': now.isoformat(),
+            'meta': {
+                'ephemeral': True,
+                'ai_failed': True
+            }
+        }
+
         try:
             final_prompt = [{"role": "system", "parts": [{"text": SYSTEM_PROMPT}]}, {"role": "user", "parts": [{"text": prompt}]}]
 
@@ -328,26 +347,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
                             }
                         }
                     )
-
-            
-            # ai failed to respond payload
-            failed_payload = {
-                'type': 'message',
-                'id': str(uuid.uuid4()),
-                'chat_id': str(self.chat_id),
-                'sender': {
-                    'id': str(ai_user.id),
-                    'email': ai_user.email,
-                },
-                'sender_id': str(ai_user.id),
-                'content': "Sorry, I’m having trouble responding right now.",
-                'message_type': 'text',
-                'created_at': now.isoformat(),
-                'meta': {
-                    'ephemeral': True,
-                    'ai_failed': True
-                }
-            }
 
 
         except Exception as e:

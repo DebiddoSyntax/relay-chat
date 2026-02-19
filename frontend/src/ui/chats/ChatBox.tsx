@@ -28,7 +28,10 @@ export interface MessageType {
     is_read: string, 
     chat: string,
     type: string,
-}
+    sender_firstname: string,
+    sender_lastname: string,
+    sender_image: string,
+    }
 
 interface ChatBoxProps{
     isGroup: boolean
@@ -440,7 +443,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                                 {displayDate}
                                             </div>
                                         )}
-                                        <MessageCard m={m} />
+                                        <MessageCard m={m} isGroup={isGroup}/>
                                         
                                     </div>
                                 );

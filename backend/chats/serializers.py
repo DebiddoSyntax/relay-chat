@@ -112,7 +112,9 @@ class StartChatSerializer(serializers.Serializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.UUIDField(source='sender.id', read_only=True)
-    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    sender_image = serializers.URLField(source='sender.image_url', read_only=True)
+    sender_firstname = serializers.CharField(source='sender.firstname', read_only=True)
+    sender_lastname = serializers.CharField(source='sender.lastname', read_only=True)
     is_read = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
 
@@ -122,7 +124,9 @@ class MessageSerializer(serializers.ModelSerializer):
             'id',
             'chat',
             'sender_id',
-            'sender_name',
+            'sender_firstname',
+            'sender_lastname',
+            'sender_image',
             'content',
             'type',
             'created_at',

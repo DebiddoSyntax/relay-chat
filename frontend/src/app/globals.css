@@ -6,8 +6,6 @@
 	--background: #ffffff;
 	--foreground: #000000;
 	--foreground-lower: theme(--color-gray-500);
-	--navbar-background: #f2f2f2;
-	--navbarshadow: theme(--shadow-lg);
 	--inputbg: #ffffff;
 }
 
@@ -17,22 +15,19 @@
 	--background: #161616;
 	--foreground: #ffffff;
 	--foreground-lower: theme(--color-gray-500);
-	--navbar-background: #000000;
-	--navbarshadow: 0 4px 10px rgba(255, 255, 255, 0.1);
 	--inputbg: #333333;
 }
 
 
 @theme inline {
+	--color-primary: #4c4452;
+	--color-hoverprimary: #46256A;
+
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-foreground-lower: var(--foreground-lower);
-	--color-primary: #884BCA;
-	--color-navbar-background: var(--navbar-background);
-	--color-hoverprimary: #46256A;
-	--color-inputbg: var(--inputbg);
 
-	--shadow-navbar: var(--navbarshadow);
+	--color-inputbg: var(--inputbg);
 	
 	/* fonts  */
 	--font-lilita: "Lilita One", sans-serif;
