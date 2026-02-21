@@ -12,7 +12,7 @@ export const refreshTokenAction = async (set: any, get: any) => {
     try {
 
         set({ isLoading: true });
-        const res = await api.post(`/auth/refresh/`, { refreshToken: refreshToken });
+        const res = await api.post(`/auth/refresh/`);
         
         const newToken = res.data.accessToken;
 

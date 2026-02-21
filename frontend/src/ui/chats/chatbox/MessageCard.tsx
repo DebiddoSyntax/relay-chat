@@ -39,7 +39,7 @@ function MessageCard({ m, isGroup }: MessageProps) {
             }
             <div className='flex flex-col gap-2 items-start'>
                 <div className={`${m.sender_id !== user?.id ? "bg-white text-black" : "bg-primary text-white" } 
-                    px-3 py-2 w-auto min-w-32 max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm break-words`}
+                    px-3 py-2 w-auto min-w-32 max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm wrap-break-word`}
                     >
                    
                     {m.content}

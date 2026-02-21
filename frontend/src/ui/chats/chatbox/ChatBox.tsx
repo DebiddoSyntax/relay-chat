@@ -5,9 +5,10 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/src/functions/auth/Store";
 import { useChat } from "@/src/functions/chats/chatStore";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
-import Call from "./call/Call"
+import Call from "../call/Call"
 import MessageCard from './MessageCard';
-import GroupInfo from "./group/GroupInfo";
+import GroupInfo from "../group/GroupInfo";
+import Sidebar from "../../reusable/Sidebar";
 import { AiFillInfoCircle } from "react-icons/ai";
 import { RiChatSmileAiFill } from "react-icons/ri";
 import { IoIosArrowBack } from "react-icons/io";
@@ -15,7 +16,11 @@ import { FaUserCircle } from "react-icons/fa";
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { IoSend } from "react-icons/io5";
-import Sidebar from "../reusable/Sidebar";
+import { FaAnglesDown } from "react-icons/fa6";
+import { useChatSocket } from "./useChatSocket";
+import { useFetchMessages } from "./fetchMessages";
+import { useScroll } from "./useScroll";
+import { handleImage } from "./handleImage";
 
 
 
@@ -31,7 +36,7 @@ export interface MessageType {
     sender_firstname: string,
     sender_lastname: string,
     sender_image: string,
-    }
+}
 
 interface ChatBoxProps{
     isGroup: boolean
@@ -42,9 +47,6 @@ interface ChatBoxProps{
 
 
 function ChatBox({ isGroup, isAI }: ChatBoxProps) {
-    // token state
-    const token = useAuth((state)=> state.accessToken)
-    const refreshAccessToken = useAuth((state)=> state.refreshAccessToken)
 
     // private chat states 
     const activePrivateId = useChat((state)=> state.activePrivateId)
@@ -67,30 +69,19 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     // other chat ui handlers 
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
-    const updateLastMessage = useChat((state) => state.updateLastMessage)
-    const resetUnread = useChat((state) => state.resetUnread)
     
     // socket states 
-    const socketRef = useRef<WebSocket | null>(null);
     const [messages, setMessages] = useState<MessageType[]>([]);
     const [input, setInput] = useState("");
-    const [aiTyping, setAiTyping] = useState(false);
-    const [status, setStatus] = useState("connecting");
-    const [nextUrl, setNextUrl] = useState<string | null>(null);
 
     // scroll refs 
     const containerRef = useRef<HTMLDivElement>(null);
     const shouldScrollRef = useRef(true);
     
-    // fetch messages states 
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
-    const [loadingMore, setLoadingMore] = useState(false);
-    const [errorMore, setErrorMore] = useState("")
-    
     // group info states 
     const [groupInfo, setGroupInfo] = useState(false);
 
+    
     // mobile back button 
     const handleBackButton = () => {
         setChatOpen(false);
@@ -104,6 +95,12 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const chat = [...chats].find(
         (chat) => activeId == chat.chat_id
     )
+
+    // sorted messages 
+    const sortedMessages = [...messages].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+
     
     // set chat name
     const otherUser = handlePrivateChatName(isGroup, chat)
@@ -112,244 +109,41 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     // set current chat type 
     const type = isGroup ? 'group' : 'private'
 
+    // handle chat socket 
+    const { sendMessage, aiTyping, status } = useChatSocket(activeId, setMessages, shouldScrollRef)
 
-    // fetch chat messages 
-    const fetchMessages = async() => {
-        try{
-            setLoading(true)
-            const response = await api.get(`/chat/${activeId}/messages/`)
-            // console.log('fetched mess', response.data)
-            setNextUrl(response.data.next)
-            setMessages(response.data.results)
-            resetUnread(type, activeId)
-            setError('')
-        }catch(err){
-            if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
-                setError('Failed to load messages')
-            } else {
-                console.error("unexpected error", err);
-                setError('An unexpected error occurred')
-            }
-        }finally{
-            setLoading(false)
-        }
-    }
+    // handle messages 
+    const { fetchMessages, nextUrl, fetchMoreMessages, loading, loadingMore, error, errorMore} = useFetchMessages(activeId, setMessages, type, containerRef, shouldScrollRef)
 
-    
-    useEffect(()=> {
-        if (!activeId)return;
-        fetchMessages()
-    }, [activeId])
-
-
-    // fetch more chat messages
-    const fetchMoreMessages = async () => {
-        if (!nextUrl || loadingMore) return;
-
-        const container = containerRef.current;
-        const previousHeight = container?.scrollHeight || 0;
-        
-        try{
-            setLoadingMore(true);
-            const res = await api.get(nextUrl);
-            // console.log('fetched more messages', res.data)
-            setMessages(prev => [...res.data.results, ...prev,]);
-            setNextUrl(res.data.next);
-            setErrorMore('')
-        }catch(err){
-            if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
-                setErrorMore('Failed to load more messages')
-            } else {
-                console.error("unexpected error", err);
-                setErrorMore('An unexpected error occurred')
-            }
-        }finally{
-            setLoadingMore(false);
-            shouldScrollRef.current = false;
-        }
-
-        requestAnimationFrame(() => {
-            if (container) {
-                container.scrollTop = container.scrollHeight - previousHeight;
-            }
-        });
-
-        setLoadingMore(false);
-    };
-
-
-    // handle message change and aityping effect 
-    useEffect(() => {
-        if (containerRef.current && chatOpen && shouldScrollRef.current) {
-            containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        }
-    }, [messages, aiTyping]);
-
-
-    // handle scroll position effect
-    useEffect(() => {
-        const container = containerRef.current;
-        if (!container || !nextUrl) return;
-
-        const handleScroll = () => {
-            if (container.scrollTop === 0) {
-                fetchMoreMessages();
-            }
-        };
-
-        container.addEventListener("scroll", handleScroll);
-        return () => container.removeEventListener("scroll", handleScroll);
-    }, [nextUrl, activeId]);
-
-
-
-    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
-
-    // ====== handle web socket connections =====
-    useEffect(() => {
-        if(!chatOpen || !activeId) return 
-        
-        const wsUrl = `${socketURL}/chat/${activeId}/`;
-        let reconnectTimeout: NodeJS.Timeout
-        let isCleanup = false
-        
-        
-        const connect = () => {
-            const socket = new WebSocket(wsUrl);
-            socketRef.current = socket
-
-            const handleMessage = async (event: MessageEvent) => {
-                const data = JSON.parse(event.data);
-                // console.log('message', data)
-
-                if (data.type === 'error') {
-                    // console.log(`❌ ${data.error}: ${data.message}`);
-                    
-                    if (data.error === 'token_expired') {
-                        try{
-                            await refreshAccessToken()
-                        }catch(err){
-                            return;
-                        }
-                    }
-                       
-                }
-                    
-                if (data.type === 'connection' && data.status === 'connected') {
-                    setStatus("connected");
-                }
-
-                if (data.type === "typing" && data.user === "ai") {
-                    setAiTyping(data.typing);
-                }
-
-                if (data.type === "message") {
-                    setAiTyping(false)
-                    shouldScrollRef.current = true;
-                    setMessages((prev) => [...prev, data]);
-
-                    if (!data.meta?.ephemeral) {
-                        socket.send(
-                            JSON.stringify({
-                                type: "read",
-                                message_id: data.id,
-                            })
-                        );
-                    }
-                }
-            };
-
-            socket.onmessage = handleMessage
-
-            socket.onclose = () => {
-                setStatus("disconnected");
-
-                if (isCleanup) return
-
-                reconnectTimeout = setTimeout(() => {
-                    // console.log('Attempting to reconnect...')
-                    connect()
-                }, 5000)
-            };
-
-
-            socket.onerror = (err) => {
-                console.error("WebSocket error", err);
-            };
-        }
-
-        connect()
-        
-        return () => {
-            isCleanup = true
-            clearTimeout(reconnectTimeout)
-            socketRef.current?.close()
-        }
-
-    }, [activeId, token, chatOpen]);
-    
-
-    // send message function 
-    const sendMessage = () => {
-        if (!input.trim() || status !== 'connected') return;
-
-        socketRef.current?.send(
-            JSON.stringify({
-                type: "message",
-                content: input,
-                message_type: "text",
-            })
-        );
-
-        updateLastMessage(type, activeId!, input, new Date().toISOString())
-
-        setInput("");
-    };
-
-    // enter to send message 
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    };
-
-    // sorted messages 
-    const sortedMessages = [...messages].sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
+    // handle scroll states  
+    const { scrollToBottom, showScrollBtn } = useScroll(activeId, messages, containerRef, nextUrl, fetchMoreMessages, loadingMore, aiTyping)
 
     // immage states 
     const ImageSrc = isGroup ? chat?.image_url : otherUser?.image_url
     const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
-    const [canShowImage, setCanShowImage] = useState(false);
+    const { canShowImage } = handleImage(ImageSrc)
 
-    // set image 
-    useEffect(() => {
-        if (!ImageSrc) {
-            setCanShowImage(false);
-            return;
-        }
-
-        const img = new window.Image();
-        img.src = ImageSrc;
-
-        img.onload = () => setCanShowImage(true);
-        img.onerror = () => setCanShowImage(false);
-
-        return () => {
-            img.onload = null;
-            img.onerror = null;
-        };
-    }, [ImageSrc]);
 
 
     // group info 
     const toggleGroupInfo = () => {
         setGroupInfo(!groupInfo)
     }
+
+
+    const handleMessage = () =>{
+        sendMessage(input, type)
+        setInput('')
+    }
+  
+
+    // enter to send message 
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleMessage()
+        }
+    };
 
 
     return (
@@ -461,6 +255,16 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 </div>
                             }
                         </div>
+                        {showScrollBtn && 
+                            <div className='relative flex justify-center items-center'>
+                                <button
+                                    onClick={scrollToBottom}
+                                    className="absolute bottom-4 bg-blue-600 text-center text-white px-3 py-3 rounded-full shadow-md cursor-pointer"
+                                    >
+                                    <FaAnglesDown className="text-sm"/>
+                                </button>
+                            </div>
+                        }
 
                         
                         {/* message input  */}
@@ -475,7 +279,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 rows={1}
                             /> 
 
-                            <button onClick={sendMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
+                            <button onClick={handleMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>
                         </div>

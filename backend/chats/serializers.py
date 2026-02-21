@@ -184,18 +184,7 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = [
-            'id',
-            'chat',
-            'sender_id',
-            'sender_firstname',
-            'sender_lastname',
-            'sender_image',
-            'content',
-            'type',
-            'created_at',
-            'is_read',
-        ]
+        fields = [ 'id', 'chat', 'sender_id', 'sender_firstname', 'sender_lastname', 'sender_image', 'content', 'type', 'created_at', 'is_read', ]
 
 
     def get_content(self, obj):

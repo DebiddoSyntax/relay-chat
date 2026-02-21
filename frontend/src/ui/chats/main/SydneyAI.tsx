@@ -1,6 +1,6 @@
 "use client"
 import { useChat } from '@/src/functions/chats/chatStore'
-import ChatBox from '../ChatBox'
+import ChatBox from '../chatbox/ChatBox'
 import { useEffect } from 'react'
 import { useAuth } from '@/src/functions/auth/Store'
 import api from '@/src/functions/auth/AxiosConfig'

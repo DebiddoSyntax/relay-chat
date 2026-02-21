@@ -87,7 +87,7 @@ const Loginpage = () => {
 
 
     return (
-        <div className='grid grid-cols-1 md:grid-cols-2 w-full h-screen py-0 bg-dashboard-background'>
+        <div className='grid grid-cols-1 md:grid-cols-2 w-full h-full md:h-screen py-0 bg-dashboard-background'>
             <LeftSection />
 
             <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>

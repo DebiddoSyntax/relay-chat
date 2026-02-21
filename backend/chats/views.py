@@ -15,6 +15,7 @@ from .serializers import SignupSerializer, LoginSerializer, MessageSerializer
 from .models import Chat, UserChat, Message, MessageReadBy
 from .pagination import MessageCursorPagination
 from .utils.decrypt import decrypt_message
+from .utils.encrypt import encrypt_message
 from imagekitio import ImageKit
 from .throttle import AuthRateLimit
 import requests
@@ -129,7 +130,7 @@ def chat_message_list_view(request, chat_id):
     paginator = MessageCursorPagination()
     page = paginator.paginate_queryset(queryset, request)
 
-    serializer = MessageSerializer( page, many=True, context={'request': request})
+    serializer = MessageSerializer(page, many=True, context={'request': request})
 
 
     unread_messages = (Message.objects.filter(chat=chat).exclude(sender=request.user).exclude(read_by=request.user))
@@ -205,10 +206,13 @@ def start_chat_view(request):
         UserChat(user=receiver, chat=chat),
     ])
 
+    ciphertext, iv = encrypt_message(content)
+
     message = Message.objects.create(
         chat=chat,
         sender=sender,
-        content=content,
+        content=ciphertext,
+        iv=iv,
         type='text'
     )
     
@@ -447,44 +451,44 @@ def get_groupchat_view(request):
 
 
 # join group chat
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def join_groupchat_view(request):
-    user = request.user
-    request_group_id = request.data.get('groupId')
-    group_id = request.data.get('groupId').strip()
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def join_groupchat_view(request):
+#     user = request.user
+#     request_group_id = request.data.get('groupId')
+#     group_id = request.data.get('groupId').strip()
 
-    if not group_id:
-        return Response(
-            {"detail": "Group id not provided"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#     if not group_id:
+#         return Response(
+#             {"detail": "Group id not provided"},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
-    try:
-        chat = Chat.objects.get(id=group_id, is_group=True)
-    except Chat.DoesNotExist:
-        return Response(
-            {"detail": "Chat with this id does not exist"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+#     try:
+#         chat = Chat.objects.get(id=group_id, is_group=True)
+#     except Chat.DoesNotExist:
+#         return Response(
+#             {"detail": "Chat with this id does not exist"},
+#             status=status.HTTP_404_NOT_FOUND
+#         )
 
-    chat.users.add(user)
+#     chat.users.add(user)
 
 
-    return Response(
-        {
-            "chat_id": chat.id,
-            "chat_name": chat.name,
-            "image_url": chat.image_url,
-            "last_message": (
-                decrypt_message(chat.last_message.content, chat.last_message.iv)
-                if chat.last_message and chat.last_message.iv
-                else chat.last_message.content if chat.last_message else None
-            ),
-            "last_message_time": chat.last_message.created_at if chat.last_message else None,
-        },
-        status=status.HTTP_200_OK
-    )
+#     return Response(
+#         {
+#             "chat_id": chat.id,
+#             "chat_name": chat.name,
+#             "image_url": chat.image_url,
+#             "last_message": (
+#                 decrypt_message(chat.last_message.content, chat.last_message.iv)
+#                 if chat.last_message and chat.last_message.iv
+#                 else chat.last_message.content if chat.last_message else None
+#             ),
+#             "last_message_time": chat.last_message.created_at if chat.last_message else None,
+#         },
+#         status=status.HTTP_200_OK
+#     )
 
 
 # add new member to group chat
@@ -526,6 +530,14 @@ def addmember_groupchat_view(request):
     if requester not in chat.users.all():
         return Response(
             {"detail": "You are not allowed to add members to this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    user_chat = UserChat.objects.filter(chat=chat, user=request.user).first()
+    
+    if not user_chat or user_chat.role != 'admin':
+        return Response(
+            {"detail": "You are not allowed to add member to this group"},
             status=status.HTTP_403_FORBIDDEN
         )
 
@@ -796,7 +808,7 @@ def login_view(request):
 
 # Google Oauth view
 @api_view(['POST'])
-# @throttle_classes([AuthRateLimit])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def google_login_view(request):
     google_token = request.data.get("access_token")
@@ -907,10 +919,8 @@ def set_password_view(request):
 def refresh_token_view(request):
     refresh_token = request.COOKIES.get("refreshToken")
     print('request:', request)
-    # refresh_token = request.data.get("refreshToken")
 
     if not refresh_token:
-        print('Refresh token not provided')
         return Response(
             {"message": "Refresh token not provided"},
             status=status.HTTP_401_UNAUTHORIZED
@@ -963,7 +973,7 @@ def refresh_token_view(request):
 
 
 
-# change pass view 
+# change password view 
 @api_view(["POST"])
 @throttle_classes([AuthRateLimit])
 @permission_classes([IsAuthenticated])
@@ -1045,6 +1055,7 @@ def update_profile_view(request):
     )
 
 
+# logout view 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
@@ -1053,7 +1064,6 @@ def logout_view(request):
         status=status.HTTP_200_OK
     )
 
-    # Delete cookies by setting them to empty and expired
     response.delete_cookie('accessToken', path='/')
     response.delete_cookie('refreshToken', path='/')
 

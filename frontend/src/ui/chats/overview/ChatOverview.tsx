@@ -1,5 +1,5 @@
 "use client"
-import ChatCard from './ChatCard'
+import ChatCard from '../chatbox/ChatCard'
 import AddNewChat from './AddNewChat';
 import { useEffect, useState } from 'react';
 import { OverviewDataProps } from '@/src/functions/types/ChatType';

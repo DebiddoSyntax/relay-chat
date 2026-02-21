@@ -13,6 +13,7 @@ import os
 import binascii
 from os import urandom
 from ..utils.decrypt import decrypt_message
+from ..utils.encrypt import encrypt_message
 
 
 
@@ -85,15 +86,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
         
-        # Send connection confirmation with unread count
-        # unread_count = await self.get_unread_count(self.chat_id, self.user.id)
+        # Send connection confirmation
         await self.send(text_data=json.dumps({
             'type': 'connection',
             'status': 'connected',
-            # 'chat_id': str(self.chat_id),
-            # 'user_id': str(self.user.id),
-            # 'sender_id': str(self.user.id),
-            # 'unread_count': unread_count
         }))
 
 
@@ -444,15 +440,14 @@ class ChatConsumer(AsyncWebsocketConsumer):
     def save_message(self, chat_id, sender_id, content, message_type='text'):
         chat = Chat.objects.get(id=chat_id)
         sender = User.objects.get(id=sender_id)
-        
-        iv = urandom(12)
-        ciphertext = aesgcm.encrypt(iv, content.encode(), None)
+
+        ciphertext, iv = encrypt_message(content)
 
         message = Message.objects.create(
             chat=chat,
             sender=sender,
-            content=binascii.hexlify(ciphertext).decode(),
-            iv=binascii.hexlify(iv).decode(),
+            content=ciphertext,
+            iv=iv,
             type=message_type
         )
         
@@ -477,7 +472,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         message = Message.objects.get(id=message_id)
         user = User.objects.get(id=user_id)
         
-        # Don't mark own messages as read
         if message.sender_id == user_id:
             return
         
@@ -488,13 +482,13 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
 
-    @database_sync_to_async
-    def get_unread_count(self, chat_id, user_id):
-        return Message.objects.filter(
-            chat_id=chat_id
-        ).exclude(
-            Q(sender_id=user_id) | Q(read_by__id=user_id)
-        ).count()
+    # @database_sync_to_async
+    # def get_unread_count(self, chat_id, user_id):
+    #     return Message.objects.filter(
+    #         chat_id=chat_id
+    #     ).exclude(
+    #         Q(sender_id=user_id) | Q(read_by__id=user_id)
+    #     ).count()
 
 
     # Utility methods  

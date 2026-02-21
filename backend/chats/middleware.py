@@ -9,9 +9,8 @@ class JWTAuthMiddleware(BaseMiddleware):
         scope['user'] = AnonymousUser()
         headers = dict(scope.get("headers", []))
         cookie_header = headers.get(b"cookie", b"").decode()
-        
-        # Get token
-        token = self._extract_token_from_cookies(cookie_header)
+
+        token = self.extract_token_from_cookies(cookie_header)
         
         if token:
             user, error = await self.get_user(token)
@@ -24,7 +23,9 @@ class JWTAuthMiddleware(BaseMiddleware):
 
         return await super().__call__(scope, receive, send)
     
-    def _extract_token_from_cookies(self, cookie_header):
+
+    # utility to get token 
+    def extract_token_from_cookies(self, cookie_header):
         if not cookie_header:
             return None
         
@@ -37,6 +38,8 @@ class JWTAuthMiddleware(BaseMiddleware):
         
         return cookies.get('accessToken')
     
+
+    # get user 
     @database_sync_to_async
     def get_user(self, token):
         try:
