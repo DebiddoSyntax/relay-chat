@@ -7,7 +7,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
-// import ReCAPTCHA from "react-google-recaptcha"
+import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useAuth } from "@/src/functions/auth/Store";
 import LeftSection from "./LeftSection";
@@ -43,7 +43,7 @@ const SignupPage = () => {
     });
 
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-    // const recaptchaRef = useRef<ReCAPTCHA>(null);
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
 
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
@@ -70,14 +70,14 @@ const SignupPage = () => {
             const response = await api.post(`/auth/signup/`, payload)
             console.log("signed Up", response.data)
             const authData = response.data
-            setAuth(authData.user, authData.accessToken, authData.refreshToken)
+            setAuth(authData.user, authData.accessToken)
             router.push('/chats')
         }catch(err){
             if (axios.isAxiosError(err)) {
                 // recaptchaRef.current?.reset();
                 setCaptchaToken("");
 				console.log("error", err.response?.data);
-				setError(err.response?.data.email || "Something went wrong");
+				setError(err.response?.data.detail || "Something went wrong");
 			} else {
 				console.error("unexpected error", err);
 				setError("An unexpected error occurred");
@@ -151,11 +151,11 @@ const SignupPage = () => {
                         </p>
                     </div>
                     
-                    {/* <ReCAPTCHA
+                    <ReCAPTCHA
                         sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                         onChange={setCaptchaToken}
                         ref={recaptchaRef}
-                    /> */}
+                    />
                     
                     <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
                         {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}

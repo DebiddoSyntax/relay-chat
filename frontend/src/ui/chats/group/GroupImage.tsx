@@ -109,6 +109,7 @@ function GroupImage({ activeId }: { activeId: number | null}) {
                                         setSuccessMessage={setSuccessMessage}
                                         setErrorMessage={setErrorMessage}
                                         onSelect={(selected) => field.onChange(selected)}
+                                        isChat={false}
                                     />
                                 )}
                             />

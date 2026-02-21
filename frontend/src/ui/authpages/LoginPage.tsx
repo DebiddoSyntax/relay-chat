@@ -8,10 +8,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/src/functions/auth/Store";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
-// import ReCAPTCHA from "react-google-recaptcha"
+import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import LeftSection from "./LeftSection";
 import api from "@/src/functions/auth/AxiosConfig";
+import GoogleAuth from "./GoogleAuth"
 
 
 // const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
@@ -40,7 +41,7 @@ const Loginpage = () => {
 
 
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-    // const recaptchaRef = useRef<ReCAPTCHA>(null);
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
 
 
     const [loading, setLoading] = useState(false)
@@ -65,13 +66,13 @@ const Loginpage = () => {
             setLoading(true)
             const response = await api.post(`/auth/login/`, payload)
             // const response = await axios.post(`${apiURL}/auth/login/`, payload)
-            // console.log("logged in", response.data.message)
+            // console.log("logged in", response.data)
             const authData = response.data
-            setAuth(authData.user, authData.accessToken, authData.refreshToken)
+            setAuth(authData.user, authData.accessToken)
             router.push(`/chats`)
         }catch(err){
             if (axios.isAxiosError(err)) {
-                // recaptchaRef.current?.reset();
+                recaptchaRef.current?.reset();
                 setCaptchaToken("");
 				console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
@@ -134,11 +135,13 @@ const Loginpage = () => {
                             </p>
                         </div>
                         
-                        {/* <ReCAPTCHA
+                        <ReCAPTCHA
                             sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                             onChange={setCaptchaToken}
                             ref={recaptchaRef}
-                        /> */}
+                            className="w-full"
+                            // style={}
+                        />
                     
                         <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Login'}
@@ -150,6 +153,8 @@ const Loginpage = () => {
                         
                     
                     </form>
+
+                    <GoogleAuth />
                     <p className='mx-auto text-center text-sm font-semibold mt-7'>Don’t have an account? <Link href='/signup'><span className='text-primary'>Create one</span></Link></p>
                 </div>
             </div>

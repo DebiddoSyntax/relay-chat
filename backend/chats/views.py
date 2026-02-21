@@ -1,12 +1,9 @@
 import os
-from rest_framework.response import Response
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import AllowAny
-from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -19,6 +16,12 @@ from .models import Chat, UserChat, Message, MessageReadBy
 from .pagination import MessageCursorPagination
 from .utils.decrypt import decrypt_message
 from imagekitio import ImageKit
+from .throttle import AuthRateLimit
+import requests
+import jwt
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 
 
 
@@ -666,6 +669,7 @@ def delete_group_view(request, chat_id):
 
 # Signup view
 @api_view(['POST'])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def signup_view(request):
     serializer = SignupSerializer(data=request.data)
@@ -677,7 +681,7 @@ def signup_view(request):
         message = errors[field_name][0]
 
         return Response(
-            {"message": message},
+            {"detail": message},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -731,21 +735,112 @@ def signup_view(request):
 
 # Login view
 @api_view(['POST'])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def login_view(request):
     serializer = LoginSerializer(data=request.data)
 
+    if not serializer.is_valid():
+        errors = serializer.errors
 
-    serializer.is_valid(raise_exception=True)
+        field_name = list(errors.keys())[0]
+        message = errors[field_name][0]
 
-    user = serializer.user
-    accessToken = serializer.access_token
-    refreshToken = serializer.refresh_token
+        return Response(
+            {"detail": message},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # serializer.save()
+
+    user = serializer.validated_data["user"]
+    accessToken = serializer.validated_data["access"]
+    refreshToken = serializer.validated_data["refresh"]
 
     response = Response(
         {
             'accessToken': accessToken,
-            'refreshToken': refreshToken,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'firstname': user.firstname,
+                'lastname': user.lastname,
+                "image_url": user.image_url,
+            }
+        },
+        status=status.HTTP_200_OK
+    )
+
+    response.set_cookie(
+        key='refreshToken',
+        value=refreshToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    return response
+
+
+# Google Oauth view
+@api_view(['POST'])
+# @throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def google_login_view(request):
+    google_token = request.data.get("access_token")
+
+    if not google_token:
+        return Response(
+            {"error": "No access token provided"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
+
+    if not google_client_id:
+        raise ValueError("GOOGLE_CLIENT_ID is not configured")
+
+    try:
+        idinfo = id_token.verify_oauth2_token(google_token, google_requests.Request(), google_client_id)
+
+        email = idinfo["email"]
+        firstname = idinfo.get("given_name", "")
+        lastname = idinfo.get("family_name", "")
+
+    except ValueError:
+        return Response(
+            {"error": "Invalid or expired token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={
+            "first_name": firstname,
+            "last_name": lastname,
+        },
+    )
+
+    refresh = RefreshToken.for_user(user)
+    accessToken = str(refresh.access_token)
+    refreshToken = str(refresh),
+
+    response = Response(
+        {
+            'accessToken': accessToken,
+            "first_login": created,
             'user': {
                 'id': user.id,
                 'email': user.email,
@@ -781,8 +876,33 @@ def login_view(request):
 
 
 
+# set password for google login user
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_password_view(request):
+    user = request.user
+    if user.has_usable_password():
+        return Response({"detail": "Password already set"}, status=400)
+    
+    password = request.data.get("password")
+    confirmPassword = request.data.get("confirmPassword")
+
+    if not password or not confirmPassword:
+        return Response({"detail": "Password required"}, status=400)
+
+    if password != confirmPassword:
+        return Response({"detail": "Passwords are not the same"}, status=400)
+
+    user.set_password(password)
+    user.save()
+
+    return Response({"detail": "Password set successfully"})
+
+
+
 # Refresh view 
 @api_view(["POST"])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
     refresh_token = request.COOKIES.get("refreshToken")
@@ -845,6 +965,7 @@ def refresh_token_view(request):
 
 # change pass view 
 @api_view(["POST"])
+@throttle_classes([AuthRateLimit])
 @permission_classes([IsAuthenticated])
 def change_pass_view(request):
     data = request.data

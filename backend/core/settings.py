@@ -34,18 +34,35 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     "rest_framework_simplejwt.token_blacklist",
-    'channels'
+    'channels',
 ]
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['email', 'profile'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '5/minute',
-        'user': '10/minute'
-    }
+
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ),
+
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/minute",
+        "user": "50/minute",
+        "authLimit": "5/minute",
+    },
 }
+
 
 
 CORS_ALLOWED_ORIGINS = [

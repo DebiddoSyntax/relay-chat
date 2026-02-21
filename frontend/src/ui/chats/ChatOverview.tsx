@@ -62,7 +62,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
             try{
                 setLoading(true)
                 const response = await api.get(`${fetchPath}`)
-                console.log('chat overview', response.data)
+                // console.log('chat overview', response.data)
                 setChats(response.data)
             }catch(error){
                 console.log('overview error', error)

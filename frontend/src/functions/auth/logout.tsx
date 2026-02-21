@@ -1,5 +1,6 @@
 import api, { EjectInterceptors } from "./AxiosConfig";
 import { useAuth } from "./Store";
+import { redirect } from "../global/useNavigation";
 
 export const logoutAction = async (set: any, get: any) => {
     const token = get().accessToken;
@@ -28,4 +29,5 @@ export const logoutAction = async (set: any, get: any) => {
     useAuth.persist.clearStorage();
     
     console.log("logged out");
+    redirect('/login')
 }

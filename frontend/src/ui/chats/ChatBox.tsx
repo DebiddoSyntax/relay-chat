@@ -222,10 +222,10 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
             const handleMessage = async (event: MessageEvent) => {
                 const data = JSON.parse(event.data);
-                console.log('message', data)
+                // console.log('message', data)
 
                 if (data.type === 'error') {
-                    console.log(`❌ ${data.error}: ${data.message}`);
+                    // console.log(`❌ ${data.error}: ${data.message}`);
                     
                     if (data.error === 'token_expired') {
                         try{
@@ -269,7 +269,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                 if (isCleanup) return
 
                 reconnectTimeout = setTimeout(() => {
-                    console.log('Attempting to reconnect...')
+                    // console.log('Attempting to reconnect...')
                     connect()
                 }, 5000)
             };

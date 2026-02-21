@@ -150,12 +150,12 @@ function Security() {
             </div>
 
             <div className="flex justify-end gap-3 items-center mt-14 px-5 md:px-10">
-                <button type="button" className="px-5 py-4 w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
+                <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
                     Log Out
                 </button> 
 
-                <button type="submit" disabled={loading} className={`px-5 py-4 w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
-                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change password'} 
+                <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
+                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change'} 
                 </button>
             </div>
         </form>

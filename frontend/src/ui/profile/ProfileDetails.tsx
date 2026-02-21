@@ -136,6 +136,7 @@ function ProfileDetails() {
                                         userImage={user?.image_url}
                                         setToast={setToast}
                                         onSelect={(selected) => field.onChange(selected)}
+                                        isChat={false}
                                     />
                                 )}
                             />

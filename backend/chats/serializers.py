@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Chat, UserChat, Message
 from .utils.decrypt import decrypt_message
+from .utils.verifyCaptcha import verifyCaptcha
+import requests
+import os
 
 
 User = get_user_model()
@@ -47,9 +50,28 @@ class SignupSerializer(serializers.ModelSerializer):
         },
     )
 
+    # captchaToken = serializers.CharField(
+    #     required=True,
+    #     allow_blank=False,
+    #     write_only=True,
+    #     error_messages={
+    #         "required": "captcha is missing",
+    #         "blank": "captcha is missing",
+    #     },
+    # )
+
     class Meta:
         model = User
-        fields = [ 'firstname', 'lastname', 'email', 'password', ]
+        fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken']
+        # fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken']
+    
+    # def validate(self, data):
+    #     captcha_token = data.get("captchaToken")
+
+    #     if not verifyCaptcha(captcha_token):
+    #         raise serializers.ValidationError(
+    #             {"captcha": "CAPTCHA verification failed."}
+    #         )
 
     def validate_email(self, value):
         email = value.lower()
@@ -78,24 +100,66 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "email is missing",
+            "blank": "email is missing",
+        },
+    )
+
+    password = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "password is missing",
+            "blank": "password is missing",
+        },
+    )
+
+    # captchaToken = serializers.CharField(
+    #     required=True,
+    #     allow_blank=False,
+    #     write_only=True,
+    #     error_messages={
+    #         "required": "captcha is missing",
+    #         "blank": "captcha is missing",
+    #     },
+    # )
+
+    class Meta:
+        model = User
+        fields = ['email', 'password']
+        # fields = ['email', 'password', 'captchaToken']
 
     def validate(self, data):
+        # captcha_token = data.get("captchaToken")
+
+        # if not verifyCaptcha(captcha_token):
+        #     raise serializers.ValidationError(
+        #         {"captcha": "CAPTCHA verification failed."}
+        #     )
+
         email = data['email'].lower()
         password = data['password']
         user = authenticate(username=email, password=password)
 
         if not user:
             raise AuthenticationFailed('Invalid email or password')
+        
+        if not user.has_usable_password:
+            raise AuthenticationFailed('This account uses Google login. Please sign in with Google')
 
         refresh = RefreshToken.for_user(user)
 
-        self.user = user
-        self.access_token = str(refresh.access_token)
-        self.refresh_token = str(refresh)
-
-        return data
+        data.pop("captchaToken", None)
+        return {
+            "user": user,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        }
 
   
 
