@@ -94,7 +94,7 @@ const SignupPage = () => {
         <LeftSection />
 
         <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
-            <div className='w-full md:w-[400px] mx-auto mt-20'>
+            <div className='w-full md:w-100 mx-auto mt-20'>
                 <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
                 <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
                 <form onSubmit={handleSubmit(handleSignUp)} className=''>

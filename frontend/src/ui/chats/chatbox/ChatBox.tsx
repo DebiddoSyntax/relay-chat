@@ -1,42 +1,30 @@
 "use client"
-import api from "@/src/functions/auth/AxiosConfig";
-import axios from "axios";
-import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/src/functions/auth/Store";
+import { useRef, useState } from "react";
 import { useChat } from "@/src/functions/chats/chatStore";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
 import Call from "../call/Call"
 import MessageCard from './MessageCard';
 import GroupInfo from "../group/GroupInfo";
 import Sidebar from "../../reusable/Sidebar";
-import { AiFillInfoCircle } from "react-icons/ai";
-import { RiChatSmileAiFill } from "react-icons/ri";
-import { IoIosArrowBack } from "react-icons/io";
-import { FaUserCircle } from "react-icons/fa";
-import { IoCheckmarkDoneCircle } from "react-icons/io5";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { IoSend } from "react-icons/io5";
-import { FaAnglesDown } from "react-icons/fa6";
 import { useChatSocket } from "./useChatSocket";
 import { useFetchMessages } from "./fetchMessages";
 import { useScroll } from "./useScroll";
-import { handleImage } from "./handleImage";
+import { useHandleImage } from "./useHandleImage";
+import useClicktoClose from "@/src/functions/global/useClicktoClose";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
+import EmojiPicker, { Theme } from "emoji-picker-react";
+import { RiChatSmileAiFill } from "react-icons/ri";
+import { IoIosArrowBack } from "react-icons/io";
+import { FaUserCircle } from "react-icons/fa";
+import { IoCheckmarkDoneCircle, IoSend } from "react-icons/io5";
+import { AiOutlineLoading3Quarters, AiFillInfoCircle } from "react-icons/ai";
+import { FaAnglesDown } from "react-icons/fa6";
 
 
 
 
-export interface MessageType {
-    id: number,
-    sender_id: string,
-    content: string,
-    created_at: string,
-    is_read: string, 
-    chat: string,
-    type: string,
-    sender_firstname: string,
-    sender_lastname: string,
-    sender_image: string,
-}
+
+// const messagesCache: MessagesCacheType = {};
 
 interface ChatBoxProps{
     isGroup: boolean
@@ -70,9 +58,25 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const setChatOpen = useChat((state)=> state.setChatOpen)
     const chatOpen = useChat((state)=> state.chatOpen)
     
-    // socket states 
-    const [messages, setMessages] = useState<MessageType[]>([]);
+    // messages
+    const messages = useChat((state)=> state.messages)
+    const chatsObj = useChat((state)=> state.chatsObj)
+
+    // const [messages, setMessages] = useState<MessageType[]>([]);
     const [input, setInput] = useState("");
+    const [showPicker, setShowPicker] = useState(false);
+
+    const handleEmojiClick = (emojiData: any) => {
+        setInput(prev => prev + emojiData.emoji);
+    };
+
+  	const emojiCloseRef = useClicktoClose(()=> {
+		setShowPicker(false)
+	})
+
+    const { isDarkMode } = useDarkMode();
+
+
 
     // scroll refs 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -110,18 +114,18 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const type = isGroup ? 'group' : 'private'
 
     // handle chat socket 
-    const { sendMessage, aiTyping, status } = useChatSocket(activeId, setMessages, shouldScrollRef)
+    const { sendMessage, aiTyping, status, partialText, socketRef } = useChatSocket(activeId, shouldScrollRef)
 
     // handle messages 
-    const { fetchMessages, nextUrl, fetchMoreMessages, loading, loadingMore, error, errorMore} = useFetchMessages(activeId, setMessages, type, containerRef, shouldScrollRef)
+    const { fetchMessages, nextUrl, fetchMoreMessages, loading, loadingMore, error, errorMore } = useFetchMessages(activeId, type, containerRef, shouldScrollRef, socketRef, status, sortedMessages)
 
     // handle scroll states  
-    const { scrollToBottom, showScrollBtn } = useScroll(activeId, messages, containerRef, nextUrl, fetchMoreMessages, loadingMore, aiTyping)
+    const { scrollToBottom, showScrollBtn } = useScroll(activeId, containerRef, nextUrl, fetchMoreMessages, loading, aiTyping, sortedMessages)
 
     // immage states 
     const ImageSrc = isGroup ? chat?.image_url : otherUser?.image_url
     const IconDisplay = isAI ? RiChatSmileAiFill : FaUserCircle
-    const { canShowImage } = handleImage(ImageSrc)
+    const { canShowImage } = useHandleImage(ImageSrc)
 
 
 
@@ -145,13 +149,29 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         }
     };
 
+    const handleScroll = () => {
+        scrollToBottom()
+    }
+
+    const aiData = {
+        id: 1, 
+        sender_id: "1", 
+        content: `${partialText}`, 
+        created_at: new Date().toISOString(), 
+        is_read: '',  
+        chat: '', 
+        type: '', 
+        sender_firstname: '', 
+        sender_lastname: '', 
+        sender_image: ''
+    }
 
     return (
-        <div  className={`flex-1 w-full h-full bg-gray-100 overflow-hidden`}>
+        <div  className={`flex-1 w-full h-full bg-gray-bg overflow-hidden`}>
             {chatOpen ? (
-                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} flex-1 w-full h-dvh bg-gray-100 overflow-hidden`}>
+                <div className={`${!chatOpen && "hidden lg:flex lg:flex-col justify-between"} relative flex-1 w-full h-dvh bg-gray-bg overflow-hidden`}>
                     {/* top bar */}
-                    <div className={`bg-white w-full px-5 lg:px-6 2xl:px-8 ${isAI ? 'py-2 md:py-5' : 'py-5'} border-b-0 border-gray-300 shadow-lg z-10`}>
+                    <div className={`bg-background w-full px-5 lg:px-6 2xl:px-8 ${isAI ? 'py-2 md:py-5' : 'py-5'} border-b-0 border-border shadow-lg z-10`}>
                         <div className='w-full flex gap-3 items-center'>
                             {!isAI && <IoIosArrowBack className='lg:hidden text-2xl cursor-pointer' onClick={handleBackButton} />}
                             {isAI && <div className="md:hidden flex flex-col justify-center items-center"><Sidebar /></div>}
@@ -169,7 +189,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                                 <p className='text-lg font-semibold'>
                                                     {chatName}
                                                 </p>
-                                            {isAI &&  <IoCheckmarkDoneCircle className='text-primary' />}
+                                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
                                         </div>
 
 
@@ -196,13 +216,13 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                     </div>
 
 
-                    <div className='relative flex-1 h-full w-full pb-[220px] sm:pb-[220px] md:pb-[220px]'>
+                    <div className='relative flex-1 h-full w-full pb-55 sm:pb-55 md:pb-55'>
                         {/* messages  */}
-                        <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pt-10 pb-5'>
+                        <div ref={containerRef} className='relative flex-1 overflow-y-auto h-full w-full custom-scrollbar pt-24 pb-5'>
                             {errorMore && 
                                 <div className="text-red-700 text-sm font-semibold text-center">
                                     {errorMore} 
-                                    <p className="text-primary text-sm text-center cursor-pointer" onClick={fetchMoreMessages}>retry</p>  
+                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMoreMessages}>retry</p>  
                                 </div>
                             }
                             {loadingMore &&<AiOutlineLoading3Quarters className='mx-auto stroke-1 text-xl text-center animate-spin'/>}
@@ -237,28 +257,36 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                                 {displayDate}
                                             </div>
                                         )}
-                                        <MessageCard m={m} isGroup={isGroup}/>
-                                        
+                                        <MessageCard m={m} isGroup={isGroup} />
                                     </div>
                                 );
                             })}
+
                             {aiTyping && (
-                                <div className="px-5 lg:px-6 2xl:px-8 mt-5 py-2 w-auto max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm">
+                                <div className="px-5 lg:px-6 2xl:px-8 mt-5 py-2 w-auto max-w-72 md:max-w-80 xl:max-w-105 text-sm leading-6 rounded-sm">
                                     Sydney is thinking<span className="animate-ping">...</span>
                                 </div>
                             )}
+
+                            {partialText && (
+                                <MessageCard m={aiData} isGroup={false} />
+                            )}
+
                             {loading && <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-xl text-center animate-spin'/>}
+
                             {error && 
                                 <div className="text-red-700 text-sm font-semibold text-center">
                                     {error} 
-                                    <p className="text-primary text-sm text-center cursor-pointer" onClick={fetchMessages}>retry</p>  
+                                    <p className="text-blue-700 text-sm text-center cursor-pointer" onClick={fetchMessages}>retry</p>  
                                 </div>
                             }
+
                         </div>
+
                         {showScrollBtn && 
                             <div className='relative flex justify-center items-center'>
                                 <button
-                                    onClick={scrollToBottom}
+                                    onClick={handleScroll}
                                     className="absolute bottom-4 bg-blue-600 text-center text-white px-3 py-3 rounded-full shadow-md cursor-pointer"
                                     >
                                     <FaAnglesDown className="text-sm"/>
@@ -268,18 +296,29 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
 
                         
                         {/* message input  */}
-                        <div className="w-full flex gap-6 py-10 px-5 lg:px-8 bg-white ">
+                        <div className="w-full flex items-center gap-3 md:gap-6 py-10 px-5 lg:px-8 bg-background ">
+                            <div ref={emojiCloseRef} className="">
+                                <button type="button" onClick={() => setShowPicker(prev => !prev)} className="text-xl cursor-pointer" >
+                                    😊
+                                </button>
+
+                                {showPicker && (
+                                    <div className="absolute bottom-44 left-7 md:left-10 z-50">
+                                        <EmojiPicker onEmojiClick={handleEmojiClick} theme={isDarkMode ? Theme.DARK : Theme.LIGHT} />
+                                    </div>
+                                )}
+                            </div>
                             <textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 id="firstMessage" 
                                 onKeyDown={handleKeyPress}
-                                placeholder='enter your message'
-                                className=" min-h-16 max-h-16 resize-none flex-1 py-3 px-4 bg-gray-100 rounded-sm focus:placeholder:opacity-0 focus:outline-none placeholder:text-sm placeholder:font-medium"
+                                placeholder='Enter your message'
+                                className=" min-h-16 max-h-16 resize-none flex-1 py-3 px-4 bg-gray-bg rounded-sm focus:placeholder:opacity-0 focus:outline-none placeholder:text-sm placeholder:font-medium"
                                 rows={1}
                             /> 
 
-                            <button onClick={handleMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 cursor-pointer rounded-sm">
+                            <button onClick={handleMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 min-h-16 max-h-16 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>
                         </div>
@@ -290,7 +329,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                 </div>
             ) : (
                 <div className="hidden w-full h-dvh lg:flex flex-col justify-center items-center">
-                    <p className={` ${isAI && 'hidden'} my-auto h-full text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
+                    <p className={` ${isAI && 'hidden'} my-auto text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
         </div>

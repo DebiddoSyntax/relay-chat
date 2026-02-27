@@ -14,6 +14,9 @@ import binascii
 from os import urandom
 from ..utils.decrypt import decrypt_message
 from ..utils.encrypt import encrypt_message
+from google import genai
+from asgiref.sync import sync_to_async
+from google.genai import types
 
 
 
@@ -108,6 +111,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 await self.handle_message(data)
             elif message_type == 'read':
                 await self.handle_read_receipt(data)
+            elif message_type == 'read_all':
+                await self.handle_read_all_receipt(data)
             else:
                 await self.send_error(f"Unknown message type: {message_type}")
                 
@@ -196,8 +201,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                                 "type": "new_message",
                                 "chat_id": str(self.chat_id),
                                 "chat_type": chat_type,
-                                "content": decrypt_content,
-                                "created_at": message.created_at.isoformat(),
+                                "message": { **payload, 'is_read': False },
                                 "sender_id": str(self.user.id),
                             }
                         }
@@ -226,9 +230,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     # handle ai response
     async def handle_ai_response(self, user_message):
-        from google import genai
-        from asgiref.sync import sync_to_async
-
         client = genai.Client()
         ai_user = await self.get_ai_user()
         now = timezone.now()
@@ -291,16 +292,69 @@ class ChatConsumer(AsyncWebsocketConsumer):
         }
 
         try:
-            final_prompt = [{"role": "system", "parts": [{"text": SYSTEM_PROMPT}]}, {"role": "user", "parts": [{"text": prompt}]}]
+            print('running')
+            previous_messages = await sync_to_async(
+                lambda: list(Message.objects.filter(chat_id=self.chat_id).order_by('created_at')[:5]).reverse()
+            )()
 
-            response = await sync_to_async(
-                client.models.generate_content,
-                thread_sensitive=False
-            )(model="gemini-3-flash-preview", contents=final_prompt)
+            conversation_history = []
+            for msg in previous_messages:
+                conversation_history.append(
+                    types.Content(
+                        role="user" if msg.sender_id != ai_user.id else "model",
+                        parts=[types.Part(text=decrypt_message(msg.content, msg.iv) if msg.iv else msg.content)]
+                    )
+                )
 
-            ai_text = (response.text or "").strip()
-            if not ai_text:
-                raise ValueError("AI returned empty response")
+            # Add current user message
+            conversation_history.append(
+                types.Content(
+                    role="user",
+                    parts=[types.Part(text=prompt)]
+                )
+            )
+
+            print('convo', conversation_history)
+
+            ai_text = ""
+
+            try:
+                response = await sync_to_async(
+                    lambda: list(client.models.generate_content_stream(
+                        model="gemini-2.0-flash",
+                        contents=conversation_history,
+                        config=types.GenerateContentConfig(
+                            system_instruction=SYSTEM_PROMPT
+                        )
+                    ))
+                )()
+
+                for chunk in response:
+                    if chunk.text:
+                        text = chunk.text
+                        ai_text += text
+                        buffer_size = 5
+                        for i in range(0, len(text), buffer_size):
+                            piece = text[i:i+buffer_size]
+                            await self.channel_layer.group_send(
+                                self.group_name,
+                                {
+                                    "type": "chat.message.partial",
+                                    "sender_id": str(ai_user.id),
+                                    "content": piece
+                                }
+                            )
+                            await asyncio.sleep(0.03)
+
+                print("AI TEXT:", repr(ai_text))
+                print('reached')
+            except Exception as e:
+                print('failed ai', e)
+                raise
+
+            if not ai_text.strip():
+                await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
+                return
 
             # Save AI message if its not empty
             message = await self.save_message(self.chat_id, ai_user.id, ai_text, "text")
@@ -356,8 +410,32 @@ class ChatConsumer(AsyncWebsocketConsumer):
             )
 
 
+    # stream ai response 
+    async def chat_message_partial(self, event):
+        logger.info(f"chunks called with event: {event}")
+        await self.send(text_data=json.dumps({
+            "type": "chat.message.partial",
+            "sender_id": event["sender_id"],
+            "content": event["content"]
+        }))
 
-    # read receipt 
+
+    # send chat message on send 
+    async def chat_message(self, event):
+        await self.send(text_data=json.dumps(event['message']))
+
+    
+    # send chat typing indicator 
+    async def chat_typing(self, event):
+        logger.info(f"chat_typing called with event: {event}")
+        await self.send(text_data=json.dumps({
+            "type": "typing",
+            "user": event.get("sender"), 
+            "typing": event.get("typing", False)
+        }))
+
+
+    # single message read receipt 
     async def handle_read_receipt(self, data):
         message_id = data.get('message_id')
         
@@ -383,29 +461,51 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             await self.send_error("Failed to mark message as read")
 
-   
 
-    async def chat_message(self, event):
-        await self.send(text_data=json.dumps(event['message']))
-
-    
-    async def chat_typing(self, event):
-        logger.info(f"chat_typing called with event: {event}")
-        await self.send(text_data=json.dumps({
-            "type": "typing",
-            "user": event.get("sender"), 
-            "typing": event.get("typing", False)
-        }))
-
-
+    # single message read send 
     async def message_read(self, event):
         try:
             await self.send(text_data=json.dumps({
-                'type': 'read',
+                'type': 'message.read',
                 'message_id': event['message_id'],
                 'user_id': event['user_id'],
                 'email': event['email'],
                 'read_at': event['read_at']
+            }))
+        except Message.DoesNotExist:
+            return
+        
+
+   # all messages read receipt 
+    async def handle_read_all_receipt(self, data):
+        chat_id = data.get('activeId')
+        
+        if not chat_id:
+            await self.send_error("chat_id is required")
+            return
+        
+        try:
+            await self.mark_all_read(chat_id)
+            
+            # Broadcast read receipt
+            await self.channel_layer.group_send(
+                self.group_name,
+                {
+                    'type': 'message.all.read',
+                    'done': True,
+                }
+            )
+            
+        except Exception as e:
+            await self.send_error("Failed to mark all message as read")
+
+
+    # all message read send 
+    async def message_all_read(self, event):
+        try:
+            await self.send(text_data=json.dumps({
+                'type': 'read',
+                'done': event['done']
             }))
         except Message.DoesNotExist:
             return
@@ -482,13 +582,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
         )
 
 
-    # @database_sync_to_async
-    # def get_unread_count(self, chat_id, user_id):
-    #     return Message.objects.filter(
-    #         chat_id=chat_id
-    #     ).exclude(
-    #         Q(sender_id=user_id) | Q(read_by__id=user_id)
-    #     ).count()
+    @database_sync_to_async
+    def mark_all_read(self, chat_id):
+        user = User.objects.get(id=self.user.id)
+
+        unread_messages = (
+            Message.objects
+            .filter(chat_id=chat_id)
+            .exclude(sender_id=self.user.id)
+            .exclude(read_by=user)
+        )
+
+        MessageReadBy.objects.bulk_create(
+            [
+                MessageReadBy(
+                    message=msg,
+                    user=user,
+                    read_at=timezone.now()
+                )
+                for msg in unread_messages
+            ],
+            ignore_conflicts=True
+        )
 
 
     # Utility methods  

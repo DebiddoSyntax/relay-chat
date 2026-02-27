@@ -1,32 +1,50 @@
-import React, { useEffect, useState } from 'react'
-import { MessageType } from './ChatBox';
-import { useChat } from '@/src/functions/chats/chatStore';
+import { useEffect, useRef, useState } from "react";
+import { useChat } from "@/src/functions/chats/chatStore";
+import { MessageType } from "@/src/functions/types/ChatType";
 
-export function useScroll(activeId: number | null, messages: MessageType[], containerRef: React.RefObject<HTMLDivElement | null>, nextUrl: string | null, fetchMoreMessages: ()=> void, loadingMore: boolean, aiTyping: boolean) {
 
-    const chatOpen = useChat((state)=> state.chatOpen)
-    // scroll button state 
+
+
+
+export function useScroll( 
+    activeId: number | null, 
+    containerRef: React.RefObject<HTMLDivElement | null>, 
+    nextUrl: string | null, 
+    fetchMoreMessages: () => void, 
+    loading: boolean, 
+    aiTyping: boolean,
+    sortedMessages: MessageType[]
+) {
+
+    const chatOpen = useChat((state) => state.chatOpen);
+    // const messages = useChat((state)=> state.messages)
     const [showScrollBtn, setShowScrollBtn] = useState(false);
+    const previousHeightRef = useRef<number>(0);
 
-    // scroll button function
-    const scrollToBottom = () => {
+    // scroll click 
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
         const container = containerRef.current;
         if (!container) return;
 
-        container.scrollTo({ top: container.scrollHeight, behavior: "smooth", });
+        container.scrollTo({
+            top: container.scrollHeight,
+            behavior,
+        });
     };
 
 
-    // handle scroll position effect
+    // preserve scroll position to fetch more messages 
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
         const handleScroll = () => {
-            if (container.scrollTop === 0 && nextUrl) fetchMoreMessages();
+            if (container.scrollTop === 0 && nextUrl && !loading) {
+                previousHeightRef.current = container.scrollHeight;
+                fetchMoreMessages();
+            }
 
             const threshold = 120;
-
             const isNotAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight > threshold;
 
             setShowScrollBtn(isNotAtBottom);
@@ -34,37 +52,47 @@ export function useScroll(activeId: number | null, messages: MessageType[], cont
 
         container.addEventListener("scroll", handleScroll);
 
-        return () => container.removeEventListener("scroll", handleScroll);
+        return () => {
+            container.removeEventListener("scroll", handleScroll);
+        };
+    }, [nextUrl, activeId, loading]);
 
-    }, [nextUrl, activeId]);
 
-
-    // handle scroll to bottom on open 
+    
     useEffect(() => {
-        if (!chatOpen || !activeId || loadingMore) return;
-
         const container = containerRef.current;
         if (!container) return;
 
-        requestAnimationFrame(() => {
-            container.scrollTop = container.scrollHeight;
-        });
+        if (previousHeightRef.current > 0) {
+            const newHeight = container.scrollHeight;
+            const heightDifference = newHeight - previousHeightRef.current;
 
-    }, [chatOpen, activeId]);
+            container.scrollTop = heightDifference;
 
-    
-    // handle message change and aityping scroll effect
+            previousHeightRef.current = 0;
+        }
+    }, [sortedMessages]);
+
+
+    useEffect(() => {
+        if (!chatOpen || !activeId) return;
+        if (loading) return;
+        if (sortedMessages.length === 0) return;
+
+        requestAnimationFrame(() => scrollToBottom("auto"));
+    }, [chatOpen, activeId, loading, sortedMessages.length]);
+
+
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !chatOpen) return;
 
-        const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+        const threshold = 120;
 
-        if (isAtBottom) scrollToBottom();
+        const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
 
-    }, [messages, aiTyping]);
-    
+        if (isAtBottom) scrollToBottom("smooth");
+    }, [sortedMessages.length, aiTyping]);
 
-    return { scrollToBottom, showScrollBtn }
+    return { scrollToBottom,  showScrollBtn, };
 }
-

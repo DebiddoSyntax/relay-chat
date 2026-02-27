@@ -10,6 +10,7 @@ import { NewchatInputType } from '@/src/functions/types/ChatType';
 import api from '@/src/functions/auth/AxiosConfig';
 import { useChat } from '@/src/functions/chats/chatStore';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
 
 
 
@@ -21,6 +22,7 @@ interface AddNewChatProps {
 
 function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
 
+    const { isDarkMode } = useDarkMode()
     const setChatOpen = useChat((state)=> state.setChatOpen)
 
     // chats states 
@@ -111,8 +113,8 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
             <PiNotePencilBold className='text-2xl cursor-pointer' onClick={handleNewChatToggle} />
 
             {newChat && (
-                <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
-                    <div className={`flex flex-col relative w-96 md:w-[640px] h-auto m-auto bg-white py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
+                <div className={`fixed inset-0 flex ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} justify-center items-center z-50`}>
+                    <div className={`flex flex-col relative w-96 md:w-160 h-auto m-auto bg-background py-3 md:py-4 lg:py-5 px-5 rounded-md overflow-hidden`}>
                         <div className='flex justify-between items-center'>
                             <p className={`text-lg font-semibold`}>
                                 {isGroup ? 'Create new group' : 'Add new chat'}
@@ -124,68 +126,68 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
                         </div>
 
                   
-                            <form onSubmit={handleSubmit(handleNewChat)} className=''>
+                        <form onSubmit={handleSubmit(handleNewChat)} className=''>
 
-                                {isGroup && (
-                                    <div className="mb-5 mt-5 items-start text-left w-full">
-                                        <label htmlFor="groupName" className="text-sm font-semibold">
-                                            Group Name
-                                        </label>
-                                        <input autoComplete="off" type="text" id="groupName" placeholder='Enter a group name'
-                                            className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                            {...register('groupName')}
-                                        />
-                                        <p className="text-red-700 text-sm mt-2">
-                                            {errors.groupName?.message && String(errors.groupName.message)}
-                                        </p>
-                                    </div>
-                                )}
-
-
+                            {isGroup && (
                                 <div className="mb-5 mt-5 items-start text-left w-full">
-                                    <label htmlFor="email" className="text-sm font-semibold">
-                                        Email
+                                    <label htmlFor="groupName" className="text-sm font-semibold">
+                                        Group Name
                                     </label>
-                                    <input autoComplete="off" type="text" id="email" placeholder='Enter an email'
-                                        className=" w-full p-3 bg-gray-100 mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                        {...register('receiver')}
+                                    <input autoComplete="off" type="text" id="groupName" placeholder='Enter a group name'
+                                        className=" w-full p-3 bg-gray-bg mt-2 border-border rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        {...register('groupName')}
                                     />
                                     <p className="text-red-700 text-sm mt-2">
-                                        {errors.receiver?.message && String(errors.receiver.message)}
+                                        {errors.groupName?.message && String(errors.groupName.message)}
                                     </p>
                                 </div>
+                            )}
+
+
+                            <div className="mb-5 mt-5 items-start text-left w-full">
+                                <label htmlFor="email" className="text-sm font-semibold">
+                                    Email
+                                </label>
+                                <input autoComplete="off" type="text" id="email" placeholder='Enter an email'
+                                    className=" w-full p-3 bg-gray-bg mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    {...register('receiver')}
+                                />
+                                <p className="text-red-700 text-sm mt-2">
+                                    {errors.receiver?.message && String(errors.receiver.message)}
+                                </p>
+                            </div>
+                            
+
+                            <div className="mb-5 mt-5 items-start text-left w-full">
+                                <label htmlFor="firstMessage" className="text-sm font-semibold">
+                                    Message
+                                </label>
                                 
-
-                                <div className="mb-5 mt-5 items-start text-left w-full">
-                                    <label htmlFor="firstMessage" className="text-sm font-semibold">
-                                        Message
-                                    </label>
-                                    
-                                    <textarea
-                                        autoComplete="off" 
-                                        id="firstMessage" 
-                                        placeholder='Enter your message'
-                                        className=" min-h-16 max-h-16 resize-none w-full p-3 bg-gray-100 mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                        rows={1}
-                                        {...register('firstMessage')}
-                                    /> 
-
-                                    <p className="text-red-700 text-sm mt-2">
-                                        {errors.firstMessage?.message && String(errors.firstMessage.message)}
-                                    </p>
-                                </div>
+                                <textarea
+                                    autoComplete="off" 
+                                    id="firstMessage" 
+                                    placeholder='Enter your message'
+                                    className=" min-h-16 max-h-16 resize-none w-full p-3 bg-gray-bg mt-2 rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    rows={1}
+                                    {...register('firstMessage')}
+                                /> 
 
                                 <p className="text-red-700 text-sm mt-2">
-                                    {errorMessage}
+                                    {errors.firstMessage?.message && String(errors.firstMessage.message)}
                                 </p>
+                            </div>
 
-                                <div className='mt-5 flex justify-end'>
-                                    <button type="submit" className='bg-primary py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
-                                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Start'}
-                                    </button>
-                                </div>
-                            </form>
-                        
+                            <p className="text-red-700 text-sm mt-2">
+                                {errorMessage}
+                            </p>
+
+                            <div className='mt-5 flex justify-end'>
+                                <button type="submit" className='bg-primary py-3 px-5 w-40 text-white text-sm font-semibold rounded-md cursor-pointer'>
+                                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Start'}
+                                </button>
+                            </div>
+                        </form>
+                    
                     </div>
                 </div>
             )}

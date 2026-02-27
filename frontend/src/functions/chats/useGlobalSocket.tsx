@@ -14,6 +14,8 @@ export function useGlobalSocket() {
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
     const incomingCall = useChat((state)=> state.incomingCall)
     const setActiveCall = useChat((state)=> state.setActiveCall)
+    const setMessages = useChat((state)=> state.setMessages)
+    const messagesCache = useChat((state)=> state.messagesCache)
 
     const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
     
@@ -30,7 +32,7 @@ export function useGlobalSocket() {
                 // console.log('global', data)
                 
                 if (data.type === 'error') {
-                    console.log(`❌ ${data.error}: ${data.message}`);
+                    // console.log(`❌ ${data.error}: ${data.message}`);
                     
                     // handle token expiration 
                     if (data.error === 'token_expired') {
@@ -49,15 +51,28 @@ export function useGlobalSocket() {
 
                 if (data.type === "new_message") {
                     // handle last message and unread count 
-                    updateLastMessage(data.chat_type, data.chat_id, data.content, data.created_at)
+                    updateLastMessage(data.chat_type, data.chat_id, data.message.content, data.message.created_at)
                     const activeId = data.chat_type == 'group' ? activeGroupId : activePrivateId
+                    console.log(data)
+                    
+
                     if (data.chat_id !== activeId) {
                         incrementUnread(data.chat_type, data.chat_id)
+                        if (data.chat_id) {
+                            // console.log('added from global', messagesCache[data.chat_id])
+                            const previousMessages = messagesCache[data.chat_id]?.messages ?? [];
+                            messagesCache[data.chat_id] = { 
+                                messages: [...previousMessages, data.message], 
+                                nextUrl: messagesCache[data.chat_id]?.nextUrl ?? null 
+                            };
+                            // console.log('end from global', messagesCache[data.chat_id])
+
+                        }
+                        
                     }
                 }
 
                 if (data.type === "new_call") {
-                    // setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio})
                     if(!incomingCall?.picked){
                         setIncomingCall({chatId: data.chat_id, isCalling: true, callerName: data.sender_name, image_url: data.image_url, isAudio: data.isAudio, picked: true})
                     }else{

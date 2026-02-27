@@ -11,7 +11,7 @@ function NotFound() {
 			<img
 				src="/NotFoundSVG.svg"
 				alt="Not found"
-				className="w-[400px] h-[400px] object-contain"
+				className="w-100 h-100 object-contain"
 			/>
 
 			<p className="text-xl lg:text-2xl mt-5 font-semibold">Page Not found</p>

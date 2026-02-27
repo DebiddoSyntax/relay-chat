@@ -1,5 +1,5 @@
 "use client"
-import ChatCard from '../chatbox/ChatCard'
+import ChatCard from './ChatCard'
 import AddNewChat from './AddNewChat';
 import { useEffect, useState } from 'react';
 import { OverviewDataProps } from '@/src/functions/types/ChatType';
@@ -106,8 +106,8 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
 
 
     return (
-        <div className={`${chatOpen ? "hidden lg:flex lg:flex-col" : "flex flex-col "} w-full md:w-full lg:w-96 2xl:w-[420px] h-dvh overflow-hidden z-10 border-r-0 md:border-r-2 border-gray-300`}> 
-            <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-gray-300'>
+        <div className={`${chatOpen ? "hidden lg:flex lg:flex-col" : "flex flex-col "} w-full md:w-full lg:w-96 2xl:w-105 h-dvh overflow-hidden z-10 border-r-0 md:border-r-2 border-border`}> 
+            <div className='px-5 lg:px-6 2xl:px-8 pt-5 pb-5 md:pb-9 border-b-2 border-border'>
                 <div className='flex justify-between items-center'>
                     <p className='text-xl font-semibold'>
                         {isGroup ? 'Groups' : 'Chats'}
@@ -119,7 +119,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
             </div>
 
             {/* search chat list  */}
-            <div className='px-5 lg:px-6 2xl:px-8 py-8 border-b-2 border-gray-300'>
+            <div className='px-5 lg:px-6 2xl:px-8 py-8 border-b-2 border-border'>
                 <input 
                     type="text" 
                     placeholder='search' 
@@ -127,7 +127,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
                     value={searchQuery}
                     onChange={(e)=> setsearchQuery(e.target.value)}
                     id="search" 
-                    className='p-3 w-full border-2 border-gray-300 rounded-sm focus:placeholder:opacity-0 focus:outline-0'
+                    className='p-3 w-full border-2 border-border rounded-sm focus:placeholder:opacity-0 focus:outline-0'
                 />
             </div>
 
@@ -145,7 +145,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
                             </div>
                         )}
                     )}
-                    {loading && <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/>}
+                    {loading && <AiOutlineLoading3Quarters className='mx-auto mt-8 stroke-1 text-base text-center animate-spin'/>}
                     {filteredChats.length < 1 && !loading && <div className='text-base  text-center font-semibold'>No chat</div>}
                 </div>
                 

@@ -1,4 +1,4 @@
-import { MessageType } from './ChatBox'
+import { MessageType } from "@/src/functions/types/ChatType";
 import { useAuth } from '@/src/functions/auth/Store'
 import { FaUserCircle } from "react-icons/fa";
 
@@ -27,7 +27,7 @@ function MessageCard({ m, isGroup }: MessageProps) {
 
     
     return (
-        <div className={`flex ${ m.sender_id == user?.id ? "justify-end" : "justify-start" } gap-2 items-end ${isGroup ? 'mt-10' : 'mt-5'} px-5 xl:px-8`} >
+        <div className={`flex ${ m.sender_id == user?.id ? "justify-end" : "justify-start" } gap-2 items-end ${isGroup ? 'mt-10' : 'mt-5'} px-5 xl:px-8 z-100`} >
             {m.sender_id !== user?.id && isGroup &&
                 <div className=''>
                     {m.sender_image ?
@@ -38,8 +38,8 @@ function MessageCard({ m, isGroup }: MessageProps) {
                 </div>
             }
             <div className='flex flex-col gap-2 items-start'>
-                <div className={`${m.sender_id !== user?.id ? "bg-white text-black" : "bg-primary text-white" } 
-                    px-3 py-2 w-auto min-w-32 max-w-72 md:max-w-80 xl:max-w-[420px] text-sm leading-6 rounded-sm wrap-break-word`}
+                <div className={`${m.sender_id !== user?.id ? "bg-message-card text-foreground" : "bg-primary text-white" } 
+                    px-3 py-2 w-auto min-w-32 max-w-72 md:max-w-80 xl:max-w-105 text-sm leading-6 rounded-sm wrap-break-word`}
                     >
                    
                     {m.content}

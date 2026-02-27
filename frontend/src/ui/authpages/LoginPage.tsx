@@ -85,13 +85,15 @@ const Loginpage = () => {
         }
     }
 
+    const [show, setShow] = useState(false)
+
 
     return (
-        <div className='grid grid-cols-1 md:grid-cols-2 w-full h-full md:h-screen py-0 bg-dashboard-background'>
-            <LeftSection />
+        <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh py-0 bg-dashboard-background'>
+            <LeftSection setShow={setShow} show={show} />
 
-            <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
-                <div className='w-full md:w-[400px] mx-auto mt-40'>
+            <div className={`w-full px-5 py-5 md:px-8 md:py-8 my-auto mx-auto ${show ? 'block' : 'hidden md:block'}`}>
+                <div className='w-full md:w-100 mx-auto'>
                     <h1 className='text-2xl font-semibold text-primary'>Log In</h1>
                     <h3 className='my-3 text-sm font-semibold text-gray-500'>Welcome Back! Enter your details</h3>
                     <form onSubmit={handleSubmit(handleLogin)} className=''>
@@ -112,7 +114,7 @@ const Loginpage = () => {
                                 <label htmlFor="password" className="text-sm font-semibold  ">
                                     Password
                                 </label>
-                                <Link href="/reset" className="text-primary underline hover:text-blue-600 transition-colors text-sm">
+                                <Link href="/reset" className="text-primary underline transition-colors text-sm">
                                     Forgot password?
                                 </Link>
                             </div>
@@ -143,7 +145,7 @@ const Loginpage = () => {
                             // style={}
                         />
                     
-                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
+                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Login'}
                         </button>
 

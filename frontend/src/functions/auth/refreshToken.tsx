@@ -17,7 +17,7 @@ export const refreshTokenAction = async (set: any, get: any) => {
         const newToken = res.data.accessToken;
 
         set({ accessToken: newToken });
-        console.log('refreshed token', res.data)
+        // console.log('refreshed token', res.data)
         return newToken;
     } catch (e) {
         console.log('failed to refresh token', e)

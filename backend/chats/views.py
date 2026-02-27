@@ -246,8 +246,6 @@ def start_chat_view(request):
     )
 
 
-
-
 # get private chats
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])

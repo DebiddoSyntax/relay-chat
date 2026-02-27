@@ -78,7 +78,7 @@ function ResetPasswordPage() {
 					
 					<button 
 						type='submit' 
-						className='mt-10 mx-auto bg-blue-700 w-full py-4 rounded-md text-sm md:text-base text-center font-semibold text-white hover:bg-blue-700 cursor-pointer'
+						className='mt-10 mx-auto bg-blue-700 w-full py-4 rounded-md text-sm md:text-base text-center font-semibold text-white cursor-pointer'
 						onClick={handleResetPassword} 
 						disabled={loading}
 					>

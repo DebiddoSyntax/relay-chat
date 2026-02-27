@@ -1,8 +1,8 @@
 "use client";
 import { create } from "zustand";
-import { OverviewDataProps } from "../types/ChatType";
+import { ChatObjType, MessagesCacheType, MessageType, OverviewDataProps,  } from "../types/ChatType";
+import { IncomingType } from "../types/ChatType";
 
-export interface IncomingType{ isCalling: boolean, callerName: string, chatId: number, image_url: string, isAudio: boolean | null, picked: boolean }
 interface ChatStore {
     // calls
     incomingCall: IncomingType | null
@@ -11,9 +11,16 @@ interface ChatStore {
     activeCall: boolean
     setActiveCall: (val: boolean)=> void
 
-    // chat
+    // messages 
+    messages: MessageType[]
+    setMessages: (messages: MessageType[] | ((prev: MessageType[]) => MessageType[])) => void
+    messagesCache: MessagesCacheType
+    chatsObj: ChatObjType
+
+    // main chat
     chatOpen: boolean
 
+    // ids 
     activePrivateId: number | null;
     activeGroupId: number | null;
     aiChatId: number | null
@@ -52,7 +59,18 @@ export const useChat = create<ChatStore>()(
 
         activeCall: false,
         incomingCall: null,
-        
+        messages: [],
+        messagesCache: {},
+        chatsObj: {},
+
+        setMessages: (messagesOrUpdater) =>
+            set((state) => ({
+                messages:
+                typeof messagesOrUpdater === "function"
+                    ? (messagesOrUpdater as (prev: MessageType[]) => MessageType[])(state.messages)
+                    : messagesOrUpdater,
+            })),
+    
 
         setPrivateChats: (chatsOrUpdater) =>
             set((state) => ({

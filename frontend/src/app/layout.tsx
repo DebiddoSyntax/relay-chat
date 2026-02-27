@@ -4,6 +4,7 @@ import Wrapper from "../functions/global/Wrapper";
 import AuthInit from "../functions/auth/useAuthInit";
 import CallAlert from "../ui/chats/call/CallAlert";
 import ScrollToTop from "../functions/global/usescrollToTop";
+import { DarkModeProvider } from "../functions/global/DarkModeContext";
 
 
 export const metadata: Metadata = {
@@ -16,12 +17,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 	return (
 		<html lang="en">
 			<body>
-				<Wrapper>
-					<ScrollToTop />
-					<CallAlert />
-					<AuthInit />
-					{children}
-				</Wrapper>
+				<DarkModeProvider>
+					<Wrapper>
+						<ScrollToTop />
+						<CallAlert />
+						<AuthInit />
+						{children}
+					</Wrapper>
+				</DarkModeProvider>
 			</body>
 		</html>
 	);

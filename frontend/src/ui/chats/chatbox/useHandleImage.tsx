@@ -1,19 +1,19 @@
 import React, { useEffect, useState } from 'react'
 
-export function handleImage(ImageSrc: string | undefined) {
+export function useHandleImage(imageSrc: string | undefined) {
 
     const [canShowImage, setCanShowImage] = useState(false);
 
 
     // set image effect
     useEffect(() => {
-        if (!ImageSrc) {
+        if (!imageSrc) {
             setCanShowImage(false);
             return;
         }
 
         const img = new window.Image();
-        img.src = ImageSrc;
+        img.src = imageSrc;
 
         img.onload = () => setCanShowImage(true);
         img.onerror = () => setCanShowImage(false);
@@ -22,7 +22,7 @@ export function handleImage(ImageSrc: string | undefined) {
             img.onload = null;
             img.onerror = null;
         };
-    }, [ImageSrc]);
+    }, [imageSrc]);
     
     return { canShowImage }
 }

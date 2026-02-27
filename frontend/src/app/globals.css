@@ -5,34 +5,65 @@
 
 
 :root {
-	--background: #ffffff;
-	--foreground: #000000;
-	--foreground-lower: theme(--color-gray-500);
-	--gray-bg: #f2f2f2;
-	--input-bg: #ffffff;
+	--background: theme(--color-neutral-100);
+	--foreground: theme(--color-neutral-900);
+	--foreground-lower: theme(--color-neutral-600);
+	--gray-bg: theme(--color-neutral-200);
+	--gray-hover:  theme(--color-neutral-400);
+	--active-card:  theme(--color-primary-900);
+	--inactive-card:  theme(--color-neutral-100);
+	--message-card:  theme(--color-neutral-100);
+	--border-lower: theme(--color-neutral-400);
 }
 
 
 
 .dark {
-	--background: #161616;
-	--foreground: #ffffff;
+	--background: #000000;
+	--foreground: theme(--color-neutral-100);
 	--foreground-lower: theme(--color-gray-500);
-	--gray-bg: #f2f2f2;
-	--input-bg: #333333;
+	--gray-bg:  theme(--color-neutral-800);
+	--gray-hover: theme(--color-neutral-200);
+	--active-card:  theme(--color-primary-100);
+	--inactive-card:  theme(--color-neutral-900);
+	--message-card:  theme(--color-neutral-700);
+	--border-lower: theme(--color-neutral-700);
 }
 
 
 @theme inline {
-	--color-primary: #4c4452;
-	--color-primary-hover: #46256A;
+	--color-primary: #3E166E;
+	--color-primary-100: #E5DDEF;
+	--color-primary-200: #D4C7E4;
+	--color-primary-300: #A98EC9;
+	--color-primary-400: #7E56AE;
+	--color-primary-600: #290E4A;
+	--color-primary-700: #150725;
+	--color-primary-800: #0C0416;
+	--color-primary-900: #06020B;
 
+
+	--color-neutral-100: #FFFFFF;
+	--color-neutral-200: #F2F2F2;
+	--color-neutral-300: #F5F5F5;
+	--color-neutral-400: #E6E6E6;
+	--color-neutral-500: #B5B5B5;
+	--color-neutral-600: #797979;
+	--color-neutral-700: #3C3C3C;
+	--color-neutral-800: #181818;
+	--color-neutral-900: #000000;
+
+
+	--color-border: var(--border-lower);
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
 	--color-foreground-lower: var(--foreground-lower);
 	--color-gray-bg: var(--gray-bg);
+	--color-gray-hover: var(--gray-hover);
+	--color-active-card: var(--active-card);
+	--color-inactive-card: var(--inactive-card);
+	--color-message-card: var(--message-card);
 
-	--color-input-bg: var(--input-bg);
 	
 	/* fonts  */
 	--font-cherryBombOne:  "Cherry Bomb One", system-ui;
@@ -58,37 +89,45 @@ body {
 
 /* Custom Scrollbar Styles */
 .custom-scrollbar {
-  overflow: auto;
-  scrollbar-width: none;
+	overflow: auto;
+	scrollbar-width: none;
 }
 
 /* Hide scrollbar in WebKit (Chrome, Safari) by default */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 0px;
-  height: 0px;
-  background: transparent;
+  	width: 0px;
+	height: 0px;
+	background: transparent;
 }
 
 /* Show scrollbar on hover */
 .custom-scrollbar:hover {
-  scrollbar-width: thin;
+	overflow: auto;
+  	scrollbar-width: thin;
+	scrollbar-color: var(--foreground-lower) var(--gray-bg);
 }
 
 /* Webkit scrollbar on hover */
 .custom-scrollbar:hover::-webkit-scrollbar {
-  width: 4px;
-  height: 6px;
+	width: 8px;
+	height: 8px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+  	background: transparent;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-track {
+    background-color: var(--gray-bg);
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: #a0aec0;
-  border-radius: 4px;
+  	opacity: 1;
 }
 
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-  background-color: #718096;
+	background-color: var(--foreground-lower);
+	border-radius: 6px;
+	opacity: 0;
+	transition: opacity 0.2s ease;
 }

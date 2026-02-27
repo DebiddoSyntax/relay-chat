@@ -10,6 +10,10 @@ import axios from 'axios';
 import { ToastType } from './ProfileDetails';
 import ToastMessage from '../reusable/ToastMessage';
 import { useAuth } from '@/src/functions/auth/Store';
+import { MdLightMode, MdDarkMode } from "react-icons/md";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
+import { PiMonitorFill } from "react-icons/pi";
+import { FiMonitor } from "react-icons/fi";
 
 
 type ActionType =
@@ -44,6 +48,7 @@ function ToggleReducer(state: StateDataType, action: ActionType) {
 
 
 function Security() {
+    const { toggleDarkMode, isDarkMode } = useDarkMode()
 
     const logout = useAuth((state)=> state.logout)
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
@@ -102,14 +107,14 @@ function Security() {
                 />
             )}
 
-            <div className="mt-5 md:mt-20 w-full px-5 md:px-10 border-t-2 border-gray-100 pt-10">
+            <div className="mt-5 md:mt-20 w-full px-5 md:px-10 border-t-2 border-border pt-10">
                 <h5 className="text-base md:text-lg xl:text-xl font-bold">Security</h5>
 
                 <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left w-full">
 
                     <div className="w-full">
                         <label htmlFor="password" className="text-sm font-semibold">Current Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
                             <input type={state.passwordToggle ? "text" : "password"}
                                 id="password"
                                 placeholder='Enter a unique password'
@@ -129,7 +134,7 @@ function Security() {
 
                     <div className="w-full">
                         <label htmlFor="newPassword" className="text-sm font-semibold">New Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
                             <input type={state.newPasswordToggle ? "text" : "password"}
                                 id="newPassword"
                                 placeholder='Enter a unique password'
@@ -149,15 +154,34 @@ function Security() {
                 </div>
             </div>
 
-            <div className="flex justify-end gap-3 items-center mt-14 px-5 md:px-10">
-                <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
-                    Log Out
-                </button> 
+            {/* <div className="flex justify-between gap-3 items-end mt-14 px-5 md:px-10">
+                <div className=''>
+                    <h5 className='text-sm font-semibold'>Apperarance</h5>
+                    <div className='mt-4 py-2 px-2 bg-gray-bg flex gap-2 items-center text-xs rounded-lg'>
+                        <div className={`${!isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <MdLightMode /> 
+                            <p>light</p>
+                        </div>
+                        <div className={`${isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <MdDarkMode /> 
+                            <p>dark</p>
+                        </div>
+                        <div className={`${isDarkMode && true && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <FiMonitor />
+                            <p>system</p>
+                        </div>
+                    </div>
+                </div> */}
+                <div className="flex justify-end gap-3 items-center mt-10 px-5 md:px-10">
+                    <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
+                        Log Out
+                    </button> 
 
-                <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
-                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change'} 
-                </button>
-            </div>
+                    <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
+                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change Password'} 
+                    </button>
+                </div>
+            {/* </div> */}
         </form>
     )
 }

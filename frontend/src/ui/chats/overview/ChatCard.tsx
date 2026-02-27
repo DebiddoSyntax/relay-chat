@@ -2,6 +2,7 @@
 import { OverviewDataProps } from '@/src/functions/types/ChatType';
 import { IoCheckmarkDoneCircle } from "react-icons/io5";
 import { FaUserCircle } from "react-icons/fa";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
 
 
 interface ChatCardProps { 
@@ -15,6 +16,7 @@ interface ChatCardProps {
 
 function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps ) {
 
+    const { toggleDarkMode, isDarkMode } = useDarkMode()
     const currentDate = new Date(data.last_message_time);
     
     const today = new Date();
@@ -38,14 +40,14 @@ function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps 
 
 
     return (
-        <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-200"} rounded-sm  w-full cursor-pointer`}>
+        <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-active-card text-background" : isDarkMode ? "bg-inactive-card text-foreground hover:text-foreground hover:bg-gray-hover/10" : "bg-inactive-card text-foreground hover:text-foreground hover:bg-gray-hover"} rounded-sm  w-full cursor-pointer`}>
             <div className='flex gap-3 w-full'>
                 {showImage ? <img src={showImage} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-14 h-14 rounded-full'/>}
                 <div className='flex flex-col gap-2 w-full'>
                     <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
                         <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
                             <p className='text-base font-semibold'>{chatName}</p>
-                            {isAI &&  <IoCheckmarkDoneCircle className='text-primary' />}
+                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
                         </div>
                         <p className={`${data.unread_count < 1 && 'hidden'} py-1 px-2 rounded-full bg-primary text-xs text-white font-semibold`}>{data.unread_count}</p>
                     </div>

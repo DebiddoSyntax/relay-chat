@@ -10,6 +10,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { IoClose, IoVideocam } from "react-icons/io5";
 import { IoMdMicOff, IoMdMic } from "react-icons/io";
 import { FaPhone } from "react-icons/fa6";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
 
 type ActionType =
   | { type: "TOGGLE"; field: keyof CallStateType }
@@ -59,7 +60,8 @@ interface FailedStateType {
 
 
 function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolean | null}) {
-       
+    
+    const { isDarkMode } = useDarkMode()
     const incomingCall = useChat((state)=> state.incomingCall)
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
     const setActiveCall = useChat((state)=> state.setActiveCall)
@@ -507,7 +509,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             {activeId && <IconToShow className={`${isAudio ? 'text-base' : 'text-2xl'} cursor-pointer`} onClick={handleJoinCall} />}
 
             {incomingCall?.isCalling && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+				<div className={`fixed inset-0 ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} flex items-center justify-center z-50`}>
 					<div className="flex items-start justify-between gap-8 bg-white top-4 left-4 p-4 md:p-6 rounded-lg w-auto">
                         <div className="flex gap-3 mt-0">
                             {incomingCall?.image_url ? 
@@ -527,7 +529,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         </div>
 
 						<div className="flex gap-3 md:gap-4 mt-0">
-							<button onClick={handleJoinCall} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleJoinCall} className="flex items-center justify-center bg-green-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 
@@ -541,7 +543,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
 
             {state.callModal && (
-                <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
+                <div className={`fixed inset-0 flex ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} justify-center items-center z-50`}>
                     <div className="relative h-full w-full flex justify-center">
                         {fail?.failed ? (
                             <div className='relative w-80 h-40 bg-white rounded-xl m-auto p-3'>
@@ -566,7 +568,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     {!isAudio ? 
                                         <video ref={remoteVideoRef} autoPlay playsInline
                                             className={`object-cover transition-all duration-300 ${state.switchVid
-                                                ? "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"
+                                                ? "absolute bottom-4 right-4 w-[120] md:w-45 h-45 md:h-70 rounded-xl shadow-lg"
                                                 : "w-full h-full" }`}
                                         />
                                     :
@@ -581,7 +583,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                         <video ref={localVideoRef} autoPlay playsInline muted
                                             className={`object-cover transition-all duration-300 ${state.switchVid
                                                 ? "w-full h-full"
-                                                : "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"}`}
+                                                : "absolute bottom-4 right-4 w-[120] md:w-45 h-45 md:h-70  rounded-xl shadow-lg"}`}
                                         />
                                         :
                                         <audio ref={localAudioRef} autoPlay muted playsInline
