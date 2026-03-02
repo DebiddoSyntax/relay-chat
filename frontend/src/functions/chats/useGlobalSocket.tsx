@@ -53,7 +53,7 @@ export function useGlobalSocket() {
                     // handle last message and unread count 
                     updateLastMessage(data.chat_type, data.chat_id, data.message.content, data.message.created_at)
                     const activeId = data.chat_type == 'group' ? activeGroupId : activePrivateId
-                    console.log(data)
+                    // console.log(data)
                     
 
                     if (data.chat_id !== activeId) {

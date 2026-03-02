@@ -91,17 +91,6 @@ export function useFetchMessages(
 
         if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
-        // const unread = sortedMessages.filter(msg => !msg.is_read);
-
-        // unread.forEach(msg => {
-        //     socket.send(
-        //         JSON.stringify({
-        //             type: "read",
-        //             message_id: msg.id,
-        //         })
-        //     );
-        // });
-
         socket.send(
             JSON.stringify({
                 type: "read_all",
@@ -109,7 +98,7 @@ export function useFetchMessages(
             })
         );
 
-    }, [activeId, status, sortedMessages]);
+    }, [activeId]);
     
 
 

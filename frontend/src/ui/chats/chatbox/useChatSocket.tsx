@@ -34,7 +34,7 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
 
             const handleMessage = async (event: MessageEvent) => {
                 const data = JSON.parse(event.data);
-                console.log('message', data)
+                // console.log('message', data)
 
                 if (data.type === 'error') {
                     // console.log(`❌ ${data.error}: ${data.message}`);
@@ -63,9 +63,12 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
                 }
 
                 if (data.type === "message") {
-                    setAiTyping(false)
+                    if(data.is_ai){
+                        setAiTyping(false)
+                        setPartialText('')
+                    }
                     shouldScrollRef.current = true;
-                    console.log('chat', data)
+                    // console.log('chat', data)
                     setMessages(prev => {
                         const updated = [...prev, data];
                         if (activeId) {

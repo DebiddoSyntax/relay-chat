@@ -594,7 +594,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                 </div>
                 
                                 {/* Controls */}
-                                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 bg-white py-5">
+                                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 bg-gray-bg py-5">
                 
                                     <button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         <ImPhoneHangUp />

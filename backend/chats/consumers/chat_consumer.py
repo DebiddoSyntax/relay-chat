@@ -294,19 +294,33 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             print('running')
             previous_messages = await sync_to_async(
-                lambda: list(Message.objects.filter(chat_id=self.chat_id).order_by('created_at')[:5]).reverse()
+                lambda: list(Message.objects.filter(chat_id=self.chat_id).exclude(id=user_message.id).order_by('-created_at')[:3])
             )()
+
+            previous_messages.reverse()
 
             conversation_history = []
             for msg in previous_messages:
+                role = "model" if msg.sender_id == ai_user.id else "user"
+                try:
+                    text = decrypt_message(msg.content, msg.iv) if msg.iv else msg.content
+                except Exception as e:
+                    logger.warning(f"Failed to decrypt history message {msg.id}: {e}")
+                    continue
+
+                if conversation_history and conversation_history[-1].role == role:
+                    continue
+
                 conversation_history.append(
                     types.Content(
-                        role="user" if msg.sender_id != ai_user.id else "model",
-                        parts=[types.Part(text=decrypt_message(msg.content, msg.iv) if msg.iv else msg.content)]
+                        role=role,
+                        parts=[types.Part(text=text)]
                     )
                 )
 
-            # Add current user message
+            if conversation_history and conversation_history[-1].role == "user":
+                conversation_history.pop()
+
             conversation_history.append(
                 types.Content(
                     role="user",
@@ -314,43 +328,49 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 )
             )
 
-            print('convo', conversation_history)
+            # print('history roles:', [m.role for m in conversation_history])
 
             ai_text = ""
 
+    
             try:
                 response = await sync_to_async(
                     lambda: list(client.models.generate_content_stream(
-                        model="gemini-2.0-flash",
+                        model="gemini-2.5-flash",
                         contents=conversation_history,
                         config=types.GenerateContentConfig(
                             system_instruction=SYSTEM_PROMPT
                         )
                     ))
-                )()
-
-                for chunk in response:
-                    if chunk.text:
-                        text = chunk.text
-                        ai_text += text
-                        buffer_size = 5
-                        for i in range(0, len(text), buffer_size):
-                            piece = text[i:i+buffer_size]
-                            await self.channel_layer.group_send(
-                                self.group_name,
-                                {
-                                    "type": "chat.message.partial",
-                                    "sender_id": str(ai_user.id),
-                                    "content": piece
-                                }
-                            )
-                            await asyncio.sleep(0.03)
-
-                print("AI TEXT:", repr(ai_text))
-                print('reached')
+                )() 
+                print(f'response received, chunks: {len(response)}')
             except Exception as e:
-                print('failed ai', e)
-                raise
+                print(f"Gemini API error: {e}")
+                import traceback
+                traceback.print_exc()
+                await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
+                return
+
+            # print('response chunks:', response)
+            for chunk in response:
+                if chunk.text:
+                    text = chunk.text
+                    ai_text += text
+                    buffer_size = 5
+                    for i in range(0, len(text), buffer_size):
+                        piece = text[i:i+buffer_size]
+                        await self.channel_layer.group_send(
+                            self.group_name,
+                            {
+                                "type": "chat.message.partial",
+                                "sender_id": str(ai_user.id),
+                                "content": piece
+                            }
+                        )
+                        await asyncio.sleep(0.03)
+
+            # print("AI TEXT:", repr(ai_text))
+            # print('reached')
 
             if not ai_text.strip():
                 await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
@@ -367,14 +387,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 'type': 'message',
                 'id': str(message.id),
                 'chat_id': str(message.chat.id),
-                'sender': {
-                    'id': str(ai_user.id),
-                    'email': ai_user.email,
-                },
                 'sender_id': str(ai_user.id),
                 'content': decrypt_content,
                 'message_type': message.type,
                 'created_at': message.created_at.isoformat(),
+                'is_ai': True,
             }
 
    
@@ -398,9 +415,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
                         }
                     )
 
-
         except Exception as e:
-            # Send failed message
+            print(f"OUTER EXCEPTION: {e}")
+            import traceback
+            traceback.print_exc()
             await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
 
         finally:
