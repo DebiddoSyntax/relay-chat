@@ -8,7 +8,7 @@
 	--background: theme(--color-neutral-100);
 	--foreground: theme(--color-neutral-900);
 	--foreground-lower: theme(--color-neutral-600);
-	--gray-bg: theme(--color-neutral-200);
+	--gray-bg: theme(--color-neutral-400);
 	--gray-hover:  theme(--color-neutral-400);
 	--active-card:  theme(--color-primary-900);
 	--inactive-card:  theme(--color-neutral-100);
@@ -16,10 +16,8 @@
 	--border-lower: theme(--color-neutral-400);
 }
 
-
-
 .dark {
-	--background: #000000;
+	--background: theme(--color-neutral-900);
 	--foreground: theme(--color-neutral-100);
 	--foreground-lower: theme(--color-gray-500);
 	--gray-bg:  theme(--color-neutral-800);
@@ -29,7 +27,6 @@
 	--message-card:  theme(--color-neutral-700);
 	--border-lower: theme(--color-neutral-700);
 }
-
 
 @theme inline {
 	--color-primary: #3E166E;
@@ -42,7 +39,6 @@
 	--color-primary-800: #0C0416;
 	--color-primary-900: #06020B;
 
-
 	--color-neutral-100: #FFFFFF;
 	--color-neutral-200: #F2F2F2;
 	--color-neutral-300: #F5F5F5;
@@ -53,18 +49,23 @@
 	--color-neutral-800: #181818;
 	--color-neutral-900: #000000;
 
-
-	--color-border: var(--border-lower);
 	--color-background: var(--background);
 	--color-foreground: var(--foreground);
-	--color-foreground-lower: var(--foreground-lower);
+
 	--color-gray-bg: var(--gray-bg);
 	--color-gray-hover: var(--gray-hover);
+
 	--color-active-card: var(--active-card);
 	--color-inactive-card: var(--inactive-card);
 	--color-message-card: var(--message-card);
 
-	
+	--color-border: var(--border-lower);
+	--color-foreground-lower: var(--foreground-lower);
+
+	--breakpoint-3xl: 104rem;
+	--breakpoint-4xl: 112rem;
+	--breakpoint-5xl: 116rem;
+
 	/* fonts  */
 	--font-cherryBombOne:  "Cherry Bomb One", system-ui;
 
@@ -75,9 +76,6 @@ html, body {
   overflow: hidden;
 }
 
-
-
-
 body {
 	background: var(--background);
 	color: var(--foreground);
@@ -86,8 +84,7 @@ body {
 }
 
 
-
-/* Custom Scrollbar Styles */
+/* ==== Custom Scrollbar Styles ==== */
 .custom-scrollbar {
 	overflow: auto;
 	scrollbar-width: none;
@@ -128,6 +125,53 @@ body {
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
 	background-color: var(--foreground-lower);
 	border-radius: 6px;
+	opacity: 0;
+	transition: opacity 0.2s ease;
+}
+
+
+
+
+
+/* ==== Hide Scrollbar Styles ====*/
+.hide-scrollbar {
+	scrollbar-width: none;
+}
+
+/* Hide scrollbar in WebKit (Chrome, Safari) by default */
+.hide-scrollbar::-webkit-scrollbar {
+  	width: 0px;
+	height: 0px;
+	background: transparent;
+}
+
+/* Show scrollbar on hover */
+.hide-scrollbar:hover {
+	overflow: auto;
+  	scrollbar-width: none;
+}
+
+/* Webkit scrollbar on hover */
+.hide-scrollbar:hover::-webkit-scrollbar {
+	width: 0px;
+	height: 0px;
+}
+
+.hide-scrollbar::-webkit-scrollbar-track {
+  	background: transparent;
+}
+
+.hide-scrollbar:hover::-webkit-scrollbar-track {
+    background-color: var(--gray-bg);
+}
+
+.hide-scrollbar::-webkit-scrollbar-thumb {
+  	opacity: 0;
+}
+
+.hide-scrollbar:hover::-webkit-scrollbar-thumb {
+	background-color: var(--foreground-lower);
+	border-radius: 0px;
 	opacity: 0;
 	transition: opacity 0.2s ease;
 }

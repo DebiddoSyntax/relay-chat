@@ -1,6 +1,4 @@
 "use client"
-import { ImSpinner9 } from "react-icons/im";
-import { LuRefreshCcw } from "react-icons/lu";
 import { RiRefreshLine } from "react-icons/ri";
 
 function LoadingPage() {

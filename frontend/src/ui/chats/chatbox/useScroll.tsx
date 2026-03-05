@@ -17,9 +17,10 @@ export function useScroll(
 ) {
 
     const chatOpen = useChat((state) => state.chatOpen);
-    // const messages = useChat((state)=> state.messages)
     const [showScrollBtn, setShowScrollBtn] = useState(false);
     const previousHeightRef = useRef<number>(0);
+    const lastMessageIdRef = useRef<number | null>(null);
+    const isFetchingMoreRef = useRef(false);
 
     // scroll click 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -41,12 +42,12 @@ export function useScroll(
         const handleScroll = () => {
             if (container.scrollTop === 0 && nextUrl && !loading) {
                 previousHeightRef.current = container.scrollHeight;
+                isFetchingMoreRef.current = true;
                 fetchMoreMessages();
             }
 
             const threshold = 120;
             const isNotAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight > threshold;
-
             setShowScrollBtn(isNotAtBottom);
         };
 
@@ -66,10 +67,10 @@ export function useScroll(
         if (previousHeightRef.current > 0) {
             const newHeight = container.scrollHeight;
             const heightDifference = newHeight - previousHeightRef.current;
-
+            
             container.scrollTop = heightDifference;
-
             previousHeightRef.current = 0;
+            isFetchingMoreRef.current = false;
         }
     }, [sortedMessages]);
 
@@ -79,14 +80,21 @@ export function useScroll(
         if (loading) return;
         if (sortedMessages.length === 0) return;
 
-        requestAnimationFrame(() => scrollToBottom("auto"));
-    }, [chatOpen, activeId, loading, sortedMessages.length]);
+        const lastMessage = sortedMessages[sortedMessages.length - 1];
+
+        if (!lastMessage) return;
+
+        if (lastMessageIdRef.current !== lastMessage.id) {
+            lastMessageIdRef.current = lastMessage.id;
+            requestAnimationFrame(() => scrollToBottom("auto"));
+        }
+    }, [sortedMessages, chatOpen, activeId, loading]);
 
 
     useEffect(() => {
         const container = containerRef.current;
         if (!container || !chatOpen) return;
-
+   
         const threshold = 120;
 
         const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;

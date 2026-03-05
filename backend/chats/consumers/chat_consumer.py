@@ -328,28 +328,45 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 )
             )
 
-            # print('history roles:', [m.role for m in conversation_history])
-
             ai_text = ""
 
-    
-            try:
-                response = await sync_to_async(
-                    lambda: list(client.models.generate_content_stream(
-                        model="gemini-2.5-flash",
-                        contents=conversation_history,
-                        config=types.GenerateContentConfig(
-                            system_instruction=SYSTEM_PROMPT
-                        )
-                    ))
-                )() 
-                print(f'response received, chunks: {len(response)}')
-            except Exception as e:
-                print(f"Gemini API error: {e}")
-                import traceback
-                traceback.print_exc()
+            GEMINI_MODELS = [
+                "gemini-2.5-flash-lite",
+                "gemini-2.5-flash",
+                "gemini-2.0-flash",
+            ]
+
+            response = None
+            for model in GEMINI_MODELS:
+                try:
+                    print(f"Trying model: {model}")
+                    response = await sync_to_async(
+                        lambda m=model: list(client.models.generate_content_stream(
+                            model=m,
+                            contents=conversation_history,
+                            config=types.GenerateContentConfig(
+                                system_instruction=SYSTEM_PROMPT
+                            )
+                        ))
+                    )()
+                    print(f"Success with model: {model}")
+                    break 
+                except Exception as e:
+                    if '429' in str(e) or 'RESOURCE_EXHAUSTED' in str(e):
+                        print(f"Model {model} rate limited, trying next...")
+                        continue 
+                    else:
+                        print(f"Gemini API error: {e}")
+                        import traceback
+                        traceback.print_exc()
+                        await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
+                        return
+
+            if response is None:
+                print("All models exhausted")
                 await self.channel_layer.group_send(self.group_name, {'type': 'chat.message', 'message': failed_payload})
                 return
+            
 
             # print('response chunks:', response)
             for chunk in response:

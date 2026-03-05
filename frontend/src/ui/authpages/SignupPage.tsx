@@ -29,6 +29,7 @@ const SignupPage = () => {
 
     const router = useRouter();
     const setAuth = useAuth((state)=> state.setAuth)
+    const show = useAuth((state)=> state.show)
 
     const schema = yup.object({
         firstname: yup.string().required("Enter your first name"),
@@ -88,89 +89,88 @@ const SignupPage = () => {
     }
 
 
+    return (
+        <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh overflow-y-auto md:overflow-hidden bg-gray-bg'>
+            <LeftSection />
 
-  return (
-    <div className='grid grid-cols-1 md:grid-cols-2 w-full h-screen py-0 bg-dashboard-background'>
-        <LeftSection />
-
-        <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
-            <div className='w-full md:w-100 mx-auto mt-20'>
-                <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
-                <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
-                <form onSubmit={handleSubmit(handleSignUp)} className=''>
-                    <div>
-                        <div className="mb-5 mt-5 items-start text-left w-full">
-                            <label htmlFor="firstname" className="text-sm font-semibold  ">First Name</label>
-                            <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
+            <div className={`${!show ? 'hidden lg:flex flex-col' : 'flex flex-col'} w-full flex justify-center items-center h-full py-10 md:py-0`}>
+                <div className={`bg-background px-5 py-5 my-auto mx-auto border-border border-0 w-96`}>
+                    <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
+                    <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
+                    <form onSubmit={handleSubmit(handleSignUp)} className='mt-5 grid grid-cols-1 gap-3'>
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="items-start text-left w-full">
+                                <label htmlFor="firstname" className="text-sm font-semibold  ">First Name</label>
+                                <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
+                                        className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        {...register('firstname')}
+                                />
+                                <p className="text-red-700 text-sm mt-2">
+                                    {errors.firstname?.message && String(errors.firstname.message)}
+                                </p>
+                            </div>
+                            <div className="items-start text-left w-full">
+                                <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
+                                <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
                                     className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    {...register('firstname')}
-                            />
-                            <p className="text-red-700 text-sm mt-2">
-                                {errors.firstname?.message && String(errors.firstname.message)}
-                            </p>
+                                    {...register('lastname')}
+                                />
+                                <p className="text-red-700 text-sm mt-2">
+                                    {errors.lastname?.message && String(errors.lastname.message)}
+                                </p>
+                            </div>
                         </div>
-                        <div className="mb-5 mt-5 items-start text-left w-full">
-                            <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
-                            <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
+
+                        <div className="items-start text-left w-full">
+                            <label htmlFor="username" className="text-sm font-semibold  ">Email</label>
+                            <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
                                 className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                {...register('lastname')}
+                                {...register('email')}
                             />
                             <p className="text-red-700 text-sm mt-2">
-                                {errors.lastname?.message && String(errors.lastname.message)}
+                                {errors.email?.message && String(errors.email.message)}
                             </p>
                         </div>
-                    </div>
 
-                    <div className="mb-5 mt-5 items-start text-left w-full">
-                        <label htmlFor="username" className="text-sm font-semibold  ">Email</label>
-                        <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
-                            className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                            {...register('email')}
-                        />
-                        <p className="text-red-700 text-sm mt-2">
-                            {errors.email?.message && String(errors.email.message)}
-                        </p>
-                    </div>
+                        <div className="items-start text-left w-full">
+                            <label htmlFor="password" className="text-sm font-semibold ">Password</label>
+                            <div className='flex justify-between items-center w-full mt-2 p-3 border border-border-lower rounded-md'>
+                                <input type={visible ? "text" : "password"}
+                                    id="password"
+                                    placeholder='Enter a unique password'
+                                    className=" w-full focus:outline-0 focus:border-0 focus:placeholder:opacity-0 placeholder:text-sm md:placeholder:text-sm"
+                                    {...register('password')}
+                                />
 
-                    <div className="mb-5 mt-7 items-start text-left w-full">
-                        <label htmlFor="password" className="text-sm font-semibold ">Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 border border-border-lower rounded-md'>
-                            <input type={visible ? "text" : "password"}
-                                id="password"
-                                placeholder='Enter a unique password'
-                                className=" w-full focus:outline-0 focus:border-0 focus:placeholder:opacity-0 placeholder:text-sm md:placeholder:text-sm"
-                                {...register('password')}
-                            />
-
-                            <span onClick={toggleVisibility} className='hover:cursor-pointer'>
-                                {visible ? <FaEyeSlash /> : <FaEye/>}
-                            </span>
+                                <span onClick={toggleVisibility} className='hover:cursor-pointer'>
+                                    {visible ? <FaEyeSlash /> : <FaEye/>}
+                                </span>
+                            </div>
+                            <p className="text-red-700 text-sm mt-2">
+                                {errors.password?.message && String(errors.password.message)}
+                            </p>
                         </div>
-                        <p className="text-red-700 text-sm mt-2">
-                            {errors.password?.message && String(errors.password.message)}
-                        </p>
-                    </div>
-                    
-                    <ReCAPTCHA
-                        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                        onChange={setCaptchaToken}
-                        ref={recaptchaRef}
-                    />
-                    
-                    <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white hover:bg-blue-800 rounded-md">
-                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}
-                    </button>
+                        
+                        <ReCAPTCHA
+                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                            onChange={setCaptchaToken}
+                            ref={recaptchaRef}
+                        />
+                        
+                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
+                            {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}
+                        </button>
 
-                    <p className="text-red-700 text-center text-sm mt-2">
-                        {error}
-                    </p>
-                
-                </form>
-                <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/login'><span className='text-primary'>Login</span></Link></p>
+                        <p className="text-red-700 text-center text-sm mt-2">
+                            {error}
+                        </p>
+                    
+                    </form>
+                    <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/'><span className='text-primary'>Login</span></Link></p>
+                </div>
             </div>
         </div>
-    </div>
-  )
+    )
 }
 
 export default SignupPage;

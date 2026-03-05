@@ -32,11 +32,13 @@ export function useFetchMessages(
     // fetch chat messages 
     const fetchMessages = async() => {
 
-        if (activeId && messagesCache[activeId]) {
+        let firstOpen = false
+        if (activeId && messagesCache[activeId] && firstOpen) {
             setMessages(messagesCache[activeId].messages)
             setNextUrl(messagesCache[activeId].nextUrl)
             resetUnread(type, activeId)
             // console.log('from cache', messagesCache[activeId])
+            firstOpen = true
             return;
         }
 
@@ -98,7 +100,7 @@ export function useFetchMessages(
             })
         );
 
-    }, [activeId]);
+    }, [activeId, status, sortedMessages]);
     
 
 

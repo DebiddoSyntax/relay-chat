@@ -1,9 +1,10 @@
 import api from '@/src/functions/auth/AxiosConfig';
 import { useAuth } from '@/src/functions/auth/Store';
-import { GoogleLogin } from '@react-oauth/google';
+import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { FcGoogle } from "react-icons/fc";
 
 function GoogleAuth() {
 	const router = useRouter()
@@ -11,10 +12,10 @@ function GoogleAuth() {
 	const [error, setError] = useState('')
 
 	const handleLogin = async (googleResponse: any) => {
-		const payload = { access_token: googleResponse.credential }
+		const payload = { code: googleResponse.code };
 		try {
 			const res = await api.post('/auth/login/social/', payload);
-			// console.log('Logged in!', res.data);
+			console.log('Logged in!', res.data);
 			const authData = res.data
             setAuth(authData.user, authData.accessToken)
 			if(authData.first_login){
@@ -38,14 +39,24 @@ function GoogleAuth() {
 		setError('Login failed')
 	}
 
-	return ( 
-		<div className='mt-5'>
-			<GoogleLogin onSuccess={handleLogin} onError={handleError} />
-			  	<p className="text-red-700 text-center text-sm mt-2">
-					{error}
-				</p>
+	const login = useGoogleLogin({
+		onSuccess: handleLogin,
+		onError: handleError,
+		flow: 'auth-code', 
+	});
+
+	return (
+		<div className="mt-5">
+			<button onClick={() => login()} className="w-full flex items-center justify-center gap-3 py-3 rounded-lg border-2 border-border transition cursor-pointer" >
+				<FcGoogle className="w-5 h-5" />
+				Continue with Google
+			</button>
+
+			<p className="text-red-700 text-center text-sm mt-2">
+				{error}
+			</p>
 		</div>
-	)
+		);
 }
 
 export default GoogleAuth;

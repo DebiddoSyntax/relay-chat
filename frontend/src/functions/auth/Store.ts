@@ -19,6 +19,9 @@ interface AuthStore {
     setIsLoading: (loading: boolean) => void;
     setAuthInitialized: (initialized: boolean) => void;
     refreshAccessToken: () => Promise<string | undefined>;
+
+    show: boolean
+    setShow: (show:boolean)=> void
 }
 
 
@@ -32,6 +35,9 @@ export const useAuth = create<AuthStore>()(
             refreshToken: null,
             isLoading: false,
             authInitialized: false,
+            show: false,
+
+            setShow: (show) => set({show: show}),
 
 
             //setloading state

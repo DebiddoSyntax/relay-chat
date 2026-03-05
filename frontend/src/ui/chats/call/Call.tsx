@@ -510,7 +510,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
             {incomingCall?.isCalling && (
 				<div className={`fixed inset-0 ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} flex items-center justify-center z-50`}>
-					<div className="flex items-start justify-between gap-8 bg-white top-4 left-4 p-4 md:p-6 rounded-lg w-auto">
+					<div className="flex items-start justify-between gap-8 bg-background top-4 left-4 p-4 md:p-6 rounded-lg w-auto">
                         <div className="flex gap-3 mt-0">
                             {incomingCall?.image_url ? 
                                 <img src={incomingCall?.image_url} alt='user image' className='w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full' /> 
@@ -519,7 +519,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             }
                             
                             <div className='flex flex-col gap-3 items-start'>
-                                <p className="mt-0 text-base md:text-lg font-semibold">
+                                <p className="mt-0 text-base md:text-lg font-semibold text-forground">
                                     {incomingCall.callerName}
                                 </p>
                                 <p className="mt-0 text-xs md:text-sm font-semibold text-gray-600">
@@ -529,11 +529,11 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         </div>
 
 						<div className="flex gap-3 md:gap-4 mt-0">
-							<button onClick={handleJoinCall} className="flex items-center justify-center bg-green-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 
-							<button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleJoinCall} className="flex items-center justify-center bg-green-800 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 						</div>

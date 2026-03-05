@@ -3,7 +3,7 @@ import SetPassword from "@/src/ui/authpages/SetPassword"
 function setpassword() {
     return (
         <div>
-            <SetPassword />
+            <SetPassword reset={false}/>
         </div>
     )
 }

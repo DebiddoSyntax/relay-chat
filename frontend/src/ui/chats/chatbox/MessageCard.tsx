@@ -1,6 +1,7 @@
 import { MessageType } from "@/src/functions/types/ChatType";
 import { useAuth } from '@/src/functions/auth/Store'
 import { FaUserCircle } from "react-icons/fa";
+import ReactMarkdown from 'react-markdown'
 
 interface MessageProps {
     m: MessageType
@@ -42,7 +43,7 @@ function MessageCard({ m, isGroup }: MessageProps) {
                     px-3 py-2 w-auto min-w-32 max-w-72 md:max-w-80 xl:max-w-105 text-sm leading-6 rounded-sm wrap-break-word`}
                     >
                    
-                    {m.content}
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
                     <div className='mt-2 flex justify-end items-end'>
                         <p className='text-[10px]'>{time}</p>
                     </div>

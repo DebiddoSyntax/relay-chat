@@ -145,6 +145,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            if(status !== 'connected') return
             handleMessage()
         }
     };
@@ -329,7 +330,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                 </div>
             ) : (
                 <div className="hidden w-full h-dvh lg:flex flex-col justify-center items-center">
-                    <p className={` ${isAI && 'hidden'} my-auto text-center text-base font-semibold text-gray-800`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
+                    <p className={` ${isAI && 'hidden'} my-auto text-center text-base font-semibold text-neutral-600`}>{chats.length < 1 ? 'Start a chat' : 'Open a Chat'}</p>
                 </div>
             )}
         </div>

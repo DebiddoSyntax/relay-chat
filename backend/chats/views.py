@@ -10,6 +10,9 @@ from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
 from django.utils import timezone
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 from .serializers import SignupSerializer, LoginSerializer, MessageSerializer
 from .models import Chat, UserChat, Message, MessageReadBy
@@ -20,9 +23,13 @@ from imagekitio import ImageKit
 from .throttle import AuthRateLimit
 import requests
 import jwt
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+import resend
 
 
 
@@ -809,21 +816,44 @@ def login_view(request):
 @throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def google_login_view(request):
-    google_token = request.data.get("access_token")
+    google_code = request.data.get("code")
 
-    if not google_token:
+    if not google_code:
         return Response(
-            {"error": "No access token provided"},
+            {"error": "No code provided"},
             status=status.HTTP_400_BAD_REQUEST
         )
 
     google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-    if not google_client_id:
-        raise ValueError("GOOGLE_CLIENT_ID is not configured")
+    if not google_client_id or not google_client_secret:
+        raise ValueError("failed to load keys")
+
+    redirect_uri = "postmessage"
+
+    token_url = "https://oauth2.googleapis.com/token"
+
+    token_response = requests.post(token_url, data={
+        "code": google_code,
+        "client_id": google_client_id,
+        "client_secret": google_client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    })
+
+    token_json = token_response.json()
+
+    id_token_jwt = token_json.get("id_token")
+
+    if not id_token_jwt:
+        return Response(
+            {"error": "Failed to retrieve ID token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
-        idinfo = id_token.verify_oauth2_token(google_token, google_requests.Request(), google_client_id)
+        idinfo = id_token.verify_oauth2_token(id_token_jwt, google_requests.Request(), google_client_id)
 
         email = idinfo["email"]
         firstname = idinfo.get("given_name", "")
@@ -1066,3 +1096,87 @@ def logout_view(request):
     response.delete_cookie('refreshToken', path='/')
 
     return response
+
+
+
+@api_view(['POST'])
+@throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def request_reset_password_view(request):
+    email = request.data.get("email")
+
+    if not email:
+        return Response({"ok1": True}, status=status.HTTP_200_OK)
+
+    resend_key = os.environ.get("RESEND_KEY")
+    if not resend_key:
+        raise ValueError("RESEND_KEY is not configured")
+    
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({"ok2": True}, status=status.HTTP_200_OK)
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    reset_link = f"http://localhost:3000/reset-password/{uid}/{token}"
+
+
+    resend.api_key = resend_key
+
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev", 
+            "to": user.email,                 
+            "subject": "Reset your password",
+            "html": f"""
+                <p>You requested a password reset.</p>
+                <p><a href="{reset_link}">Click here to reset your password</a></p>
+                <p>If you didn't request this, ignore this email.</p>
+            """,
+        })
+    except Exception as e:
+        print(f"Email send failed: {e}")
+
+    return Response({"ok3": True}, status=status.HTTP_200_OK)
+
+
+
+
+@api_view(['POST'])
+@throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def reset_password_view(request):
+    data = request.data
+
+    required_fields = [ 'id', 'token', 'password', 'confirmPassword']
+
+    missing_fields = [field for field in required_fields if not data.get(field)]
+
+    if missing_fields:
+        return Response({ 'detail': f'Missing required fields: {", ".join(missing_fields)}' }, status=status.HTTP_400_BAD_REQUEST)
+
+    uid = data['id']
+    token = data['token']
+    password = data['password']
+    confirm_password = data['confirmPassword']
+
+    if password != confirm_password:
+        return Response( {"detail": "Passwords are not the same"}, status=status.HTTP_400_BAD_REQUEST )
+
+
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = User.objects.get(pk=user_id)
+    except:
+        return Response({"detail": "Invalid request"}, status=400)
+
+    if not default_token_generator.check_token(user, token):
+        return Response({"detail": "Token expired or invalid"}, status=400)
+
+    user.set_password(password)
+    user.save()
+
+    return Response({"detail": "Password reset successful"})
+

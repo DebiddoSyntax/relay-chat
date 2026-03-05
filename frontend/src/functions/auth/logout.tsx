@@ -29,5 +29,5 @@ export const logoutAction = async (set: any, get: any) => {
     useAuth.persist.clearStorage();
     
     console.log("logged out");
-    redirect('/login')
+    redirect('/')
 }

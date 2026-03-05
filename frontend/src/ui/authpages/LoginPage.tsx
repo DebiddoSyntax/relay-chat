@@ -1,10 +1,10 @@
 "use client"
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/src/functions/auth/Store";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
@@ -25,8 +25,14 @@ interface loginType {
 const Loginpage = () => {
 
     const router = useRouter()
+    const pathname = usePathname()
 
     const setAuth = useAuth((state)=> state.setAuth)
+    const show = useAuth((state)=> state.show)
+
+    useEffect(() => {
+    window.scrollTo(0, 0);
+    }, [pathname]);
     
 
     const schema = yup.object({
@@ -85,15 +91,14 @@ const Loginpage = () => {
         }
     }
 
-    const [show, setShow] = useState(false)
-
 
     return (
-        <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh py-0 bg-dashboard-background'>
-            <LeftSection setShow={setShow} show={show} />
+        <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh overflow-y-auto md:overflow-hidden bg-gray-bg hide-scrollbar'>
+            <LeftSection />
 
-            <div className={`w-full px-5 py-5 md:px-8 md:py-8 my-auto mx-auto ${show ? 'block' : 'hidden md:block'}`}>
-                <div className='w-full md:w-100 mx-auto'>
+            {/* login card  */}
+            <div className={`${!show ? 'hidden lg:flex flex-col' : 'flex flex-col'}w-full flex justify-center items-center h-full`}>
+                <div className={`bg-background px-5 py-5 my-auto mx-auto border-border border-0 w-96`}>
                     <h1 className='text-2xl font-semibold text-primary'>Log In</h1>
                     <h3 className='my-3 text-sm font-semibold text-gray-500'>Welcome Back! Enter your details</h3>
                     <form onSubmit={handleSubmit(handleLogin)} className=''>
@@ -141,11 +146,11 @@ const Loginpage = () => {
                             sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                             onChange={setCaptchaToken}
                             ref={recaptchaRef}
-                            className="w-full"
-                            // style={}
+                            // className="w-full"
+                            // size="compact"
                         />
                     
-                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-primary text-white rounded-md">
+                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Login'}
                         </button>
 
@@ -155,6 +160,8 @@ const Loginpage = () => {
                         
                     
                     </form>
+
+                    {/* <p className="text-center text-lg font-semibold">Or</p> */}
 
                     <GoogleAuth />
                     <p className='mx-auto text-center text-sm font-semibold mt-7'>Don’t have an account? <Link href='/signup'><span className='text-primary'>Create one</span></Link></p>

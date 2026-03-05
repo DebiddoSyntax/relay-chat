@@ -2,7 +2,7 @@
 import { useReducer, useRef, useState } from 'react';
 import axios from 'axios';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import api from '@/src/functions/auth/AxiosConfig';
 import { useForm } from 'react-hook-form'
@@ -37,8 +37,12 @@ function ToggleReducer(state: StateDataType, action: ActionType) {
     }
 }
 
-function SetPassword() {
+
+
+function SetPassword({ reset }: { reset: boolean}) {
     const router = useRouter()
+	const { id, token } = useParams()
+
 	const [state, dispatch] = useReducer(ToggleReducer, initialState);
 	const [loading, setLoading] = useState(false)
 	const [message, setMessage] = useState<string | null>(null);
@@ -67,13 +71,20 @@ function SetPassword() {
 			return;
 		}
 
+		const resetPayload = { id, token, ...data }
+
+		const url = reset ? '/auth/password/reset/' : '/auth/password/set/'
+
+		const payload = reset ? resetPayload : data
+
 		try {
 			setLoading(true);
-			const response = await api.post(`/auth/setpassword/`, data);
+			const response = await api.post(url, payload);
 			console.log(response)
 			setError('')
 			setMessage(response.data.detail);
-			setTimeout(() => router.push('/chats'), 3000);
+			const redirect = reset ? '/' : '/chats'
+			setTimeout(() => router.push(redirect), 3000);
 		} catch (err: any) {
 			setError(err.response?.data?.detail || 'Something went wrong.');
 		} finally {
@@ -84,14 +95,14 @@ function SetPassword() {
 
 
 	return (
-		<div className="pt-24 bg-[#f2f2f2] h-screen">
+		<div className="pt-24 bg-gray-bg h-screen">
 			<h3 className='text-base md:text-lg font-semibold text-center mb-5'>Set a Login Password</h3>
-			<div className='px-8 md:px-10 lg:px-10 py-8 md:py-8 lg:py-10 bg-white w-[90%] sm:w-[70%] lg:w-[50%] xl:w-[40%] 2xl:w-[30%] mx-auto rounded-md hover:shadow-lg'>
+			<div className='px-8 md:px-10 lg:px-10 py-8 md:py-8 lg:py-10 bg-background w-[90%] sm:w-[70%] lg:w-[50%] xl:w-[40%] 2xl:w-[30%] mx-auto rounded-md hover:shadow-lg'>
 				<form onSubmit={handleSubmit(onSubmit)}>
 					<div  className='flex flex-col gap-6'>
 						<div className="w-full">
 							<label htmlFor="password" className="text-sm font-semibold">Password</label>
-							<div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+							<div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
 								<input type={state.passwordToggle ? "text" : "password"}
 									id="password"
 									placeholder='Enter a unique password'
@@ -111,7 +122,7 @@ function SetPassword() {
 
 						<div className="w-full">
 							<label htmlFor="confirmPassword" className="text-sm font-semibold">Confirm Password</label>
-							<div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+							<div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
 								<input type={state.confirmPasswordToggle ? "text" : "password"}
 									id="confirmPassword"
 									placeholder='Enter a unique password'
@@ -142,17 +153,19 @@ function SetPassword() {
 
 				</form>
 			</div>
-			<div className='w-full flex justify-center items-center'>
-				<button 
-					type='button' 
-					disabled={loading} 
-					className='mt-8 text-center text-base font-semibold text-primary cursor-pointer' 
-					onClick={()=> router.push('/chats')}
-				>
-					Skip
-				</button>
+			{!reset &&
+				<div className='w-full flex justify-center items-center'>
+					<button 
+						type='button' 
+						disabled={loading} 
+						className='mt-8 text-center text-base font-semibold text-primary cursor-pointer' 
+						onClick={()=> router.push('/chats')}
+					>
+						Skip
+					</button>
+				</div>
+			}
 			</div>
-		</div>
 	);
 }
 
