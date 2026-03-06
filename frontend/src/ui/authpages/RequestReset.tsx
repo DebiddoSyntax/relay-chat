@@ -94,7 +94,7 @@ function RequestReset() {
                         <p className="mt-5 text-base text-gray-600 w-full">
                             We have sent a password reset link to your email.
                         </p>
-                        <IoMdMailUnread className='mt-5 text-blue-700 text-4xl md:text-5xl mx-auto'/>
+                        <IoMdMailUnread className='mt-5 text-primary text-4xl md:text-5xl mx-auto'/>
                     </div>
                 </div>
             )}

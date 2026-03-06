@@ -68,17 +68,17 @@ export const InitializedInterceptor = (refreshAccessToken: () => Promise<string 
 
             const originalRequest = error.config;
 
-            if (originalRequest.url?.includes("/api/auth/refresh")) {
+            if (originalRequest.url?.includes("/auth/refresh") || originalRequest.url?.includes("/auth/logout/")) {
                 // console.log("Refresh failed. Logging out.");
 
                 processQueue(error, null);
-                useAuth.getState().logout();
+                // useAuth.getState().logout();
 
                 return Promise.reject(error);
             }
 
             
-            if (error.response?.status === 401 && !originalRequest._retry) {
+            if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes("/auth/refresh") && !originalRequest.url?.includes("/auth/logout/")) {
                 const token = useAuth.getState().accessToken;
                 
                 if (!token) {

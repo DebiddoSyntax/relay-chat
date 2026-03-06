@@ -21,7 +21,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (!user) return null
 
     return <div className={`flex flex-col md:flex-row gap-0 pl-0 md:pl-6 lg:pl-10 w-full h-full overflow-hidden`}>{children}</div>
-    // return <div className={`flex flex-col md:flex-row gap-0 pl-0 md:pl-6 lg:pl-10 w-full h-full ${pathname === '/profile' ? 'overflow-y-auto' : 'overflow-hidden'}`}>{children}</div>
 }
 
 export default ProtectedRoute

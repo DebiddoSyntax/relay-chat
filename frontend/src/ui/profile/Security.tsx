@@ -75,7 +75,7 @@ function Security() {
 
         try{
             setLoading(true)
-            const res = await api.post('/auth/password/update/', data)
+            const res = await api.post('/auth/user/password/update/', data)
             console.log(res.data)
             setToast({type: 'success', show: true, message: 'Password updated successfully'})
         } catch (err) {
@@ -154,34 +154,16 @@ function Security() {
                 </div>
             </div>
 
-            {/* <div className="flex justify-between gap-3 items-end mt-14 px-5 md:px-10">
-                <div className=''>
-                    <h5 className='text-sm font-semibold'>Apperarance</h5>
-                    <div className='mt-4 py-2 px-2 bg-gray-bg flex gap-2 items-center text-xs rounded-lg'>
-                        <div className={`${!isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
-                            <MdLightMode /> 
-                            <p>light</p>
-                        </div>
-                        <div className={`${isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
-                            <MdDarkMode /> 
-                            <p>dark</p>
-                        </div>
-                        <div className={`${isDarkMode && true && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
-                            <FiMonitor />
-                            <p>system</p>
-                        </div>
-                    </div>
-                </div> */}
-                <div className="flex justify-end gap-3 items-center mt-10 px-5 md:px-10">
-                    <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
-                        Log Out
-                    </button> 
+        
+            <div className="flex justify-end gap-3 items-center mt-10 px-5 md:px-10">
+                <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
+                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change Password'} 
+                </button>
 
-                    <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
-                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change Password'} 
-                    </button>
-                </div>
-            {/* </div> */}
+                <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
+                    Log Out
+                </button> 
+            </div>
         </form>
     )
 }

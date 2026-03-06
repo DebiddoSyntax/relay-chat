@@ -6,6 +6,7 @@ export const logoutAction = async (set: any, get: any) => {
     const token = get().accessToken;
 
     try {
+        useAuth.persist.clearStorage();
         set({ isLoading: true });
         if (token) {
             await api.post("/auth/logout/");
@@ -26,7 +27,6 @@ export const logoutAction = async (set: any, get: any) => {
         isLoading: false,
     });
 
-    useAuth.persist.clearStorage();
     
     console.log("logged out");
     redirect('/')

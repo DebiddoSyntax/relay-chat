@@ -22,6 +22,8 @@ interface AuthStore {
 
     show: boolean
     setShow: (show:boolean)=> void
+    isFirst: boolean
+    setIsFirst: (isFirst:boolean)=> void
 }
 
 
@@ -36,8 +38,10 @@ export const useAuth = create<AuthStore>()(
             isLoading: false,
             authInitialized: false,
             show: false,
+            isFirst: false,
 
             setShow: (show) => set({show: show}),
+            setIsFirst: (isFirst) => set({isFirst: isFirst}),
 
 
             //setloading state

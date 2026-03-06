@@ -56,13 +56,13 @@ const SignupPage = () => {
     
     const handleSignUp = async (data: signupType) => {
 
-        // if(!captchaToken || captchaToken == ''){
-        //     setError("Please verify captcha")
-        //     return
-        // }
+        if(!captchaToken || captchaToken == ''){
+            setError("Please verify captcha")
+            return
+        }
 
         const payload = {
-            // captchaToken,
+            captchaToken,
             ...data
         }
 
@@ -75,7 +75,7 @@ const SignupPage = () => {
             router.push('/chats')
         }catch(err){
             if (axios.isAxiosError(err)) {
-                // recaptchaRef.current?.reset();
+                recaptchaRef.current?.reset();
                 setCaptchaToken("");
 				console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
@@ -93,7 +93,7 @@ const SignupPage = () => {
         <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh overflow-y-auto md:overflow-hidden bg-gray-bg'>
             <LeftSection />
 
-            <div className={`${!show ? 'hidden lg:flex flex-col' : 'flex flex-col'} w-full flex justify-center items-center h-full py-10 md:py-0`}>
+            <div className={`${!show ? 'hidden lg:flex flex-col' : 'flex flex-col'} w-full flex justify-center items-center h-full py-10 md:py-10`}>
                 <div className={`bg-background px-5 py-5 my-auto mx-auto border-border border-0 w-96`}>
                     <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
                     <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
@@ -101,20 +101,24 @@ const SignupPage = () => {
                         <div className="grid grid-cols-1 gap-6">
                             <div className="items-start text-left w-full">
                                 <label htmlFor="firstname" className="text-sm font-semibold  ">First Name</label>
-                                <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
-                                        className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                        {...register('firstname')}
-                                />
+                                <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                    <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
+                                            className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                            {...register('firstname')}
+                                    />
+                                </div>
                                 <p className="text-red-700 text-sm mt-2">
                                     {errors.firstname?.message && String(errors.firstname.message)}
                                 </p>
                             </div>
                             <div className="items-start text-left w-full">
                                 <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
-                                <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
-                                    className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    {...register('lastname')}
-                                />
+                                <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                    <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
+                                        className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        {...register('lastname')}
+                                    />
+                                </div>
                                 <p className="text-red-700 text-sm mt-2">
                                     {errors.lastname?.message && String(errors.lastname.message)}
                                 </p>
@@ -123,10 +127,12 @@ const SignupPage = () => {
 
                         <div className="items-start text-left w-full">
                             <label htmlFor="username" className="text-sm font-semibold  ">Email</label>
-                            <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
-                                className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                {...register('email')}
-                            />
+                            <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
+                                    className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    {...register('email')}
+                                />
+                            </div>
                             <p className="text-red-700 text-sm mt-2">
                                 {errors.email?.message && String(errors.email.message)}
                             </p>
@@ -134,7 +140,7 @@ const SignupPage = () => {
 
                         <div className="items-start text-left w-full">
                             <label htmlFor="password" className="text-sm font-semibold ">Password</label>
-                            <div className='flex justify-between items-center w-full mt-2 p-3 border border-border-lower rounded-md'>
+                            <div className='flex justify-between items-center w-full mt-2 px-3 py-3 bg-gray-bg rounded-md text-sm'>
                                 <input type={visible ? "text" : "password"}
                                     id="password"
                                     placeholder='Enter a unique password'
@@ -151,11 +157,14 @@ const SignupPage = () => {
                             </p>
                         </div>
                         
+                        <div className="recaptcha-wrapper" style={{ width: '100%', overflow: 'hidden' }}>
                         <ReCAPTCHA
                             sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
                             onChange={setCaptchaToken}
                             ref={recaptchaRef}
+                            style={{ transform: 'scale(0.85)', transformOrigin: '0 0', width: '100%' }}
                         />
+                        </div>
                         
                         <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}

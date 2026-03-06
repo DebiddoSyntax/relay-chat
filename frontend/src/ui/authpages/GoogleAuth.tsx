@@ -9,6 +9,7 @@ import { FcGoogle } from "react-icons/fc";
 function GoogleAuth() {
 	const router = useRouter()
 	const setAuth = useAuth((state)=> state.setAuth)
+	const setIsFirst = useAuth((state)=> state.setIsFirst)
 	const [error, setError] = useState('')
 
 	const handleLogin = async (googleResponse: any) => {
@@ -17,9 +18,12 @@ function GoogleAuth() {
 			const res = await api.post('/auth/login/social/', payload);
 			console.log('Logged in!', res.data);
 			const authData = res.data
-            setAuth(authData.user, authData.accessToken)
+			
+			setIsFirst(authData.first_login)
+			setAuth(authData.user, authData.accessToken);
+
 			if(authData.first_login){
-            	router.push(`/set-password`)
+				router.push(`/set-password`)
 			}else{
 				router.push(`/chats`)
 			}
@@ -48,8 +52,8 @@ function GoogleAuth() {
 	return (
 		<div className="mt-5">
 			<button onClick={() => login()} className="w-full flex items-center justify-center gap-3 py-3 rounded-lg border-2 border-border transition cursor-pointer" >
-				<FcGoogle className="w-5 h-5" />
-				Continue with Google
+				<FcGoogle className="text-base" />
+				<p className='text-sm font-semibold'>Continue with Google</p>
 			</button>
 
 			<p className="text-red-700 text-center text-sm mt-2">

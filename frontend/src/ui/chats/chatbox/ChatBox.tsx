@@ -319,7 +319,7 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 rows={1}
                             /> 
 
-                            <button onClick={handleMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-gray-400 text-white px-4 py-3 min-h-16 max-h-16 cursor-pointer rounded-sm">
+                            <button onClick={handleMessage} disabled={status !== 'connected'} className="bg-primary disabled:bg-neutral-500 text-white px-4 py-3 min-h-16 max-h-16 cursor-pointer rounded-sm">
                                 <IoSend />
                             </button>
                         </div>

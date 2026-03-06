@@ -5,7 +5,7 @@ import { AiFillFunnelPlot } from "react-icons/ai";
 import { RiChatSmileAiFill } from "react-icons/ri";
 import { MdJoinFull } from "react-icons/md";
 import { useAuth } from '@/src/functions/auth/Store';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const Messages = [
     { 
@@ -23,13 +23,16 @@ const Messages = [
     },
 ]
 
+
+
 function LeftSection() {
     const router = useRouter()
+    const pathname = usePathname()
     const show = useAuth((state)=> state.show)
     const setShow = useAuth((state)=> state.setShow)
 
-    const handleClick = (path: string) => {
-        router.push(path)
+    const handleClick = () => {
+        router.push(pathname)
         setTimeout(()=> {
             setShow(true)
         }, 2000)
@@ -42,8 +45,8 @@ function LeftSection() {
                 <h3 className="mt-0 font-cherryBombOne font-black">
                     RelayChat
                 </h3>
-                <button className="lg:hidden text-xs font-semibold px-5 py-3 border-2 border-primary-700 bg-primary-700 rounded-md cursor-pointer" onClick={()=> handleClick('/')}>
-                    Login
+                <button className="lg:hidden text-xs font-semibold px-5 py-3 border-2 border-primary-700 bg-primary-700 rounded-md cursor-pointer" onClick={handleClick}>
+                    {pathname === '/login' ? 'Login' : 'Sign Up'}
                 </button>
             </div>
 

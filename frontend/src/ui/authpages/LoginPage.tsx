@@ -13,6 +13,7 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import LeftSection from "./LeftSection";
 import api from "@/src/functions/auth/AxiosConfig";
 import GoogleAuth from "./GoogleAuth"
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 
 
 // const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
@@ -23,17 +24,13 @@ interface loginType {
 }
 
 const Loginpage = () => {
-
+    
     const router = useRouter()
     const pathname = usePathname()
-
+    const { executeRecaptcha } = useGoogleReCaptcha()
+    
     const setAuth = useAuth((state)=> state.setAuth)
     const show = useAuth((state)=> state.show)
-
-    useEffect(() => {
-    window.scrollTo(0, 0);
-    }, [pathname]);
-    
 
     const schema = yup.object({
         email: yup.string().required("Please enter your email").email("Please enter a valid email"),
@@ -58,20 +55,28 @@ const Loginpage = () => {
 
     const handleLogin = async (data: loginType) => {
 
-        // if(!captchaToken || captchaToken == ''){
-        //     setError("Please verify captcha")
-        //     return
-        // }
+        if (!executeRecaptcha) {
+            console.log("Recaptcha not ready")
+            return
+        }
+
+        // Execute reCAPTCHA and get the token
+        const token = await executeRecaptcha('login_form_submit')
+        setCaptchaToken(token)
+
+        if(!captchaToken || captchaToken == ''){
+            setError("Please verify captcha")
+            return
+        }
 
         const payload = {
-            // captchaToken,
+            captchaToken,
             ...data
         }
 
         try{
             setLoading(true)
             const response = await api.post(`/auth/login/`, payload)
-            // const response = await axios.post(`${apiURL}/auth/login/`, payload)
             // console.log("logged in", response.data)
             const authData = response.data
             setAuth(authData.user, authData.accessToken)
@@ -102,12 +107,14 @@ const Loginpage = () => {
                     <h1 className='text-2xl font-semibold text-primary'>Log In</h1>
                     <h3 className='my-3 text-sm font-semibold text-gray-500'>Welcome Back! Enter your details</h3>
                     <form onSubmit={handleSubmit(handleLogin)} className=''>
-                        <div className="mb-5 mt-5 items-start text-left w-full">
+                        <div className="mb-5 mt-5 items-start text-left w-full text-sm">
                             <label htmlFor="email" className="text-sm font-semibold  ">Email</label>
-                            <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
-                                className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                {...register('email')}
-                            />
+                            <div className=" w-full p-3 mt-2 bg-gray-bg border-border rounded-md">
+                                <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
+                                    className="w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    {...register('email')}
+                                />
+                            </div>
                             <p className="text-red-700 text-sm mt-2">
                                 {errors.email?.message && String(errors.email.message)}
                             </p>
@@ -119,12 +126,12 @@ const Loginpage = () => {
                                 <label htmlFor="password" className="text-sm font-semibold  ">
                                     Password
                                 </label>
-                                <Link href="/reset" className="text-primary underline transition-colors text-sm">
+                                <Link href="/reset" className="text-primary-400 underline transition-colors text-sm">
                                     Forgot password?
                                 </Link>
                             </div>
                             
-                            <div className='flex justify-between items-center w-full p-3 border border-border-lower rounded-md'>
+                            <div className='flex justify-between items-center w-full p-3 bg-gray-bg rounded-md text-sm'>
                                 <input type={visible ? "text" : "password"}
                                     id="password"
                                     autoComplete="off"
@@ -143,7 +150,7 @@ const Loginpage = () => {
                         </div>
                         
                         <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
                             onChange={setCaptchaToken}
                             ref={recaptchaRef}
                             // className="w-full"
@@ -160,8 +167,11 @@ const Loginpage = () => {
                         
                     
                     </form>
-
-                    {/* <p className="text-center text-lg font-semibold">Or</p> */}
+                    <div className="mt-5 w-full flex gap-3 items-center">
+                        <div className="w-full border border-border"></div>
+                        <p className="text-center text-xs font-semibold">Or</p>
+                        <div className="w-full border border-border"></div>
+                    </div>
 
                     <GoogleAuth />
                     <p className='mx-auto text-center text-sm font-semibold mt-7'>Don’t have an account? <Link href='/signup'><span className='text-primary'>Create one</span></Link></p>

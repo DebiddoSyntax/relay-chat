@@ -73,7 +73,7 @@ function SetPassword({ reset }: { reset: boolean}) {
 
 		const resetPayload = { id, token, ...data }
 
-		const url = reset ? '/auth/password/reset/' : '/auth/password/set/'
+		const url = reset ? '/auth/user/password/reset/' : '/auth/user/password/set/'
 
 		const payload = reset ? resetPayload : data
 
