@@ -1,35 +1,61 @@
 "use client";
 import React, { createContext, useContext, useEffect, useState } from "react";
 
+type ThemeMode = "light" | "dark" | "system";
+
 type DarkModeContextType = {
-    isDarkMode: boolean;
-    toggleDarkMode: () => void;
+	isDarkMode: boolean;
+	theme: ThemeMode;
+	setTheme: (mode: ThemeMode) => void;
+	toggleDarkMode: () => void;
 };
 
 const DarkModeContext = createContext<DarkModeContextType | undefined>(undefined);
 
-// Helper: get initial theme
-const getInitialTheme = (): boolean => {
-	if (typeof window === "undefined") return false; // SSR safe
-	const savedTheme = localStorage.getItem("theme");
-	if (savedTheme === "dark") return true;
-	if (savedTheme === "light") return false;
-	return window.matchMedia("(prefers-color-scheme: dark)").matches;
+// Detect system preference
+const getSystemTheme = () =>
+	typeof window !== "undefined" &&
+	window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+const getInitialTheme = (): ThemeMode => {
+  if (typeof window === "undefined") return "light";
+  const saved = localStorage.getItem("theme") as ThemeMode | null;
+  return saved ?? "system";
 };
 
 export const DarkModeProvider = ({ children }: { children: React.ReactNode }) => {
-	const [isDarkMode, setIsDarkMode] = useState(getInitialTheme);
+	const [theme, setTheme] = useState<ThemeMode>(getInitialTheme);
+	const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
 
-	// Apply theme class whenever it changes
+	// Sync theme logic
 	useEffect(() => {
-		document.documentElement.classList.toggle("dark", isDarkMode);
-		localStorage.setItem("theme", isDarkMode ? "dark" : "light");
-	}, [isDarkMode]);
+		const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+		
+		const applyTheme = () => {
+			const dark = theme === "dark" || (theme === "system" && mediaQuery.matches);
+			setIsDarkMode(dark);
+			document.documentElement.classList.toggle("dark", dark);
+		};
 
-	const toggleDarkMode = () => setIsDarkMode((prev) => !prev);
+		applyTheme();
+
+		if (theme === "system") {
+			mediaQuery.addEventListener("change", applyTheme);
+			return () => mediaQuery.removeEventListener("change", applyTheme);
+		}
+	}, [theme]);
+
+	// Persist user choice
+	useEffect(() => {
+		localStorage.setItem("theme", theme);
+	}, [theme]);
+
+	const toggleDarkMode = () => {
+		setTheme(isDarkMode ? "light" : "dark");
+	};
 
 	return (
-		<DarkModeContext.Provider value={{ isDarkMode, toggleDarkMode }}>
+		<DarkModeContext.Provider value={{ isDarkMode, theme, setTheme, toggleDarkMode }}>
 			{children}
 		</DarkModeContext.Provider>
 	);

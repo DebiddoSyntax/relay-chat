@@ -1,6 +1,6 @@
 "use client"
-import ChatBox from '../ChatBox'
-import ChatOverview from '../ChatOverview'
+import ChatBox from '../chatbox/ChatBox'
+import ChatOverview from '../overview/ChatOverview'
 
 // main group component 
 function GroupChats() {

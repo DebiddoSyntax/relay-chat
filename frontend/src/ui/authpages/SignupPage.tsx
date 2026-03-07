@@ -7,14 +7,16 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from "axios";
-// import ReCAPTCHA from "react-google-recaptcha"
+import ReCAPTCHA from "react-google-recaptcha"
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useAuth } from "@/src/functions/auth/Store";
 import LeftSection from "./LeftSection";
+import api from "@/src/functions/auth/AxiosConfig";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 
 
 
-const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
+// const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 
 export interface signupType {
@@ -27,7 +29,11 @@ export interface signupType {
 const SignupPage = () => {
 
     const router = useRouter();
+    const { executeRecaptcha } = useGoogleReCaptcha()
+
+
     const setAuth = useAuth((state)=> state.setAuth)
+    const show = useAuth((state)=> state.show)
 
     const schema = yup.object({
         firstname: yup.string().required("Enter your first name"),
@@ -41,8 +47,9 @@ const SignupPage = () => {
         resolver: yupResolver(schema),
     });
 
+    const [showV2, setShowV2] = useState(false)
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-    // const recaptchaRef = useRef<ReCAPTCHA>(null);
+    const recaptchaRef = useRef<ReCAPTCHA>(null);
 
     const [error, setError] = useState("")
     const [loading, setLoading] = useState(false)
@@ -54,31 +61,42 @@ const SignupPage = () => {
     
     const handleSignUp = async (data: signupType) => {
 
-        // if(!captchaToken || captchaToken == ''){
-        //     setError("Please verify captcha")
-        //     return
-        // }
+         if (!executeRecaptcha) {
+            setError("Recaptcha not ready")
+            return
+        }
+
+        const token = await executeRecaptcha('login_submit')
+
+        if(showV2){
+            if(!captchaToken || captchaToken == ''){
+                setError("Please verify captcha")
+                return
+            }
+        }
 
         const payload = {
-            // captchaToken,
+            captchaToken: showV2 ? captchaToken : token,
+            expected_action: !showV2 ? 'login_submit' : '',
             ...data
         }
 
         try{
             setLoading(true)
-            const response = await axios.post(`${apiURL}/auth/signup/`, payload)
-            console.log("signed Up", response.data)
+            const response = await api.post(`/auth/signup/`, payload)
+            // console.log("signed Up", response.data)
             const authData = response.data
-            setAuth(authData.user, authData.accessToken, authData.refreshToken)
+            setAuth(authData.user, authData.accessToken)
             router.push('/chats')
         }catch(err){
             if (axios.isAxiosError(err)) {
-                // recaptchaRef.current?.reset();
+                recaptchaRef.current?.reset();
                 setCaptchaToken("");
-				console.log("error", err.response?.data);
-				setError(err.response?.data.email || "Something went wrong");
+                setShowV2(err.response?.data.require_v2)
+				// console.log("error", err.response?.data);
+				setError(err.response?.data.detail || "Something went wrong");
 			} else {
-				console.error("unexpected error", err);
+				// console.error("unexpected error", err);
 				setError("An unexpected error occurred");
 			}
         }finally{
@@ -87,89 +105,96 @@ const SignupPage = () => {
     }
 
 
+    return (
+        <div className='grid grid-cols-1 lg:grid-cols-2 w-full h-dvh overflow-y-auto md:overflow-hidden bg-gray-bg'>
+            <LeftSection />
 
-  return (
-    <div className='grid grid-cols-1 md:grid-cols-2 w-full h-screen py-0 bg-dashboard-background'>
-        <LeftSection />
+            <div className={`${!show ? 'hidden lg:flex flex-col' : 'flex flex-col'} w-full flex justify-center items-center h-full py-10 md:py-10`}>
+                <div className={`bg-background px-5 py-5 my-auto mx-auto border-border border-0 w-96`}>
+                    <h1 className='text-2xl font-semibold text-primary'>Create an account</h1>
+                    <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
+                    <form onSubmit={handleSubmit(handleSignUp)} className='mt-5 grid grid-cols-1 gap-3'>
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="items-start text-left w-full">
+                                <label htmlFor="firstname" className="text-sm font-semibold  ">First Name</label>
+                                <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                    <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
+                                            className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                            {...register('firstname')}
+                                    />
+                                </div>
+                                <p className="text-red-700 text-sm mt-2">
+                                    {errors.firstname?.message && String(errors.firstname.message)}
+                                </p>
+                            </div>
+                            <div className="items-start text-left w-full">
+                                <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
+                                <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                    <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
+                                        className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                        {...register('lastname')}
+                                    />
+                                </div>
+                                <p className="text-red-700 text-sm mt-2">
+                                    {errors.lastname?.message && String(errors.lastname.message)}
+                                </p>
+                            </div>
+                        </div>
 
-        <div className='bg-dashboard-foreground w-full h-full px-5 py-5 md:px-8 md:py-8'>
-            <div className='w-full md:w-[400px] mx-auto mt-20'>
-                <h1 className='text-2xl font-semibold text-blue-700'>Create an account</h1>
-                <h3 className='my-3 text-sm font-semibold text-gray-500'>Start chatting with your friends now</h3>
-                <form onSubmit={handleSubmit(handleSignUp)} className=''>
-                    <div>
-                        <div className="mb-5 mt-5 items-start text-left w-full">
-                            <label htmlFor="firstname" className="text-sm font-semibold  ">First Name</label>
-                            <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your first name'
-                                    className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                    {...register('firstname')}
-                            />
+                        <div className="items-start text-left w-full">
+                            <label htmlFor="username" className="text-sm font-semibold  ">Email</label>
+                            <div className=" w-full p-3 mt-2 bg-gray-bg rounded-md text-sm">
+                                <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
+                                    className=" w-full focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    {...register('email')}
+                                />
+                            </div>
                             <p className="text-red-700 text-sm mt-2">
-                                {errors.firstname?.message && String(errors.firstname.message)}
+                                {errors.email?.message && String(errors.email.message)}
                             </p>
                         </div>
-                        <div className="mb-5 mt-5 items-start text-left w-full">
-                            <label htmlFor="lastname" className="text-sm font-semibold">Last Name</label>
-                            <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your last name'
-                                className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                                {...register('lastname')}
-                            />
+
+                        <div className="items-start text-left w-full">
+                            <label htmlFor="password" className="text-sm font-semibold ">Password</label>
+                            <div className='flex justify-between items-center w-full mt-2 px-3 py-3 bg-gray-bg rounded-md text-sm'>
+                                <input type={visible ? "text" : "password"}
+                                    id="password"
+                                    placeholder='Enter a unique password'
+                                    className=" w-full focus:outline-0 focus:border-0 focus:placeholder:opacity-0 placeholder:text-sm md:placeholder:text-sm"
+                                    {...register('password')}
+                                />
+
+                                <span onClick={toggleVisibility} className='hover:cursor-pointer'>
+                                    {visible ? <FaEyeSlash /> : <FaEye/>}
+                                </span>
+                            </div>
                             <p className="text-red-700 text-sm mt-2">
-                                {errors.lastname?.message && String(errors.lastname.message)}
+                                {errors.password?.message && String(errors.password.message)}
                             </p>
                         </div>
-                    </div>
-
-                    <div className="mb-5 mt-5 items-start text-left w-full">
-                        <label htmlFor="username" className="text-sm font-semibold  ">Email</label>
-                        <input autoComplete="off" type="email" id="email" placeholder='Enter your email'
-                            className=" w-full p-3 border mt-2 border-border-lower rounded-md focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
-                            {...register('email')}
-                        />
-                        <p className="text-red-700 text-sm mt-2">
-                            {errors.email?.message && String(errors.email.message)}
-                        </p>
-                    </div>
-
-                    <div className="mb-5 mt-7 items-start text-left w-full">
-                        <label htmlFor="password" className="text-sm font-semibold ">Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 border border-border-lower rounded-md'>
-                            <input type={visible ? "text" : "password"}
-                                id="password"
-                                placeholder='Enter a unique password'
-                                className=" w-full focus:outline-0 focus:border-0 focus:placeholder:opacity-0 placeholder:text-sm md:placeholder:text-sm"
-                                {...register('password')}
+                        
+                        {showV2 &&
+                            <ReCAPTCHA
+                                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
+                                onChange={setCaptchaToken}
+                                ref={recaptchaRef}
                             />
+                        }
+                        
+                        <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
+                            {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}
+                        </button>
 
-                            <span onClick={toggleVisibility} className='hover:cursor-pointer'>
-                                {visible ? <FaEyeSlash /> : <FaEye/>}
-                            </span>
-                        </div>
-                        <p className="text-red-700 text-sm mt-2">
-                            {errors.password?.message && String(errors.password.message)}
+                        <p className="text-red-700 text-center text-sm mt-2">
+                            {error}
                         </p>
-                    </div>
                     
-                    {/* <ReCAPTCHA
-                        sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
-                        onChange={setCaptchaToken}
-                        ref={recaptchaRef}
-                    /> */}
-                    
-                    <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center h-full w-full place-items-center bg-blue-700 text-white hover:bg-blue-800 rounded-md">
-                        {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}
-                    </button>
-
-                    <p className="text-red-700 text-center text-sm mt-2">
-                        {error}
-                    </p>
-                
-                </form>
-                <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/login'><span className='text-blue-700'>Login</span></Link></p>
+                    </form>
+                    <p className='mx-auto text-center text-sm font-semibold mt-7'>Already have an account? <Link href='/'><span className='text-primary'>Login</span></Link></p>
+                </div>
             </div>
         </div>
-    </div>
-  )
+    )
 }
 
 export default SignupPage;

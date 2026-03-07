@@ -9,6 +9,11 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import axios from 'axios';
 import { ToastType } from './ProfileDetails';
 import ToastMessage from '../reusable/ToastMessage';
+import { useAuth } from '@/src/functions/auth/Store';
+import { MdLightMode, MdDarkMode } from "react-icons/md";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
+import { PiMonitorFill } from "react-icons/pi";
+import { FiMonitor } from "react-icons/fi";
 
 
 type ActionType =
@@ -43,7 +48,9 @@ function ToggleReducer(state: StateDataType, action: ActionType) {
 
 
 function Security() {
+    const { toggleDarkMode, isDarkMode } = useDarkMode()
 
+    const logout = useAuth((state)=> state.logout)
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
     const [loading, setLoading] = useState(false)
     const [toast, setToast] = useState<ToastType>(null)
@@ -64,19 +71,19 @@ function Security() {
 
     const onSubmit = async(data: SecurityType) => {
         
-        console.log(data)
+        // console.log(data)
 
         try{
             setLoading(true)
-            const res = await api.post('/auth/password/update/', data)
-            console.log(res.data)
+            const res = await api.post('/auth/user/password/update/', data)
+            // console.log(res.data)
             setToast({type: 'success', show: true, message: 'Password updated successfully'})
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 setToast({type: 'failure', show: true, message: err.response?.data?.detail || 'Failed to set new password'})
 			} else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setToast({type: 'failure', show: true, message: 'An unexpected error occurred'})
 			}
 		}finally{
@@ -84,6 +91,10 @@ function Security() {
         }
     }
 
+
+    const handleLogout = () => {
+        logout()
+    }
 
 
     return (
@@ -96,14 +107,14 @@ function Security() {
                 />
             )}
 
-            <div className="mt-5 md:mt-10 w-full px-5 md:px-10 border-t-2 border-gray-100 pt-10">
+            <div className="mt-5 md:mt-20 w-full px-5 md:px-10 border-t-2 border-border pt-10">
                 <h5 className="text-base md:text-lg xl:text-xl font-bold">Security</h5>
 
                 <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-6 items-start text-left w-full">
 
                     <div className="w-full">
                         <label htmlFor="password" className="text-sm font-semibold">Current Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md text-sm'>
                             <input type={state.passwordToggle ? "text" : "password"}
                                 id="password"
                                 placeholder='Enter a unique password'
@@ -123,7 +134,7 @@ function Security() {
 
                     <div className="w-full">
                         <label htmlFor="newPassword" className="text-sm font-semibold">New Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-[#f2f2f2] rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md text-sm'>
                             <input type={state.newPasswordToggle ? "text" : "password"}
                                 id="newPassword"
                                 placeholder='Enter a unique password'
@@ -143,10 +154,15 @@ function Security() {
                 </div>
             </div>
 
-            <div className="flex justify-end items-center mt-6 px-5 md:px-10">
-                <button type="submit" disabled={loading} className={`px-5 py-4 w-40 bg-blue-700 text-white rounded-md text-xs font-semibold cursor-pointer`}>
-                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Save new password'} 
+        
+            <div className="flex justify-end gap-3 items-center mt-10 px-5 md:px-10">
+                <button type="submit" disabled={loading} className={`px-5 py-4 w-full sm:w-40 bg-primary text-white rounded-md text-xs font-semibold cursor-pointer`}>
+                    {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Change Password'} 
                 </button>
+
+                <button type="button" className="px-5 py-4 w-full sm:w-40 bg-red-600 text-white rounded-md text-xs font-semibold cursor-pointer" onClick={handleLogout}>
+                    Log Out
+                </button> 
             </div>
         </form>
     )

@@ -13,12 +13,17 @@ interface AuthStore {
     isLoading: boolean;
     authInitialized: boolean;
 
-    setAuth: (user: UserType, token: string, rtoken: string) => void;
+    setAuth: (user: UserType, token: string) => void;
     setUser: (user: UserType) => void;
     logout: () => Promise<void>;
     setIsLoading: (loading: boolean) => void;
     setAuthInitialized: (initialized: boolean) => void;
     refreshAccessToken: () => Promise<string | undefined>;
+
+    show: boolean
+    setShow: (show:boolean)=> void
+    isFirst: boolean
+    setIsFirst: (isFirst:boolean)=> void
 }
 
 
@@ -32,6 +37,11 @@ export const useAuth = create<AuthStore>()(
             refreshToken: null,
             isLoading: false,
             authInitialized: false,
+            show: false,
+            isFirst: false,
+
+            setShow: (show) => set({show: show}),
+            setIsFirst: (isFirst) => set({isFirst: isFirst}),
 
 
             //setloading state
@@ -43,8 +53,8 @@ export const useAuth = create<AuthStore>()(
             setUser: (user) => set({ user: user }),
             
             //set user auth data
-            setAuth: (user, token, rtoken) => {
-                set({ user, accessToken: token, refreshToken: rtoken, authInitialized: true });
+            setAuth: (user, token) => {
+                set({ user, accessToken: token, authInitialized: true });
             },
 
             

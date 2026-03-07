@@ -9,6 +9,7 @@ import { IoClose } from "react-icons/io5";
 import { FiPlus } from "react-icons/fi";
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { MembersType } from './GroupInfo';
+import { useChat } from '@/src/functions/chats/chatStore';
 
 
 
@@ -20,6 +21,9 @@ interface Props{
 
 
 function AddMember({ activeId, setMembers }: Props) {
+
+	const groupChats = useChat((state)=> state.groupChats)
+	
 	// new member states 
 	const [newMember, setNewMember] = useState(false)
 	const [loading, setLoading] = useState(false)
@@ -64,7 +68,7 @@ function AddMember({ activeId, setMembers }: Props) {
 
         } catch (err) {
 			if (axios.isAxiosError(err)) {
-				console.error("error", err.response?.data);
+				// console.error("error", err.response?.data);
 				setErrorMessage(err.response?.data?.detail || "Something went wrong");
 			} else {
 				console.error("unexpected error", err);
@@ -75,11 +79,15 @@ function AddMember({ activeId, setMembers }: Props) {
 		}
     }
 
+	const currentChat = groupChats?.find(
+        (c) => c.chat_id == activeId
+    )
+
 	return (
 		
 		<div className='mt-10'>
-			{!newMember &&
-				<div className='flex gap-2 items-center text-sm cursor-pointer text-blue-700'>
+			{!newMember && currentChat?.my_role === 'admin' && 
+				<div className='flex gap-2 items-center text-sm cursor-pointer text-primary w-28'>
 					<FiPlus className='text-base'/>
 					<p className="" onClick={()=> setNewMember(true)}>Add Member</p>
 				</div>
@@ -97,13 +105,13 @@ function AddMember({ activeId, setMembers }: Props) {
 					<div className='flex gap-2 items-center text-sm w-full'>
 						<div className="mb-5 mt-5 items-start text-left w-full">
 							<input autoComplete="off" type="text" id="receiver" placeholder='Enter the new member email'
-								className=" w-full p-3 bg-gray-100 mt-0 rounded-sm focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
+								className=" w-full p-3 bg-gray-bg mt-0 rounded-sm focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
 								{...register('receiver')}
 							/>
 							
 						</div>
 
-						<button type='submit' className='py-3 px-8 w-40 text-xs text-center bg-blue-700 text-white rounded-sm cursor-pointer'>
+						<button type='submit' className='py-3 px-8 w-40 text-xs text-center border-2 border-primary bg-primary text-white rounded-sm cursor-pointer'>
 							{loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Add'} 
 						</button>
 

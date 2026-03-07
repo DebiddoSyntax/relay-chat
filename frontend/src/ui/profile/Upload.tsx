@@ -5,6 +5,7 @@ import { useRef, useState, Dispatch, SetStateAction } from "react";
 import { BiUpload } from "react-icons/bi";
 import { MdOutlineClear } from "react-icons/md";
 import { ToastType } from "./ProfileDetails";
+import { GrAttachment } from "react-icons/gr";
 
 
 interface ImageURLProps {
@@ -15,10 +16,11 @@ interface ImageURLProps {
   setSuccessMessage?: Dispatch<SetStateAction<string>>
   setErrorMessage?: Dispatch<SetStateAction<string>>
   setToast?: Dispatch<SetStateAction<ToastType>>
+  isChat: boolean
 }
 
 
-function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, setSuccessMessage, setToast }: ImageURLProps) {
+function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, setSuccessMessage, setToast, isChat }: ImageURLProps) {
     
     // progress state 
     const [progress, setProgress] = useState(0);
@@ -34,7 +36,7 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
             const { signature, expire, token, publicKey } = response.data;
             return { signature, expire, token, publicKey };
         } catch (error) {
-            console.error("Authentication error:", error);
+            // console.error("Authentication error:", error);
             throw new Error("Authentication request failed");
         }
     };
@@ -61,7 +63,7 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
         try {
             authParams = await authenticator();
         } catch (authError) {
-            console.error("Failed to authenticate for upload:");
+            // console.error("Failed to authenticate for upload:");
             setToast && setToast({type: 'failure', show: true, message: 'Failed to upload'})
             handleImageClear()
             setFileName('Upload file')
@@ -94,15 +96,15 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
 
         } catch (error) {
             if (error instanceof ImageKitAbortError) {
-                console.error("Upload aborted:", error.reason);
+                // console.error("Upload aborted:", error.reason);
             } else if (error instanceof ImageKitInvalidRequestError) {
-                console.error("Invalid request:", error.message);
+                // console.error("Invalid request:", error.message);
             } else if (error instanceof ImageKitUploadNetworkError) {
-                console.error("Network error:", error.message);
+                // console.error("Network error:", error.message);
             } else if (error instanceof ImageKitServerError) {
-                console.error("Server error:", error.message);
+                // console.error("Server error:", error.message);
             } else {
-                console.error("Upload error:", error);
+                // console.error("Upload error:", error);
             }
         }
     };
@@ -111,11 +113,44 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
 
 
     return (
-        <div className="flex gap-3 items-center">
-            <div className="border-2 border-gray-200 py-2 px-3 rounded-4xl cursor-pointer w-36 flex justify-center">
+        <>
+            {!isChat ? (
+                <div className="flex gap-3 items-center">
+                    <div className="border-2 border-gray-200 py-2 px-3 rounded-4xl cursor-pointer w-36 flex justify-center">
 
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <BiUpload />
+                        <label className="flex items-center gap-3 cursor-pointer">
+                            <BiUpload />
+                            <input
+                                type="file"
+                                // ref={fileInputRef} 
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    setFileName(file.name);
+                                    handleUpload(file);
+                                    
+                                    setFileName(e.target.files?.[0]?.name || "Upload file")
+                                }}
+                            />
+                            <span className="text-sm font-medium truncate w-20">
+                                {fileName}
+                            </span>
+                        </label>
+                    </div>
+                    
+                    {progress > 0 && (
+                        <span className="text-xs font-medium text-gray-600">
+                            {progress == 100 ? <MdOutlineClear className="text-2xl cursor-pointer" onClick={handleImageClear} /> : `${progress}%`}
+                        </span>
+                    )}
+
+
+                </div> 
+            ) : (
+                <div className="cursor-pointer">
+                    <GrAttachment className="text-2xl"/>
                     <input
                         type="file"
                         // ref={fileInputRef} 
@@ -123,26 +158,12 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
                         onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (!file) return;
-
-                            setFileName(file.name);
-                            handleUpload(file);
-                            
-                            setFileName(e.target.files?.[0]?.name || "Upload file")
+                            // handleUpload(file);
                         }}
                     />
-                    <span className="text-sm font-medium truncate w-20">
-                        {fileName}
-                    </span>
-                </label>
-            </div>
-            
-            {progress > 0 && (
-                <span className="text-xs font-medium text-gray-600">
-                    {progress == 100 ? <MdOutlineClear className="text-2xl cursor-pointer" onClick={handleImageClear} /> : `${progress}%`}
-                </span>
+                </div>
             )}
-
-        </div>
+        </>
     );
 };
 

@@ -26,7 +26,7 @@ export const connectSocket = (url: string, mount: boolean) => {
                 ws = new WebSocket(url)
 
                 ws.addEventListener("open", () => {
-                    console.log('WebSocket opened, waiting for auth_required...')
+                    // console.log('WebSocket opened, waiting for auth_required...')
                     setSocketError(false)
                     setSocketSuccess(false)
                 })
@@ -34,11 +34,11 @@ export const connectSocket = (url: string, mount: boolean) => {
                 ws.addEventListener("message", async (event) => {
                     try {
                         const data = JSON.parse(event.data)
-                        console.log('WebSocket message received:', data.type)
+                        // console.log('WebSocket message received:', data.type)
 
                         // Handle initial auth_required message from server
                         if (data.type === 'auth_required') {
-                            console.log('Received auth_required, sending token...')
+                            // console.log('Received auth_required, sending token...')
                             ws.send(JSON.stringify({
                                 type: 'auth',
                                 token: token,
@@ -49,7 +49,7 @@ export const connectSocket = (url: string, mount: boolean) => {
                         // Handle auth response
                         if (data.type === 'auth') {
                             if (data.success) {
-                                console.log('Authentication successful')
+                                // console.log('Authentication successful')
                                 setSocketSuccess(true)
                                 setSocketSuccessMessage('Authenticated')
                                 setSocketError(false)
@@ -57,26 +57,26 @@ export const connectSocket = (url: string, mount: boolean) => {
                             } else {
                                 // Handle auth failures
                                 const error = data.error
-                                console.log("Auth failed, reason:", error)
+                                // console.log("Auth failed, reason:", error)
 
                                 if (error === 'expired') {
-                                    console.log('Token expired, attempting refresh...')
+                                    // console.log('Token expired, attempting refresh...')
                                     try {
                                         const newToken = await refreshAccessToken()
-                                        console.log('Token refreshed, resending auth...')
+                                        // console.log('Token refreshed, resending auth...')
                                         ws.send(JSON.stringify({
                                             type: 'auth',
                                             token: newToken,
                                         }))
                                     } catch (refreshError) {
-                                        console.error('Token refresh failed:', refreshError)
+                                        // console.error('Token refresh failed:')
                                         setSocketError(true)
                                         setSocketErrorMessage('Failed to refresh token')
                                         setSocketSuccess(false)
                                         ws.close()
                                     }
                                 } else if (error === 'invalid') {
-                                    console.log('Invalid token, logging out...')
+                                    // console.log('Invalid token, logging out...')
                                     logout()
                                     setSocketError(true)
                                     setSocketErrorMessage('Invalid token')
@@ -95,26 +95,26 @@ export const connectSocket = (url: string, mount: boolean) => {
 
                         // Handle error messages
                         if (data.type === 'error') {
-                            console.error('Server error:', data.error)
+                            // console.error('Server error:', data.error)
                             setSocketError(true)
                             setSocketErrorMessage(data.error)
                             return
                         }
 
                     } catch (parseError) {
-                        console.error('Failed to parse message:', parseError, event.data)
+                        // console.error('Failed to parse message:', parseError, event.data)
                     }
                 })
 
                 ws.addEventListener("error", (event) => {
-                    console.error('WebSocket error:', event)
+                    // console.error('WebSocket error:', event)
                     setSocketError(true)
                     setSocketErrorMessage('WebSocket connection error')
                     setSocketSuccess(false)
                 })
 
                 ws.addEventListener("close", (event) => {
-                    console.log('WebSocket closed:', event.code, event.reason)
+                    // console.log('WebSocket closed:', event.code, event.reason)
                     setSocketSuccess(false)
                     setSocketReady(false)
 
@@ -123,14 +123,14 @@ export const connectSocket = (url: string, mount: boolean) => {
 
                     // Reconnect after 5 seconds (reduced from 30s for faster feedback)
                     reconnectTimeout = setTimeout(() => {
-                        console.log('Attempting to reconnect...')
+                        // console.log('Attempting to reconnect...')
                         connect()
                     }, 5000)
                 })
 
                 setSocket(ws)
             } catch (error) {
-                console.error('Failed to create WebSocket:', error)
+                // console.error('Failed to create WebSocket:', error)
                 setSocketError(true)
                 setSocketErrorMessage('Failed to create WebSocket connection')
             }

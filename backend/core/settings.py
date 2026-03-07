@@ -19,6 +19,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost', '192.168.0.129', '192.168.43.196']
 
+PASSWORD_RESET_TIMEOUT = 900
 
 # Application definition
 INSTALLED_APPS = [
@@ -34,14 +35,35 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     "rest_framework_simplejwt.token_blacklist",
-    'channels'
+    'channels',
 ]
+
+
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['email', 'profile'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+}
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.AnonRateThrottle",
+    ),
+
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/minute",
+        "user": "50/minute",
+        "authLimit": "5/minute",
+    },
 }
+
 
 
 CORS_ALLOWED_ORIGINS = [

@@ -4,6 +4,7 @@ import { ImCancelCircle } from "react-icons/im";
 import { FaRegCheckCircle } from "react-icons/fa"
 import { IoClose } from "react-icons/io5";
 import { TiWarning } from "react-icons/ti";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
 
 interface ModalProps{
     modalState: "idle" | "loading" | "success" | "failure" | "confirm"
@@ -27,19 +28,20 @@ interface ModalProps{
 
 function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handleConfirm, handleFetch, FailedMessage, LoadingMessage, SuccessMessage, ConfirmHeadingMessage, ConfirmSubHMessage, ButtonText, ButtonTextColor, ButtonColor, ButtonType }: ModalProps) {
     
-        const callFunction = () => {
-            if(handleFetch){
-                handleFetch()
-            }
+    const { isDarkMode } = useDarkMode()
+    const callFunction = () => {
+        if(handleFetch){
+            handleFetch()
         }
+    }
 
-        const ConfirmOrFetch = ()=> {
-            if(handleConfirm){
-                handleConfirm()
-            }else{
-                callFunction()
-            }
+    const ConfirmOrFetch = ()=> {
+        if(handleConfirm){
+            handleConfirm()
+        }else{
+            callFunction()
         }
+    }
 
 
     return (
@@ -49,8 +51,8 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
             </button>
 
             {modalOpen && (
-                <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
-                    <div className={`flex flex-col ${modalState == 'success' || modalState == 'failure'  || modalState == 'confirm'  ? 'justify-between' : 'justify-center'} relative ${modalState == 'confirm' && 'w-72 md:w-80 xl:w-96 h-72 md:h-72 xl:h-72'} w-60 md:w-72 xl:w-96 h-40 md:h-52 xl:h-64 m-auto bg-white py-5 px-5 rounded-md overflow-hidden`} 
+                <div className={`fixed inset-0 flex ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} justify-center items-center z-50`}>
+                    <div className={`flex flex-col ${modalState == 'success' || modalState == 'failure'  || modalState == 'confirm'  ? 'justify-between' : 'justify-center'} relative ${modalState == 'confirm' && 'w-72 md:w-80 xl:w-96 h-72 md:h-72 xl:h-72'} w-60 md:w-72 xl:w-96 h-40 md:h-52 xl:h-64 m-auto bg-background py-5 px-5 rounded-md overflow-hidden`} 
                         // ref={modalRef}
                     >
                         
@@ -65,7 +67,7 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
                         <div className='flex flex-col justify-center h-full'>
                         
                             {modalState == 'loading' && (
-                                <div className="flex flex-col gap-6 justify-center bg-white">
+                                <div className="flex flex-col gap-6 justify-center bg-background">
                                     <div className="flex justify-center">
                                         <LuLoader className="animate-spin text-4xl md:text-5xl xl:text-6xl"/>
                                     </div>
@@ -76,7 +78,7 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
                             )}
 
                             {modalState == 'failure' && (
-                                <div className="flex flex-col gap-6 justify-center bg-white">
+                                <div className="flex flex-col gap-6 justify-center bg-background">
                                     <div className="flex justify-center">
                                         <ImCancelCircle className="text-red-700 text-4xl md:text-5xl xl:text-6xl"/>
                                     </div>
@@ -92,7 +94,7 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
                             )}
 
                             {modalState == 'confirm' && (
-                                <div className="flex flex-col gap-6 justify-center w-full bg-white">
+                                <div className="flex flex-col gap-6 justify-center w-full bg-background">
                                     <div className=''>
                                         <p className='text-sm font-semibold text-center'>{ConfirmHeadingMessage}</p>
                                         <p className='mt-2 text-xs font-medium text-gray-600 text-center'>{ConfirmSubHMessage}</p>
@@ -111,7 +113,7 @@ function LoadingModal({ errorMessage, modalOpen, setModalOpen, modalState, handl
                                         </p>
                                     </div>
                                     <div className='grid grid-cols-2 gap-2 items-center w-full'>
-                                        <button type='button' className='px-3 py-3 bg-white border-2 border-border-lower text-xs rounded-sm font-semibold cursor-pointer' onClick={()=> setModalOpen(false)}>Cancel</button>
+                                        <button type='button' className='px-3 py-3 bg-background border-2 border-border text-xs rounded-sm font-semibold cursor-pointer' onClick={()=> setModalOpen(false)}>Cancel</button>
                                         <button type='button' className='px-3 py-3 bg-red-700 text-xs rounded-sm text-white font-semibold cursor-pointer' onClick={callFunction}>Confirm</button>
                                     </div>
                                 </div>

@@ -9,9 +9,12 @@ import { FiEdit } from "react-icons/fi";
 import Upload from './Upload';
 import api from '@/src/functions/auth/AxiosConfig';
 import { AiOutlineLoading3Quarters } from "react-icons/ai";
-// import { Toaster, toast } from "react-hot-toast";
 import ToastMessage from '../reusable/ToastMessage';
 import axios from 'axios';
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
+import { PiMonitorFill } from "react-icons/pi";
+import { MdLightMode, MdDarkMode } from "react-icons/md";
+import { FiMonitor } from "react-icons/fi";
 
 
 
@@ -25,6 +28,8 @@ export type ToastType = {
 function ProfileDetails() {
     const user = useAuth((state)=> state.user)
     const setUser = useAuth((state)=> state.setUser)
+
+    const { toggleDarkMode, isDarkMode } = useDarkMode()
 
     const [displayImage, setDisplayImage] = useState<string | undefined>('')
     const [editProfile, setEditProfile] = useState(false)
@@ -66,21 +71,21 @@ function ProfileDetails() {
 
 
     const onSubmit = async(data: EditProfileType) =>{
-        console.log(data)
+        // console.log(data)
 
         try{
             setLoading(true)
             const res = await api.patch('auth/user/update/', data)
-            console.log(res.data)
+            // console.log(res.data)
             setUser(res.data.user)
             setEditProfile(false)
             setToast({type: 'success', show: true, message: 'Profile updated successfully'})
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 setToast({type: 'failure', show: true, message: err.response?.data?.detail || 'Failed to update profile'})
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setToast({type: 'failure', show: true, message: 'An unexpected error occurred'})
             }
             
@@ -136,6 +141,7 @@ function ProfileDetails() {
                                         userImage={user?.image_url}
                                         setToast={setToast}
                                         onSelect={(selected) => field.onChange(selected)}
+                                        isChat={false}
                                     />
                                 )}
                             />
@@ -146,24 +152,51 @@ function ProfileDetails() {
                     )}
                 </div>
 
-
-                {!editProfile && (
-                    <div className='flex gap-2 items-center justify-center text-sm py-2 px-5 border-2 border-gray-200 rounded-4xl w-40 cursor-pointer' onClick={()=> setEditProfile(true)}>
-                        <FiEdit />
-                        <p>Edit Profile</p>
-                    </div>
-                )}
-
-                {editProfile && (
-                    <div className='flex gap-2 items-center'>
-                        <div className='text-sm font-medium py-2 px-5 border-2 border-gray-200 rounded-4xl w-auto cursor-pointer' onClick={handleCancel}>
-                            <p>cancel</p>
+                <div className='flex gap-3 items-center'>
+                    {/* <div className='py-2 px-2 bg-gray-bg flex gap-2 items-center text-xs rounded-lg'>
+                        <div className={`${!isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <MdLightMode /> 
+                            <p>light</p>
                         </div>
-                        <button type="submit" disabled={loading} className='text-sm text-white font-medium py-2 px-5 w-40 bg-black border-2 border-gray-200 rounded-4xl cursor-pointer'>
-                            {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Save changes'} 
-                        </button>
-                    </div>
-                )}
+                        <div className={`${isDarkMode && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <MdDarkMode /> 
+                            <p>dark</p>
+                        </div>
+                        <div className={`${isDarkMode && true && 'bg-background'} flex items-center gap-2 py-3 pl-3 pr-4  cursor-pointer rounded-md`} onClick={toggleDarkMode}>
+                            <FiMonitor />
+                            <p>system</p>
+                        </div>
+                    </div> */}
+                    {!editProfile && (
+                        <div className='flex gap-2 items-center justify-center text-sm py-2 px-5 border-2 border-border rounded-4xl w-40 cursor-pointer' onClick={()=> setEditProfile(true)}>
+                            <FiEdit />
+                            <p>Edit Profile</p>
+                        </div>
+                    )}
+
+                    {editProfile && (
+                        <div className='flex gap-2 items-center'>
+                            <div className='text-sm font-medium py-2 px-5 border-2 border-border rounded-4xl w-auto cursor-pointer' onClick={handleCancel}>
+                                <p>cancel</p>
+                            </div>
+                            <button type="submit" disabled={loading} className='text-sm text-background font-medium py-2 px-5 w-40 bg-foreground border-2 border-border rounded-4xl cursor-pointer'>
+                                {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Save changes'} 
+                            </button>
+                        </div>
+                    )}
+                    {/* <div className={`flex text-2xl items-center bg-dashboard-background p-2 mx-2 rounded-full cursor-pointer`} onClick={toggleDarkMode}>
+                        {isDarkMode ? (
+                            <div className='text-base text-green-700 stroke-2 hover:text-blue-700 cursor-pointer'>
+                                <MdDarkMode />
+                            </div>
+                        ) : (
+                            <div className='text-base text-green-700 stroke-2 hover:text-blue-700 cursor-pointer'>
+                                <MdLightMode />
+                            </div>
+                        )}
+                    </div> */}
+                    
+                </div>
             </div>
 
             <div className="">
@@ -171,14 +204,14 @@ function ProfileDetails() {
                     <div className="mt-0">
                         <label htmlFor='firstname' className="text-sm font-semibold">First Name</label>
                         {!editProfile && (
-                            <p className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium">
+                            <p className="w-full mt-2 px-3 py-3  bg-gray-bg rounded-md text-sm md:text-sm font-medium">
                                 {user?.firstname  || "Not Available"}
                             </p>
                         )}
                         {editProfile && (
                             <>
                                 <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your firstname'
-                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
+                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-gray-bg rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-xs"
                                     {...register('firstname')}
                                 />
                                 <p className="text-red-700 text-sm mt-0">
@@ -191,14 +224,14 @@ function ProfileDetails() {
                     <div className="mt-0">
                         <label htmlFor='lastname' className="text-sm font-semibold">Last Name</label>
                         {!editProfile && (
-                            <p className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium">
+                            <p className="w-full mt-2 px-3 py-3 overflow-hidden bg-gray-bg rounded-md text-sm md:text-sm font-medium">
                                 {user?.lastname  || "Not Available"}
                             </p>
                         )}
                         {editProfile && (
                             <>
                                 <input autoComplete="off" type="lastname" id="lastname" placeholder='Enter your lastname'
-                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    className="w-full mt-2 px-3 py-3 overflow-hidden bg-gray-bg rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
                                     {...register('lastname')}
                                 />
                                 <p className="text-red-700 text-sm mt-0">
@@ -211,14 +244,14 @@ function ProfileDetails() {
                     <div className="mt-0">
                         <label htmlFor='email' className="text-sm font-semibold">Email</label>
                         {!editProfile && (
-                            <p className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium">
+                            <p className="w-full mt-2 px-3 py-3  bg-gray-bg rounded-md text-sm md:text-sm font-medium">
                                 {user?.email  || "Not Available"}
                             </p>
                         )}
                         {editProfile && (
                             <>
                                 <input autoComplete="off" type="firstname" id="firstname" placeholder='Enter your email'
-                                    className="w-full mt-2 px-3 py-3  bg-[#f2f2f2] rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
+                                    className="w-full mt-2 px-3 py-3  bg-gray-bg rounded-md text-sm md:text-sm font-medium focus:outline-none focus:placeholder:opacity-0 placeholder:text-sm"
                                     {...register('email')}
                                 />
                                 <p className="text-red-700 text-sm mt-0">

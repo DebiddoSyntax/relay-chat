@@ -10,6 +10,7 @@ import { FaUserCircle } from "react-icons/fa";
 import { IoClose, IoVideocam } from "react-icons/io5";
 import { IoMdMicOff, IoMdMic } from "react-icons/io";
 import { FaPhone } from "react-icons/fa6";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
 
 type ActionType =
   | { type: "TOGGLE"; field: keyof CallStateType }
@@ -59,11 +60,12 @@ interface FailedStateType {
 
 
 function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolean | null}) {
-       
-    const token = useAuth((state)=> state.accessToken)
-    const refreshToken = useAuth((state)=> state.refreshToken)
+    
+    const { isDarkMode } = useDarkMode()
     const incomingCall = useChat((state)=> state.incomingCall)
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
+    const setActiveCall = useChat((state)=> state.setActiveCall)
+    const activeCall = useChat((state)=> state.activeCall)
 
     const [state, dispatch] = useReducer(ToggleReducer, initialState);
     const [fail, setFail] = useState<FailedStateType | null>(null)
@@ -84,34 +86,35 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
     const bothConnectedRef = useRef(false);
     const callCleanedUpRef = useRef(true); 
     const unansweredTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const inCallRef = useRef(false);
 
 
+    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
 
 
     const refreshAccess = async () => {
         try {
-            const res = await api.post(`/auth/refresh/`, { refreshToken: refreshToken });
+            const res = await api.post(`/auth/refresh/`);
             const newToken = res.data.accessToken;
             useAuth.setState({ accessToken: newToken });
-            console.log('refreshed and added, websocket')
+            // console.log('refreshed and added, websocket')
             return newToken;
         } catch (e) {
-            console.log('failed to refresh token', e)
+            // console.log('failed to refresh token', e)
             setFail({failed: true, failedMessage: 'Call failed'})
             return;
         } 
     }
 
-    const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
   
     const cleanupCall = async () => {
-        console.log("🧹 Starting cleanup...");
+        // console.log("🧹 Starting cleanup...");
 
         // Stop all media tracks first
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
                 track.stop();
-                console.log(`  Stopped ${track.kind} track`);
+                // console.log(`  Stopped ${track.kind} track`);
             });
             streamRef.current = null;
         }
@@ -143,7 +146,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                 try {
                     await peerRef.current.removeTrack(sender);
                 } catch (e) {
-                    console.warn("⚠️ Error removing track:", e);
+                    // console.warn("⚠️ Error removing track:");
                 }
             }
             peerRef.current.close();
@@ -158,6 +161,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
         // Reset refs
         bothConnectedRef.current = false;
+        inCallRef.current = false;
         roleRef.current = "caller";
         callCleanedUpRef.current = true;
 
@@ -165,8 +169,19 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
     };
 
 
+    const setInCall = (val: boolean) => {
+        inCallRef.current = val;
+        if (val !== state.inCall) toggle('inCall');
+    };
+
+
     const joinCall = async () => {
         if (state.inCall && !activeId) return;
+
+        if(activeCall){
+            setFail({failed: true, failedMessage: 'User on a call' })
+            return
+        }
         
         if (!callCleanedUpRef.current) {
             let attempts = 0;
@@ -229,18 +244,38 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         toggle('remoteAudioActive')
                     }
                 } else {
-                    console.warn("⚠️ No stream in track event");
+                    // console.warn("⚠️ No stream in track event");
                 }
             };
 
 
-            const socket = new WebSocket(`${socketURL}/video/${currentId}/?token=${token}&audio=${isAudio}`);
+            const socket = new WebSocket(`${socketURL}/video/${currentId}/?audio=${isAudio}`);
             socketRef.current = socket;
 
             let remoteOfferSet = false;
 
             socket.onmessage = async event => {
                 const data = JSON.parse(event.data);
+
+                // console.log('global', data)
+                
+                if (data.type === 'error') {
+                    // console.log(`❌ ${data.error}: ${data.message}`);
+                    
+                    // handle token expiration 
+                    if (data.error === 'token_expired') {
+                        try{
+                            await refreshAccess()
+                        }catch(err){
+                            return;
+                        }
+                    }
+                       
+                }
+
+                if (data.type === 'connection' && data.status === 'connected') {
+                    // console.log('call socket connected')
+                }
 
                 try {
                     if (data.role) {
@@ -250,7 +285,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                     if (roleRef.current === "caller") {
                         unansweredTimeoutRef.current = setTimeout(() => {
                             if (!bothConnectedRef.current) {
-                                console.log("⏰ No answer. Ending call.");
+                                // console.log("⏰ No answer. Ending call.");
                                 handleLeaveCall();
                             }
                         }, 20000);
@@ -263,6 +298,8 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             clearTimeout(unansweredTimeoutRef.current);
                             unansweredTimeoutRef.current = null;
                         }
+
+                        if (!inCallRef.current) setInCall(true);
 
 
                         if (roleRef.current === "caller" && peerRef.current && peerRef.current.signalingState !== "closed") {
@@ -282,7 +319,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     }
                                 }));
                             } catch (e) {
-                                console.error("❌ Error creating/sending offer:", e);
+                                // console.error("❌ Error creating/sending offer:", e);
                                 toggle('failedCall');
                                 setFail({failed: true, failedMessage: 'Error creating/sending offer' })
                             }
@@ -314,7 +351,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
                             remoteOfferSet = true;
                         } catch (e) {
-                            console.error("❌ Error processing offer/answer:", e);
+                            // console.error("❌ Error processing offer/answer:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Error processing offer/answer' })
                         }
@@ -330,12 +367,12 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     })
                                 );
                             } else {
-                                console.warn("⚠️ Wrong signaling state for answer:", peerRef.current.signalingState);
+                                // console.warn("⚠️ Wrong signaling state for answer:", peerRef.current.signalingState);
                                 toggle('failedCall');
                                 setFail({failed: true, failedMessage: 'Wrong signaling state for answer' })
                             }
                         } catch (e) {
-                            console.error("❌ Error setting remote description:", e);
+                            // console.error("❌ Error setting remote description:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Error setting remote description' })
                         }
@@ -352,7 +389,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                 })
                             );
                         } catch (e) {
-                            console.warn("⚠️ Could not add ICE candidate:", e);
+                            // console.warn("⚠️ Could not add ICE candidate:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Could not add ICE candidate' })
                         }
@@ -363,11 +400,12 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         handleLeaveCall()
                     }
                 } catch (error) {
-                    console.error("❌ Error processing message:", error);
+                    // console.error("❌ Error processing message:", error);
                     toggle('failedCall');
                     setFail({failed: true, failedMessage: 'Error processing message' })
                 }
             };
+            
 
             // Send ICE candidates - verify everything is ready
             peer.onicecandidate = (e) => {
@@ -381,7 +419,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             }
                         }));
                     } catch (err) {
-                        console.error("❌ Error sending ICE candidate:", err);
+                        // console.error("❌ Error sending ICE candidate:", err);
                     }
                 }
             };
@@ -391,7 +429,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             callCleanedUpRef.current = false; 
 
         } catch (error) {
-            console.error("❌ Error joining call:", error);
+            // console.error("❌ Error joining call:", error);
             await cleanupCall();
             handleLeaveCall()
         }
@@ -411,7 +449,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                     role: roleRef.current
                 }));
             } catch (error) {
-                console.error("❌ Error sending disconnect notification:", error);
+                // console.error("❌ Error sending disconnect notification:", error);
             }
             
             // Give it a moment to send before closing
@@ -427,7 +465,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         resetStates();
         setIncomingCall(null);
 
-        console.log("✅ Call ended");
+        // console.log("✅ Call ended");
     };
 
 
@@ -435,6 +473,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         joinCall()
         toggle('callModal')
     }
+
 
     const handleLeaveCall = async () => {
         await leaveCall()
@@ -453,6 +492,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         }
         toggle('muteSound')
     }
+    
 
     const toggleMuteMic = () => {
         const audio = streamRef?.current?.getAudioTracks()[0]
@@ -469,8 +509,8 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             {activeId && <IconToShow className={`${isAudio ? 'text-base' : 'text-2xl'} cursor-pointer`} onClick={handleJoinCall} />}
 
             {incomingCall?.isCalling && (
-				<div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-					<div className="flex items-start justify-between gap-8 bg-white top-4 left-4 p-4 md:p-6 rounded-lg w-auto">
+				<div className={`fixed inset-0 ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} flex items-center justify-center z-50`}>
+					<div className="flex items-start justify-between gap-8 bg-background top-4 left-4 p-4 md:p-6 rounded-lg w-auto">
                         <div className="flex gap-3 mt-0">
                             {incomingCall?.image_url ? 
                                 <img src={incomingCall?.image_url} alt='user image' className='w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full' /> 
@@ -479,7 +519,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             }
                             
                             <div className='flex flex-col gap-3 items-start'>
-                                <p className="mt-0 text-base md:text-lg font-semibold">
+                                <p className="mt-0 text-base md:text-lg font-semibold text-forground">
                                     {incomingCall.callerName}
                                 </p>
                                 <p className="mt-0 text-xs md:text-sm font-semibold text-gray-600">
@@ -489,11 +529,11 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         </div>
 
 						<div className="flex gap-3 md:gap-4 mt-0">
-							<button onClick={handleJoinCall} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 
-							<button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+							<button onClick={handleJoinCall} className="flex items-center justify-center bg-green-800 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                 <ImPhoneHangUp />
                             </button>
 						</div>
@@ -503,7 +543,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
 
             {state.callModal && (
-                <div className="fixed inset-0 flex bg-black/50 justify-center items-center z-50">
+                <div className={`fixed inset-0 flex ${isDarkMode ? 'bg-foreground/20' : 'bg-foreground/50'} justify-center items-center z-50`}>
                     <div className="relative h-full w-full flex justify-center">
                         {fail?.failed ? (
                             <div className='relative w-80 h-40 bg-white rounded-xl m-auto p-3'>
@@ -516,7 +556,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         ) : (
                             <div className="relative w-[90%] md:w-[80%] xl:w-[60%] h-[80%] bg-black rounded-xl overflow-hidden pt-18 md:pt-20 pb-20 md:pb-24 m-auto">
                                 <div className="absolute flex items-center gap-6 top-4 left-4 px-4 py-2">
-                                    <p className={`${bothConnectedRef.current == true ? 'text-green-500' : 'text-blue-700'}`}>
+                                    <p className={`${bothConnectedRef.current == true ? 'text-green-500' : 'text-primary'}`}>
                                         {bothConnectedRef.current == true ? 'connected' : 'connecting...'}
                                     </p>
                                 </div>
@@ -528,7 +568,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     {!isAudio ? 
                                         <video ref={remoteVideoRef} autoPlay playsInline
                                             className={`object-cover transition-all duration-300 ${state.switchVid
-                                                ? "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"
+                                                ? "absolute bottom-4 right-4 w-[120] md:w-45 h-45 md:h-70 rounded-xl shadow-lg"
                                                 : "w-full h-full" }`}
                                         />
                                     :
@@ -543,7 +583,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                         <video ref={localVideoRef} autoPlay playsInline muted
                                             className={`object-cover transition-all duration-300 ${state.switchVid
                                                 ? "w-full h-full"
-                                                : "absolute bottom-4 right-4 w-[120] md:w-[180px] h-[180px] md:h-[280px] rounded-xl shadow-lg"}`}
+                                                : "absolute bottom-4 right-4 w-[120] md:w-45 h-45 md:h-70  rounded-xl shadow-lg"}`}
                                         />
                                         :
                                         <audio ref={localAudioRef} autoPlay muted playsInline
@@ -554,22 +594,22 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                 </div>
                 
                                 {/* Controls */}
-                                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 bg-white py-5">
+                                <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-6 bg-gray-bg py-5">
                 
                                     <button onClick={handleLeaveCall} className="flex items-center justify-center bg-red-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         <ImPhoneHangUp />
                                     </button>
                 
                                     {!isAudio && 
-                                        <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                        <button onClick={()=> toggle('switchVid')} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                             <MdCameraswitch />
                                         </button>
                                     }
                 
-                                    <button onClick={()=> toggleMuteVid()} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                    <button onClick={()=> toggleMuteVid()} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         {state.muteSound ? <HiSpeakerXMark /> : <HiSpeakerWave />}
                                     </button>
-                                    <button onClick={()=> toggleMuteMic()} className="flex items-center justify-center bg-blue-700 text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
+                                    <button onClick={()=> toggleMuteMic()} className="flex items-center justify-center bg-primary text-white w-12 md:w-14 xl:w-16 h-12 md:h-14 xl:h-16 rounded-full text-2xl cursor-pointer">
                                         {state.muteMic ? <IoMdMicOff /> : <IoMdMic />}
                                     </button>
                 

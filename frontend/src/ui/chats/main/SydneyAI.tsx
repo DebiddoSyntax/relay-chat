@@ -1,6 +1,6 @@
 "use client"
 import { useChat } from '@/src/functions/chats/chatStore'
-import ChatBox from '../ChatBox'
+import ChatBox from '../chatbox/ChatBox'
 import { useEffect } from 'react'
 import { useAuth } from '@/src/functions/auth/Store'
 import api from '@/src/functions/auth/AxiosConfig'
@@ -15,7 +15,7 @@ function SydneyAI() {
     useEffect(()=> {
         const FetchConversations = async()=> {
             if(!authInitialized){
-                console.log('not init')
+                // console.log('not init')
                 return
             }
             
@@ -25,7 +25,7 @@ function SydneyAI() {
                 setAiChatId(response.data.chat_id)
                 setChatOpen(true)
             }catch(error){
-                console.log('overview error', error)
+                // console.log('overview error', error)
             }
         }
 

@@ -4,6 +4,9 @@ from django.contrib.auth import get_user_model, authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Chat, UserChat, Message
 from .utils.decrypt import decrypt_message
+from .utils.verifyCaptcha import verifyCaptcha
+import requests
+import os
 
 
 User = get_user_model()
@@ -47,15 +50,41 @@ class SignupSerializer(serializers.ModelSerializer):
         },
     )
 
+    captchaToken = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "captcha is missing",
+            "blank": "captcha is missing",
+        },
+    )
+
+    expected_action = serializers.CharField( write_only=True, required=False, allow_blank=True,)
+
     class Meta:
         model = User
-        fields = [ 'firstname', 'lastname', 'email', 'password', ]
-
-    def validate_email(self, value):
-        email = value.lower()
+        fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken', 'expected_action']
+    
+    
+    def validate(self, data):
+        captcha_token = data.get("captchaToken")
+        expected_action = data.get("expected_action")
+        email_value = data.get('email')
+        
+        if not verifyCaptcha(captcha_token, expected_action):
+            raise serializers.ValidationError(
+                {"captcha": "CAPTCHA verification failed.", "v2": True}
+            )
+        
+        email = email_value.lower()
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError('Email already exists')
-        return email
+        
+        data['email'] = email
+        return data
+    
+    
 
     def create(self, validated_data): 
         user = User(
@@ -78,24 +107,69 @@ class SignupSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
+    email = serializers.EmailField(
+        required=True,
+        allow_blank=False,
+        error_messages={
+            "required": "email is missing",
+            "blank": "email is missing",
+        },
+    )
+
+    password = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "password is missing",
+            "blank": "password is missing",
+        },
+    )
+
+    captchaToken = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "captcha is missing",
+            "blank": "captcha is missing",
+        },
+    )
+
+    expected_action = serializers.CharField( write_only=True, required=False, allow_blank=True,)
+
+    class Meta:
+        model = User
+        fields = ['email', 'password', 'captchaToken', 'expected_action']
 
     def validate(self, data):
+        captcha_token = data.get("captchaToken")
+        expected_action = data.get("expected_action")
+        
+
+        if not verifyCaptcha(captcha_token, expected_action):
+            raise serializers.ValidationError(
+                {"captcha": "CAPTCHA verification failed.", "v2": True}
+            )
+
         email = data['email'].lower()
         password = data['password']
         user = authenticate(username=email, password=password)
 
         if not user:
             raise AuthenticationFailed('Invalid email or password')
+        
+        if not user.has_usable_password:
+            raise AuthenticationFailed('This account uses Google login. Please sign in with Google')
 
         refresh = RefreshToken.for_user(user)
 
-        self.user = user
-        self.access_token = str(refresh.access_token)
-        self.refresh_token = str(refresh)
-
-        return data
+        data.pop("captchaToken", None)
+        return {
+            "user": user,
+            "access": str(refresh.access_token),
+            "refresh": str(refresh)
+        }
 
   
 
@@ -112,22 +186,15 @@ class StartChatSerializer(serializers.Serializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_id = serializers.UUIDField(source='sender.id', read_only=True)
-    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    sender_image = serializers.URLField(source='sender.image_url', read_only=True)
+    sender_firstname = serializers.CharField(source='sender.firstname', read_only=True)
+    sender_lastname = serializers.CharField(source='sender.lastname', read_only=True)
     is_read = serializers.SerializerMethodField()
     content = serializers.SerializerMethodField()
 
     class Meta:
         model = Message
-        fields = [
-            'id',
-            'chat',
-            'sender_id',
-            'sender_name',
-            'content',
-            'type',
-            'created_at',
-            'is_read',
-        ]
+        fields = [ 'id', 'chat', 'sender_id', 'sender_firstname', 'sender_lastname', 'sender_image', 'content', 'type', 'created_at', 'is_read', ]
 
 
     def get_content(self, obj):

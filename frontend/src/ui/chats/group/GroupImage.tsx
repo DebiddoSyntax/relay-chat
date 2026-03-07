@@ -64,7 +64,7 @@ function GroupImage({ activeId }: { activeId: number | null}) {
         try{
             // setLoading(true)
             const res = await api.patch('/groupchat/image/', payload)
-            console.log(res.data)
+            // console.log(res.data)
             setGroupChats(prev => {
                 const exists = prev.find(chat => chat.chat_id === res.data.chat_id);
                 if (exists) return [{...exists, image_url: res.data.image_url}, ...prev.filter(chat => chat.chat_id !== res.data.chat_id)];
@@ -75,10 +75,10 @@ function GroupImage({ activeId }: { activeId: number | null}) {
             setErrorMessage('')
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 setErrorMessage(err.response?.data?.detail || "Something went wrong");
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setErrorMessage("An unexpected error occurred");
             }
         }finally{
@@ -109,6 +109,7 @@ function GroupImage({ activeId }: { activeId: number | null}) {
                                         setSuccessMessage={setSuccessMessage}
                                         setErrorMessage={setErrorMessage}
                                         onSelect={(selected) => field.onChange(selected)}
+                                        isChat={false}
                                     />
                                 )}
                             />

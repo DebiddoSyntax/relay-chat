@@ -1,0 +1,64 @@
+"use client"
+import { OverviewDataProps } from '@/src/functions/types/ChatType';
+import { IoCheckmarkDoneCircle } from "react-icons/io5";
+import { FaUserCircle } from "react-icons/fa";
+import { useDarkMode } from '@/src/functions/global/DarkModeContext';
+
+
+interface ChatCardProps { 
+    data: OverviewDataProps,
+    activeId: number | null
+    isAI: boolean
+    chatName: string | undefined
+    showImage: string | undefined
+}
+
+
+function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps ) {
+
+    const { toggleDarkMode, isDarkMode } = useDarkMode()
+    const currentDate = new Date(data.last_message_time);
+    
+    const today = new Date();
+    const yesterday = new Date();
+    yesterday.setDate(today.getDate() - 1);
+
+    const time = currentDate.toLocaleTimeString("en-GB", {
+        hour: "2-digit",
+        minute: "2-digit",
+    });
+
+
+    let displayDate;
+    if (currentDate.toDateString() === today.toDateString()) {
+        displayDate = time;
+    } else if (currentDate.toDateString() === yesterday.toDateString()) {
+        displayDate = "Yesterday";
+    } else {
+        displayDate = data.last_message_time?.split("T")[0];
+    }
+
+
+    return (
+        <div className={`px-5 py-3 mb-3 ${activeId == data.chat_id ? "bg-active-card text-background" : isDarkMode ? "bg-inactive-card text-foreground hover:text-foreground hover:bg-gray-hover/10" : "bg-inactive-card text-foreground hover:text-foreground hover:bg-gray-hover"} rounded-sm  w-full cursor-pointer`}>
+            <div className='flex gap-3 w-full'>
+                {showImage ? <img src={showImage} alt='user image' className='w-12 h-12 rounded-full' /> : <FaUserCircle className='w-14 h-14 rounded-full'/>}
+                <div className='flex flex-col gap-2 w-full'>
+                    <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
+                        <div className={`${isAI && 'flex gap-1 items-center text-sm'}`}>
+                            <p className='text-base font-semibold'>{chatName}</p>
+                            {isAI &&  <IoCheckmarkDoneCircle className='text-blue-700' />}
+                        </div>
+                        <p className={`${data.unread_count < 1 && 'hidden'} py-1 px-2 rounded-full bg-primary text-xs text-white font-semibold`}>{data.unread_count}</p>
+                    </div>
+                    <div className='flex justify-between items-center text-xs w-full gap-3 overflow-hidden'>
+                        <p className='w-28 sm:w-28 md:w-28 lg:w-24 2xl:w-40 overflow-hidden truncate'>{isAI ? 'click to view messages' : data.last_message}</p>
+                        <p className="">{displayDate}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+export default ChatCard

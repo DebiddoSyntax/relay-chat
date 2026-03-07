@@ -17,9 +17,9 @@ export default function ToastMessage({ message, onClose, type }: ToastProps) {
     const isSuccess = type === "success";
 
     return (
-        <div className="fixed top-5 right-5 z-50 animate-[slideIn_0.3s_ease-out]">
-            <div className={`relative bg-white border-l-4 ${isSuccess ? "border-green-500" : "border-red-500" } px-4 py-3 shadow-lg rounded-md min-w-[260px]`}>
-                <p className={`"text-sm font-medium text-green-700"`}>
+        <div className="fixed top-24 md:top-5 right-5 z-50 animate-[slideIn_0.3s_ease-out]">
+            <div className={`relative bg-background border-l-4 ${isSuccess ? "border-green-500" : "border-red-500" } px-4 py-5 shadow-lg rounded-md min-w-65`}>
+                <p className={`"text-xs font-medium text-green-700"`}>
                     {message}
                 </p>
 

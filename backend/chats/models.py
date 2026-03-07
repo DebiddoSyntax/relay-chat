@@ -65,6 +65,8 @@ class RefreshToken(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refresh_tokens")
     created_at = models.DateTimeField(default=timezone.now)
 
+
+
 class Chat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255, null=True, blank=True)
@@ -85,6 +87,8 @@ class Chat(models.Model):
     )
     updated_at = models.DateTimeField(auto_now=True)
 
+
+
 class UserChat(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -94,6 +98,8 @@ class UserChat(models.Model):
 
     class Meta:
         unique_together = ('user', 'chat')
+
+
 
 class Message(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -111,6 +117,8 @@ class Message(models.Model):
             models.Index(fields=['sender', '-created_at']),
         ]
         ordering = ['-created_at']
+
+
 
 class MessageReadBy(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

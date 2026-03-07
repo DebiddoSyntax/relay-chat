@@ -1,24 +1,31 @@
-from django.contrib.auth import get_user_model
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from .serializers import SignupSerializer, LoginSerializer
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from .models import Chat, UserChat
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.tokens import RefreshToken
-from django.conf import settings
-from django.shortcuts import get_object_or_404
-
-from .models import Message, Chat, MessageReadBy
-from .serializers import MessageSerializer
-from .pagination import MessageCursorPagination
-from django.utils import timezone
-from django.db.models import Q, Count
-from .utils.decrypt import decrypt_message
 import os
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from django.db.models import Q, Count
+from django.utils import timezone
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes
+
+from .serializers import SignupSerializer, LoginSerializer, MessageSerializer
+from .models import Chat, UserChat, Message, MessageReadBy
+from .pagination import MessageCursorPagination
+from .utils.decrypt import decrypt_message
+from .utils.encrypt import encrypt_message
 from imagekitio import ImageKit
+from .throttle import AuthRateLimit
+import requests
+
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+import resend
 
 
 
@@ -42,6 +49,45 @@ def image_auth(request):
         'signature': auth_params['signature'],
         'publicKey': os.environ.get('IMAGEKIT_PUBLIC_KEY')
     })
+
+
+# get chat messages
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_message_list_view(request, chat_id):
+ 
+    chat = get_object_or_404(Chat, id=chat_id)
+
+   
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response(
+            {"detail": "Chat does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    
+    queryset = (Message.objects.filter(chat=chat).select_related('sender').prefetch_related('read_by'))
+
+    # 4. Paginate manually
+    paginator = MessageCursorPagination()
+    page = paginator.paginate_queryset(queryset, request)
+
+    serializer = MessageSerializer(page, many=True, context={'request': request})
+
+
+    unread_messages = (Message.objects.filter(chat=chat).exclude(sender=request.user).exclude(read_by=request.user))
+
+
+    MessageReadBy.objects.bulk_create(
+        [
+            MessageReadBy(message=msg, user=request.user)
+            for msg in unread_messages
+        ],
+        ignore_conflicts=True
+    )
+
+    # 6. Return paginated response
+    return paginator.get_paginated_response(serializer.data)
 
 
 
@@ -105,57 +151,6 @@ def ai_chat_view(request):
 
 
 
-# get chat messages
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def chat_message_list_view(request, chat_id):
- 
-    chat = get_object_or_404(Chat, id=chat_id)
-
-   
-    if not chat.users.filter(id=request.user.id).exists():
-        return Response([], status=403)
-
-    
-    queryset = (
-        Message.objects
-        .filter(chat=chat)
-        .select_related('sender')
-        .prefetch_related('read_by')
-    )
-
-    # 4. Paginate manually
-    paginator = MessageCursorPagination()
-    page = paginator.paginate_queryset(queryset, request)
-
-    serializer = MessageSerializer(
-        page,
-        many=True,
-        context={'request': request}
-    )
-
-
-    unread_messages = (
-        Message.objects
-        .filter(chat=chat)
-        .exclude(sender=request.user)
-        .exclude(read_by=request.user)
-    )
-
-
-    MessageReadBy.objects.bulk_create(
-        [
-            MessageReadBy(message=msg, user=request.user)
-            for msg in unread_messages
-        ],
-        ignore_conflicts=True
-    )
-
-    # 6. Return paginated response
-    return paginator.get_paginated_response(serializer.data)
-
-
-
 # start private chat
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -213,10 +208,13 @@ def start_chat_view(request):
         UserChat(user=receiver, chat=chat),
     ])
 
+    ciphertext, iv = encrypt_message(content)
+
     message = Message.objects.create(
         chat=chat,
         sender=sender,
-        content=content,
+        content=ciphertext,
+        iv=iv,
         type='text'
     )
     
@@ -248,8 +246,6 @@ def start_chat_view(request):
         },
         status=status.HTTP_200_OK
     )
-
-
 
 
 # get private chats
@@ -455,44 +451,44 @@ def get_groupchat_view(request):
 
 
 # join group chat
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def join_groupchat_view(request):
-    user = request.user
-    request_group_id = request.data.get('groupId')
-    group_id = request.data.get('groupId').strip()
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# def join_groupchat_view(request):
+#     user = request.user
+#     request_group_id = request.data.get('groupId')
+#     group_id = request.data.get('groupId').strip()
 
-    if not group_id:
-        return Response(
-            {"detail": "Group id not provided"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+#     if not group_id:
+#         return Response(
+#             {"detail": "Group id not provided"},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
 
-    try:
-        chat = Chat.objects.get(id=group_id, is_group=True)
-    except Chat.DoesNotExist:
-        return Response(
-            {"detail": "Chat with this id does not exist"},
-            status=status.HTTP_404_NOT_FOUND
-        )
+#     try:
+#         chat = Chat.objects.get(id=group_id, is_group=True)
+#     except Chat.DoesNotExist:
+#         return Response(
+#             {"detail": "Chat with this id does not exist"},
+#             status=status.HTTP_404_NOT_FOUND
+#         )
 
-    chat.users.add(user)
+#     chat.users.add(user)
 
 
-    return Response(
-        {
-            "chat_id": chat.id,
-            "chat_name": chat.name,
-            "image_url": chat.image_url,
-            "last_message": (
-                decrypt_message(chat.last_message.content, chat.last_message.iv)
-                if chat.last_message and chat.last_message.iv
-                else chat.last_message.content if chat.last_message else None
-            ),
-            "last_message_time": chat.last_message.created_at if chat.last_message else None,
-        },
-        status=status.HTTP_200_OK
-    )
+#     return Response(
+#         {
+#             "chat_id": chat.id,
+#             "chat_name": chat.name,
+#             "image_url": chat.image_url,
+#             "last_message": (
+#                 decrypt_message(chat.last_message.content, chat.last_message.iv)
+#                 if chat.last_message and chat.last_message.iv
+#                 else chat.last_message.content if chat.last_message else None
+#             ),
+#             "last_message_time": chat.last_message.created_at if chat.last_message else None,
+#         },
+#         status=status.HTTP_200_OK
+#     )
 
 
 # add new member to group chat
@@ -534,6 +530,14 @@ def addmember_groupchat_view(request):
     if requester not in chat.users.all():
         return Response(
             {"detail": "You are not allowed to add members to this group"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    user_chat = UserChat.objects.filter(chat=chat, user=request.user).first()
+    
+    if not user_chat or user_chat.role != 'admin':
+        return Response(
+            {"detail": "You are not allowed to add member to this group"},
             status=status.HTTP_403_FORBIDDEN
         )
 
@@ -675,8 +679,11 @@ def delete_group_view(request, chat_id):
 
 
 
+# ======== AUTH =========
+
 # Signup view
 @api_view(['POST'])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def signup_view(request):
     serializer = SignupSerializer(data=request.data)
@@ -684,11 +691,12 @@ def signup_view(request):
     if not serializer.is_valid():
         errors = serializer.errors
 
+        require_v2 = errors.get("v2", [False])[0]
         field_name = list(errors.keys())[0]
         message = errors[field_name][0]
 
         return Response(
-            {"message": message},
+            {"detail": message, "require_v2": require_v2},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -726,27 +734,47 @@ def signup_view(request):
         path='/'
     )
 
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
     return response
 
 
 
 # Login view
 @api_view(['POST'])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def login_view(request):
     serializer = LoginSerializer(data=request.data)
 
+    if not serializer.is_valid():
+        errors = serializer.errors
+        require_v2 = errors.get("v2", [False])[0]
+        field_name = list(errors.keys())[0]
+        message = errors[field_name][0]
 
-    serializer.is_valid(raise_exception=True)
+        return Response(
+            {"detail": message, "require_v2": require_v2},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # serializer.save()
 
-    user = serializer.user
-    accessToken = serializer.access_token
-    refreshToken = serializer.refresh_token
+    user = serializer.validated_data["user"]
+    accessToken = serializer.validated_data["access"]
+    refreshToken = serializer.validated_data["refresh"]
 
     response = Response(
         {
             'accessToken': accessToken,
-            'refreshToken': refreshToken,
             'user': {
                 'id': user.id,
                 'email': user.email,
@@ -768,19 +796,158 @@ def login_view(request):
         path='/'
     )
 
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
     return response
+
+
+
+# Google Oauth view
+@api_view(['POST'])
+@throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def google_login_view(request):
+    google_code = request.data.get("code")
+
+    if not google_code:
+        return Response(
+            {"error": "No code provided"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    google_client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+
+    if not google_client_id or not google_client_secret:
+        raise ValueError("failed to load keys")
+
+    redirect_uri = "postmessage"
+
+    token_url = "https://oauth2.googleapis.com/token"
+
+    token_response = requests.post(token_url, data={
+        "code": google_code,
+        "client_id": google_client_id,
+        "client_secret": google_client_secret,
+        "redirect_uri": redirect_uri,
+        "grant_type": "authorization_code",
+    })
+
+    token_json = token_response.json()
+
+    id_token_jwt = token_json.get("id_token")
+
+    if not id_token_jwt:
+        return Response(
+            {"error": "Failed to retrieve ID token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    try:
+        idinfo = id_token.verify_oauth2_token(id_token_jwt, google_requests.Request(), google_client_id)
+
+        email = idinfo["email"]
+        firstname = idinfo.get("given_name", "")
+        lastname = idinfo.get("family_name", "")
+
+    except ValueError:
+        return Response(
+            {"error": "Invalid or expired token"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user, created = User.objects.get_or_create(
+        email=email,
+        defaults={
+            "firstname": firstname,
+            "lastname": lastname,
+        },
+    )
+
+    refresh = RefreshToken.for_user(user)
+    accessToken = str(refresh.access_token)
+    refreshToken = str(refresh),
+
+    response = Response(
+        {
+            'accessToken': accessToken,
+            "first_login": created,
+            'user': {
+                'id': user.id,
+                'email': user.email,
+                'firstname': user.firstname,
+                'lastname': user.lastname,
+                "image_url": user.image_url,
+            }
+        },
+        status=status.HTTP_200_OK
+    )
+
+    response.set_cookie(
+        key='refreshToken',
+        value=refreshToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    response.set_cookie(
+        key='accessToken',
+        value=accessToken,
+        httponly=True,
+        secure=False,
+        samesite="Lax",
+        max_age=60 * 60 * 24 * 30,
+        path='/'
+    )
+
+    return response
+
+
+
+# set password for google login user
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def set_password_view(request):
+    user = request.user
+    if user.has_usable_password():
+        return Response({"detail": "Password already set"}, status=400)
+    
+    password = request.data.get("password")
+    confirmPassword = request.data.get("confirmPassword")
+
+    if not password or not confirmPassword:
+        return Response({"detail": "Password required"}, status=400)
+
+    if password != confirmPassword:
+        return Response({"detail": "Passwords are not the same"}, status=400)
+
+    user.set_password(password)
+    user.save()
+
+    return Response({"detail": "Password set successfully"})
 
 
 
 # Refresh view 
 @api_view(["POST"])
+@throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
 def refresh_token_view(request):
-    # refresh_token = request.COOKIES.get("refreshToken")
-    refresh_token = request.data.get("refreshToken")
+    refresh_token = request.COOKIES.get("refreshToken")
+    print('request:', request)
 
     if not refresh_token:
-        print('Refresh token not provided')
         return Response(
             {"message": "Refresh token not provided"},
             status=status.HTTP_401_UNAUTHORIZED
@@ -811,6 +978,16 @@ def refresh_token_view(request):
                 path="/"
             )
 
+            response.set_cookie(
+                key='accessToken',
+                value=new_access_token,
+                httponly=True,
+                secure=False,
+                samesite="Lax",
+                max_age=60 * 15,
+                path='/'
+            )
+
         return response
 
     except Exception:
@@ -823,8 +1000,9 @@ def refresh_token_view(request):
 
 
 
-# change pass view 
+# change password view 
 @api_view(["POST"])
+@throttle_classes([AuthRateLimit])
 @permission_classes([IsAuthenticated])
 def change_pass_view(request):
     data = request.data
@@ -902,3 +1080,104 @@ def update_profile_view(request):
         },
         status=status.HTTP_200_OK
     )
+
+
+
+# logout view 
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    response = Response(
+        {"message": "Logged out successfully"},
+        status=status.HTTP_200_OK
+    )
+
+    response.delete_cookie('accessToken', path='/')
+    response.delete_cookie('refreshToken', path='/')
+
+    return response
+
+
+
+# request reset link view 
+@api_view(['POST'])
+@throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def request_reset_password_view(request):
+    email = request.data.get("email")
+
+    if not email:
+        return Response({"ok1": True}, status=status.HTTP_200_OK)
+
+    resend_key = os.environ.get("RESEND_KEY")
+    if not resend_key:
+        raise ValueError("RESEND_KEY is not configured")
+    
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return Response({"ok2": True}, status=status.HTTP_200_OK)
+
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+
+    reset_link = f"http://localhost:3000/reset-password/{uid}/{token}"
+
+
+    resend.api_key = resend_key
+
+    try:
+        resend.Emails.send({
+            "from": "onboarding@resend.dev", 
+            "to": user.email,                 
+            "subject": "Reset your password",
+            "html": f"""
+                <p>You requested a password reset.</p>
+                <p><a href="{reset_link}">Click here to reset your password</a></p>
+                <p>If you didn't request this, ignore this email.</p>
+            """,
+        })
+    except Exception as e:
+        print(f"Email send failed: {e}")
+
+    return Response({"ok3": True}, status=status.HTTP_200_OK)
+
+
+
+# reset password view 
+@api_view(['POST'])
+@throttle_classes([AuthRateLimit])
+@permission_classes([AllowAny])
+def reset_password_view(request):
+    data = request.data
+
+    required_fields = [ 'id', 'token', 'password', 'confirmPassword']
+
+    missing_fields = [field for field in required_fields if not data.get(field)]
+
+    if missing_fields:
+        return Response({ 'detail': f'Missing required fields: {", ".join(missing_fields)}' }, status=status.HTTP_400_BAD_REQUEST)
+
+    uid = data['id']
+    token = data['token']
+    password = data['password']
+    confirm_password = data['confirmPassword']
+
+    if password != confirm_password:
+        return Response( {"detail": "Passwords are not the same"}, status=status.HTTP_400_BAD_REQUEST )
+
+
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = User.objects.get(pk=user_id)
+    except:
+        return Response({"detail": "Invalid request"}, status=400)
+
+    if not default_token_generator.check_token(user, token):
+        return Response({"detail": "Token expired or invalid"}, status=400)
+
+    user.set_password(password)
+    user.save()
+
+    return Response({"detail": "Password reset successful"})
+
