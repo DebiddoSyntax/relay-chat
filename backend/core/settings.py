@@ -15,7 +15,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('DJANGO_SECRETKEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
+
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_SECONDS
 
 ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost', '192.168.0.129', '192.168.43.196']
 

@@ -1,9 +1,12 @@
+import CaptchaWrapper from "@/src/ui/authpages/CaptchaWrapper"
 import SignupPage from "@/src/ui/authpages/SignupPage"
 
 function signup() {
     return (
         <div>
-            <SignupPage />
+            <CaptchaWrapper>
+                <SignupPage />
+            </CaptchaWrapper>
         </div>
     )
 }
