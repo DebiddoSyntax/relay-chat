@@ -1,22 +1,21 @@
 "use client"
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import api from "@/src/functions/auth/AxiosConfig";
+import axios from "axios";
 import { useForm } from 'react-hook-form'
 import * as yup from 'yup'
 import { yupResolver } from "@hookform/resolvers/yup"
-import { usePathname, useRouter } from "next/navigation";
-import { useAuth } from "@/src/functions/auth/Store";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
-import axios from "axios";
-import ReCAPTCHA from "react-google-recaptcha"
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import LeftSection from "./LeftSection";
-import api from "@/src/functions/auth/AxiosConfig";
-import GoogleAuth from "./GoogleAuth"
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
+import ReCAPTCHA from "react-google-recaptcha"
+import { useAuth } from "@/src/functions/auth/Store";
+import LeftSection from "./LeftSection";
+import GoogleAuth from "./GoogleAuth"
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { AiOutlineLoading3Quarters } from "react-icons/ai";
 
 
-// const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
 
 interface loginType {
     email: string,
@@ -26,7 +25,6 @@ interface loginType {
 const Loginpage = () => {
     
     const router = useRouter()
-    const pathname = usePathname()
     const { executeRecaptcha } = useGoogleReCaptcha()
     
     const setAuth = useAuth((state)=> state.setAuth)

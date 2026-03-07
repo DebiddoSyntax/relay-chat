@@ -15,10 +15,6 @@ import api from "@/src/functions/auth/AxiosConfig";
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 
 
-
-// const apiURL = process.env.NEXT_PUBLIC_BASE_API_URL
-
-
 export interface signupType {
     firstname: string,
     lastname: string,

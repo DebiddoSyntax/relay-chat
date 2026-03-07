@@ -1,6 +1,6 @@
 import api from '@/src/functions/auth/AxiosConfig';
 import { useAuth } from '@/src/functions/auth/Store';
-import { GoogleLogin, useGoogleLogin } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';

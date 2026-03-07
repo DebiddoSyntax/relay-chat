@@ -1,11 +1,11 @@
-import React from 'react'
-import Link from "next/link";
-import { AiFillApi } from "react-icons/ai";
-import { AiFillFunnelPlot } from "react-icons/ai";
 import { RiChatSmileAiFill } from "react-icons/ri";
 import { MdJoinFull } from "react-icons/md";
 import { useAuth } from '@/src/functions/auth/Store';
 import { useRouter, usePathname } from 'next/navigation';
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+
+
 
 const Messages = [
     { 
@@ -30,6 +30,7 @@ function LeftSection() {
     const pathname = usePathname()
     const show = useAuth((state)=> state.show)
     const setShow = useAuth((state)=> state.setShow)
+    
 
     const handleClick = () => {
         router.push(pathname)
@@ -37,6 +38,22 @@ function LeftSection() {
             setShow(true)
         }, 2000)
     }
+
+    useGSAP(()=> {
+        gsap.fromTo('#messages', 
+        { 
+            y: 600,
+            borderRadius: '100%',
+            rotation: 0,
+            ease: 'back.inOut'
+        }, 
+        { 
+            y: 0,
+            rotation: 0, 
+            borderRadius: '0%',
+            stagger: 0.3
+        })
+    }, [])
 
     return (
         <div className={`${show ? 'hidden lg:flex flex-col' : 'flex flex-col'} relative overflow-hidden min-h-screen bg-primary py-10 px-5 md:px-10 2xl:px-16 text-2xl md:text-3xl lg:text-4xl text-white`}>
@@ -56,7 +73,7 @@ function LeftSection() {
 
             <div className="mt-20 sm:mt-40 lg:mt-40 2xl:mt-52 flex flex-col sm:justify-between flex-1">
                 
-                <div>
+                <div id="messages">
                     <div className='text-4xl md:text-5xl lg:text-4xl 2xl:text-5xl leading-12 md:leading-14 lg:leading-12 xl:leading-14 font-semibold'>Where Conversations Move Faster</div>
 
                     <p className="mt-8 text-sm md:text-base leading-5 md:leading-8 font-semibold text-neutral-500">
@@ -64,7 +81,7 @@ function LeftSection() {
                     </p>
                 </div>
 
-                <div className='mt-20 sm:mt-0 grid grid-cols-2 gap-8 items-start'>
+                <div id="messages" className='mt-20 sm:mt-0 grid grid-cols-2 gap-8 items-start'>
                     {Messages.map((msg, i)=> {
                         const Icon = msg.icon
                         return (
