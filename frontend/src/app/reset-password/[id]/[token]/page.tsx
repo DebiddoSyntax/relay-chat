@@ -1,5 +1,4 @@
 import SetPassword from "@/src/ui/authpages/SetPassword"
-import ResetPassword from "@/src/ui/authpages/reset/ResetPassword"
 
 function resetpassword() {
     return (
