@@ -985,7 +985,7 @@ def refresh_token_view(request):
                 httponly=True,
                 secure=False,
                 samesite="Lax",
-                max_age=60 * 60 * 24 * 30,
+                max_age=60 * 15,
                 path='/'
             )
 

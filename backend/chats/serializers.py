@@ -50,28 +50,27 @@ class SignupSerializer(serializers.ModelSerializer):
         },
     )
 
-    # captchaToken = serializers.CharField(
-    #     required=True,
-    #     allow_blank=False,
-    #     write_only=True,
-    #     error_messages={
-    #         "required": "captcha is missing",
-    #         "blank": "captcha is missing",
-    #     },
-    # )
+    captchaToken = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "captcha is missing",
+            "blank": "captcha is missing",
+        },
+    )
 
     class Meta:
         model = User
         fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken']
-        # fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken']
     
-    # def validate(self, data):
-    #     captcha_token = data.get("captchaToken")
+    def validate(self, data):
+        captcha_token = data.get("captchaToken")
 
-    #     if not verifyCaptcha(captcha_token):
-    #         raise serializers.ValidationError(
-    #             {"captcha": "CAPTCHA verification failed."}
-    #         )
+        if not verifyCaptcha(captcha_token):
+            raise serializers.ValidationError(
+                {"captcha": "CAPTCHA verification failed."}
+            )
 
     def validate_email(self, value):
         email = value.lower()
@@ -119,28 +118,31 @@ class LoginSerializer(serializers.Serializer):
         },
     )
 
-    # captchaToken = serializers.CharField(
-    #     required=True,
-    #     allow_blank=False,
-    #     write_only=True,
-    #     error_messages={
-    #         "required": "captcha is missing",
-    #         "blank": "captcha is missing",
-    #     },
-    # )
+    captchaToken = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        write_only=True,
+        error_messages={
+            "required": "captcha is missing",
+            "blank": "captcha is missing",
+        },
+    )
+
+    expected_action = serializers.CharField(write_only=True)
 
     class Meta:
         model = User
-        fields = ['email', 'password']
-        # fields = ['email', 'password', 'captchaToken']
+        fields = ['email', 'password', 'captchaToken', 'expected_action']
 
     def validate(self, data):
-        # captcha_token = data.get("captchaToken")
+        captcha_token = data.get("captchaToken")
+        expected_action = data.get("expected_action")
+        
 
-        # if not verifyCaptcha(captcha_token):
-        #     raise serializers.ValidationError(
-        #         {"captcha": "CAPTCHA verification failed."}
-        #     )
+        if not verifyCaptcha(captcha_token, expected_action):
+            raise serializers.ValidationError(
+                {"captcha": "CAPTCHA verification failed."}
+            )
 
         email = data['email'].lower()
         password = data['password']

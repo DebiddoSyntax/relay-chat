@@ -43,6 +43,8 @@ const Loginpage = () => {
     });
 
 
+    const [showV2, setShowV2] = useState(false)
+    const [expectedAction, setExpectedAction] = useState("")
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -51,26 +53,28 @@ const Loginpage = () => {
     const [error, setError] = useState("")
     const [visible, setVisible] = useState(false);
     const toggleVisibility = () => setVisible((prev) => !prev);
+    
 
 
     const handleLogin = async (data: loginType) => {
 
         if (!executeRecaptcha) {
-            console.log("Recaptcha not ready")
+            setError("Recaptcha not ready")
             return
         }
 
-        // Execute reCAPTCHA and get the token
-        const token = await executeRecaptcha('login_form_submit')
-        setCaptchaToken(token)
+        const token = await executeRecaptcha('login_submit')
 
-        if(!captchaToken || captchaToken == ''){
-            setError("Please verify captcha")
-            return
+        if(showV2){
+            if(!captchaToken || captchaToken == ''){
+                setError("Please verify captcha")
+                return
+            }
         }
 
         const payload = {
-            captchaToken,
+            captchaToken: showV2 ? captchaToken : token,
+            expected_action: !showV2 ? 'login_submit' : null,
             ...data
         }
 
@@ -85,6 +89,7 @@ const Loginpage = () => {
             if (axios.isAxiosError(err)) {
                 recaptchaRef.current?.reset();
                 setCaptchaToken("");
+                setExpectedAction('')
 				console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
 			} else {
@@ -149,13 +154,13 @@ const Loginpage = () => {
                             </p>
                         </div>
                         
-                        <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
-                            onChange={setCaptchaToken}
-                            ref={recaptchaRef}
-                            // className="w-full"
-                            // size="compact"
-                        />
+                        {showV2 &&
+                            <ReCAPTCHA
+                                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
+                                onChange={setCaptchaToken}
+                                ref={recaptchaRef}
+                            />
+                        }
                     
                         <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Login'}

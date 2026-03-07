@@ -6,6 +6,7 @@ import { useGlobalSocket } from '@/src/functions/chats/useGlobalSocket'
 import { unlockAudio } from '@/src/ui/chats/call/unlockAudio'
 import AuthRoute from '../routing/AuthRoute'
 import { useNavigation } from './useNavigation'
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3'
 
 
 function Wrapper({ children }: { children: React.ReactNode }) {
@@ -21,9 +22,11 @@ function Wrapper({ children }: { children: React.ReactNode }) {
     return (
         // <div onClick={unlockAudio}>
         <div>
-            <AuthRoute>
-                <main className='h-dvh'>{ children }</main>
-            </AuthRoute>
+            <GoogleReCaptchaProvider reCaptchaKey={process.env.NEXT_PUBLIC_RECAPTCHA_V3_SITE!}>
+                <AuthRoute>
+                    <main className='h-dvh'>{ children }</main>
+                </AuthRoute>
+            </GoogleReCaptchaProvider>
         </div>
     )
 }

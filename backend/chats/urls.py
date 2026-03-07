@@ -27,8 +27,8 @@ urlpatterns = [
     path('auth/refresh/', views.refresh_token_view),
     path('auth/logout/', views.logout_view),
     path('auth/user/update/', views.update_profile_view),
-    path('auth/password/update/', views.change_pass_view),
+    path('auth/user/password/update/', views.change_pass_view),
     path('auth/user/password/request/reset/', views.request_reset_password_view),
     path('auth/user/password/reset/', views.reset_password_view),
-    path('auth/password/set/', views.set_password_view),
+    path('auth/user/password/set/', views.set_password_view),
 ]

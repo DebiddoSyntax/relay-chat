@@ -159,7 +159,7 @@ const SignupPage = () => {
                         
                         <div className="recaptcha-wrapper" style={{ width: '100%', overflow: 'hidden' }}>
                         <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY!}
+                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
                             onChange={setCaptchaToken}
                             ref={recaptchaRef}
                             style={{ transform: 'scale(0.85)', transformOrigin: '0 0', width: '100%' }}
