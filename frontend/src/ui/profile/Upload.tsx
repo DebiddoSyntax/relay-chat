@@ -36,7 +36,7 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
             const { signature, expire, token, publicKey } = response.data;
             return { signature, expire, token, publicKey };
         } catch (error) {
-            console.error("Authentication error:", error);
+            // console.error("Authentication error:", error);
             throw new Error("Authentication request failed");
         }
     };
@@ -63,7 +63,7 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
         try {
             authParams = await authenticator();
         } catch (authError) {
-            console.error("Failed to authenticate for upload:");
+            // console.error("Failed to authenticate for upload:");
             setToast && setToast({type: 'failure', show: true, message: 'Failed to upload'})
             handleImageClear()
             setFileName('Upload file')
@@ -96,15 +96,15 @@ function Upload({ onSelect, setDisplayImage, userImage, reset, setErrorMessage, 
 
         } catch (error) {
             if (error instanceof ImageKitAbortError) {
-                console.error("Upload aborted:", error.reason);
+                // console.error("Upload aborted:", error.reason);
             } else if (error instanceof ImageKitInvalidRequestError) {
-                console.error("Invalid request:", error.message);
+                // console.error("Invalid request:", error.message);
             } else if (error instanceof ImageKitUploadNetworkError) {
-                console.error("Network error:", error.message);
+                // console.error("Network error:", error.message);
             } else if (error instanceof ImageKitServerError) {
-                console.error("Server error:", error.message);
+                // console.error("Server error:", error.message);
             } else {
-                console.error("Upload error:", error);
+                // console.error("Upload error:", error);
             }
         }
     };

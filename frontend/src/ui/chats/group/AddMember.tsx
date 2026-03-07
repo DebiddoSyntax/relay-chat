@@ -68,7 +68,7 @@ function AddMember({ activeId, setMembers }: Props) {
 
         } catch (err) {
 			if (axios.isAxiosError(err)) {
-				console.error("error", err.response?.data);
+				// console.error("error", err.response?.data);
 				setErrorMessage(err.response?.data?.detail || "Something went wrong");
 			} else {
 				console.error("unexpected error", err);

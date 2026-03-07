@@ -46,7 +46,7 @@ function LeftSection() {
                     RelayChat
                 </h3>
                 <button className="lg:hidden text-xs font-semibold px-5 py-3 border-2 border-primary-700 bg-primary-700 rounded-md cursor-pointer" onClick={handleClick}>
-                    {pathname === '/login' ? 'Login' : 'Sign Up'}
+                    {pathname === '/' ? 'Login' : 'Sign Up'}
                 </button>
             </div>
 

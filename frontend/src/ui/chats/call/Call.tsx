@@ -97,10 +97,10 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             const res = await api.post(`/auth/refresh/`);
             const newToken = res.data.accessToken;
             useAuth.setState({ accessToken: newToken });
-            console.log('refreshed and added, websocket')
+            // console.log('refreshed and added, websocket')
             return newToken;
         } catch (e) {
-            console.log('failed to refresh token', e)
+            // console.log('failed to refresh token', e)
             setFail({failed: true, failedMessage: 'Call failed'})
             return;
         } 
@@ -108,13 +108,13 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
   
     const cleanupCall = async () => {
-        console.log("🧹 Starting cleanup...");
+        // console.log("🧹 Starting cleanup...");
 
         // Stop all media tracks first
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(track => {
                 track.stop();
-                console.log(`  Stopped ${track.kind} track`);
+                // console.log(`  Stopped ${track.kind} track`);
             });
             streamRef.current = null;
         }
@@ -146,7 +146,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                 try {
                     await peerRef.current.removeTrack(sender);
                 } catch (e) {
-                    console.warn("⚠️ Error removing track:", e);
+                    // console.warn("⚠️ Error removing track:");
                 }
             }
             peerRef.current.close();
@@ -244,7 +244,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         toggle('remoteAudioActive')
                     }
                 } else {
-                    console.warn("⚠️ No stream in track event");
+                    // console.warn("⚠️ No stream in track event");
                 }
             };
 
@@ -257,10 +257,10 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             socket.onmessage = async event => {
                 const data = JSON.parse(event.data);
 
-                console.log('global', data)
+                // console.log('global', data)
                 
                 if (data.type === 'error') {
-                    console.log(`❌ ${data.error}: ${data.message}`);
+                    // console.log(`❌ ${data.error}: ${data.message}`);
                     
                     // handle token expiration 
                     if (data.error === 'token_expired') {
@@ -274,7 +274,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                 }
 
                 if (data.type === 'connection' && data.status === 'connected') {
-                    console.log('call socket connected')
+                    // console.log('call socket connected')
                 }
 
                 try {
@@ -285,7 +285,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                     if (roleRef.current === "caller") {
                         unansweredTimeoutRef.current = setTimeout(() => {
                             if (!bothConnectedRef.current) {
-                                console.log("⏰ No answer. Ending call.");
+                                // console.log("⏰ No answer. Ending call.");
                                 handleLeaveCall();
                             }
                         }, 20000);
@@ -319,7 +319,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     }
                                 }));
                             } catch (e) {
-                                console.error("❌ Error creating/sending offer:", e);
+                                // console.error("❌ Error creating/sending offer:", e);
                                 toggle('failedCall');
                                 setFail({failed: true, failedMessage: 'Error creating/sending offer' })
                             }
@@ -351,7 +351,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
 
                             remoteOfferSet = true;
                         } catch (e) {
-                            console.error("❌ Error processing offer/answer:", e);
+                            // console.error("❌ Error processing offer/answer:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Error processing offer/answer' })
                         }
@@ -367,12 +367,12 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                     })
                                 );
                             } else {
-                                console.warn("⚠️ Wrong signaling state for answer:", peerRef.current.signalingState);
+                                // console.warn("⚠️ Wrong signaling state for answer:", peerRef.current.signalingState);
                                 toggle('failedCall');
                                 setFail({failed: true, failedMessage: 'Wrong signaling state for answer' })
                             }
                         } catch (e) {
-                            console.error("❌ Error setting remote description:", e);
+                            // console.error("❌ Error setting remote description:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Error setting remote description' })
                         }
@@ -389,7 +389,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                                 })
                             );
                         } catch (e) {
-                            console.warn("⚠️ Could not add ICE candidate:", e);
+                            // console.warn("⚠️ Could not add ICE candidate:", e);
                             toggle('failedCall');
                             setFail({failed: true, failedMessage: 'Could not add ICE candidate' })
                         }
@@ -400,7 +400,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                         handleLeaveCall()
                     }
                 } catch (error) {
-                    console.error("❌ Error processing message:", error);
+                    // console.error("❌ Error processing message:", error);
                     toggle('failedCall');
                     setFail({failed: true, failedMessage: 'Error processing message' })
                 }
@@ -419,7 +419,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                             }
                         }));
                     } catch (err) {
-                        console.error("❌ Error sending ICE candidate:", err);
+                        // console.error("❌ Error sending ICE candidate:", err);
                     }
                 }
             };
@@ -429,7 +429,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             callCleanedUpRef.current = false; 
 
         } catch (error) {
-            console.error("❌ Error joining call:", error);
+            // console.error("❌ Error joining call:", error);
             await cleanupCall();
             handleLeaveCall()
         }
@@ -449,7 +449,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
                     role: roleRef.current
                 }));
             } catch (error) {
-                console.error("❌ Error sending disconnect notification:", error);
+                // console.error("❌ Error sending disconnect notification:", error);
             }
             
             // Give it a moment to send before closing
@@ -465,7 +465,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
         resetStates();
         setIncomingCall(null);
 
-        console.log("✅ Call ended");
+        // console.log("✅ Call ended");
     };
 
 

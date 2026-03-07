@@ -13,7 +13,7 @@ export const refreshTokenAction = async (set: any, get: any) => {
         // console.log('refreshed token', res.data)
         return newToken;
     } catch (e) {
-        console.log('failed to refresh token', e)
+        // console.log('failed to refresh token', e)
         await get().logout();
         // return;
     } finally {

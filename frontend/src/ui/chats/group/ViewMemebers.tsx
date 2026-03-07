@@ -37,7 +37,7 @@ function ViewMemebers({ activeId, setMembers, members, setGroupInfo }: Props) {
                 // console.log(response.data)
                 setMembers(response.data)
             } catch(e){
-                console.log(e)
+                // console.log(e)
             }finally{
                 setLoading(false)
             }
@@ -74,11 +74,11 @@ function ViewMemebers({ activeId, setMembers, members, setGroupInfo }: Props) {
             
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data?.message);
+                // console.error("error", err.response?.data?.message);
                 setDelState('failure')
                 setErrorMessage(err.response?.data?.message || "Something went wrong");
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setDelState('failure')
                 setErrorMessage("An unexpected error occurred");
             }

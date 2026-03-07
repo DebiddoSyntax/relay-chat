@@ -60,23 +60,31 @@ class SignupSerializer(serializers.ModelSerializer):
         },
     )
 
+    expected_action = serializers.CharField( write_only=True, required=False, allow_blank=True,)
+
     class Meta:
         model = User
-        fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken']
+        fields = [ 'firstname', 'lastname', 'email', 'password', 'captchaToken', 'expected_action']
+    
     
     def validate(self, data):
         captcha_token = data.get("captchaToken")
-
-        if not verifyCaptcha(captcha_token):
+        expected_action = data.get("expected_action")
+        email_value = data.get('email')
+        
+        if not verifyCaptcha(captcha_token, expected_action):
             raise serializers.ValidationError(
-                {"captcha": "CAPTCHA verification failed."}
+                {"captcha": "CAPTCHA verification failed.", "v2": True}
             )
-
-    def validate_email(self, value):
-        email = value.lower()
+        
+        email = email_value.lower()
         if User.objects.filter(email=email).exists():
             raise serializers.ValidationError('Email already exists')
-        return email
+        
+        data['email'] = email
+        return data
+    
+    
 
     def create(self, validated_data): 
         user = User(
@@ -128,7 +136,7 @@ class LoginSerializer(serializers.Serializer):
         },
     )
 
-    expected_action = serializers.CharField(write_only=True)
+    expected_action = serializers.CharField( write_only=True, required=False, allow_blank=True,)
 
     class Meta:
         model = User
@@ -141,7 +149,7 @@ class LoginSerializer(serializers.Serializer):
 
         if not verifyCaptcha(captcha_token, expected_action):
             raise serializers.ValidationError(
-                {"captcha": "CAPTCHA verification failed."}
+                {"captcha": "CAPTCHA verification failed.", "v2": True}
             )
 
         email = data['email'].lower()

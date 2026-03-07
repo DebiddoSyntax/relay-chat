@@ -79,10 +79,10 @@ function AddNewChat({ isGroup, setActiveId }: AddNewChatProps ) {
             setErrorMessage('')
         } catch (err) {
 			if (axios.isAxiosError(err)) {
-				console.error("error", err.response?.data);
+				// console.error("error", err.response?.data);
 				setErrorMessage(err.response?.data?.detail || "Something went wrong");
 			} else {
-				console.error("unexpected error", err);
+				// console.error("unexpected error", err);
 				setErrorMessage("An unexpected error occurred");
 
 			}

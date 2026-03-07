@@ -44,7 +44,6 @@ const Loginpage = () => {
 
 
     const [showV2, setShowV2] = useState(false)
-    const [expectedAction, setExpectedAction] = useState("")
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -74,7 +73,7 @@ const Loginpage = () => {
 
         const payload = {
             captchaToken: showV2 ? captchaToken : token,
-            expected_action: !showV2 ? 'login_submit' : null,
+            expected_action: !showV2 ? 'login_submit' : '',
             ...data
         }
 
@@ -89,11 +88,11 @@ const Loginpage = () => {
             if (axios.isAxiosError(err)) {
                 recaptchaRef.current?.reset();
                 setCaptchaToken("");
-                setExpectedAction('')
-				console.log("error", err.response?.data);
+                setShowV2(err.response?.data.require_v2)
+				// console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
 			} else {
-				console.error("unexpected error", err);
+				// console.error("unexpected error", err);
 				setError("An unexpected error occurred");
 			}
         }finally{

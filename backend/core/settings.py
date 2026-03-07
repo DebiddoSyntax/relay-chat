@@ -19,6 +19,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost', '192.168.0.129', '192.168.43.196']
 
+PASSWORD_RESET_TIMEOUT = 900
 
 # Application definition
 INSTALLED_APPS = [

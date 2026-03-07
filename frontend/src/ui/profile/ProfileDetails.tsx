@@ -71,7 +71,7 @@ function ProfileDetails() {
 
 
     const onSubmit = async(data: EditProfileType) =>{
-        console.log(data)
+        // console.log(data)
 
         try{
             setLoading(true)
@@ -82,10 +82,10 @@ function ProfileDetails() {
             setToast({type: 'success', show: true, message: 'Profile updated successfully'})
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 setToast({type: 'failure', show: true, message: err.response?.data?.detail || 'Failed to update profile'})
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setToast({type: 'failure', show: true, message: 'An unexpected error occurred'})
             }
             

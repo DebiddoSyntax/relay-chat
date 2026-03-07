@@ -107,7 +107,7 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
 
 
             socket.onerror = (err) => {
-                console.error("WebSocket error", err);
+                // console.error("WebSocket error", err);
             };
         }
 

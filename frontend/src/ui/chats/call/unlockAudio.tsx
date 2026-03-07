@@ -11,6 +11,6 @@ export const unlockAudio = async () => {
 
         isUnlocked = true;
     } catch (error) {
-        console.log("Audio unlock failed", error);
+        // console.log("Audio unlock failed", error);
     }
 };

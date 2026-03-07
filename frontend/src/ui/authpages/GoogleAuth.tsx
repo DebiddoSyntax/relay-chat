@@ -16,7 +16,7 @@ function GoogleAuth() {
 		const payload = { code: googleResponse.code };
 		try {
 			const res = await api.post('/auth/login/social/', payload);
-			console.log('Logged in!', res.data);
+			// console.log('Logged in!', res.data);
 			const authData = res.data
 			
 			setIsFirst(authData.first_login)
@@ -29,17 +29,17 @@ function GoogleAuth() {
 			}
 		} catch (err) {
 			if (axios.isAxiosError(err)) {
-				console.log("error", err.response?.data);
+				// console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
 			} else {
-				console.error("unexpected error", err);
+				// console.error("unexpected error");
 				setError("An unexpected error occurred");
 			}
 		}
 	};
 
 	const handleError = () => {
-		console.log('Login Failed')
+		// console.log('Login Failed')
 		setError('Login failed')
 	}
 

@@ -53,7 +53,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
     useEffect(()=> {
         const FetchConversations = async()=> {
             if(!authInitialized){
-                console.log('not init')
+                // console.log('not init')
                 return
             }
 
@@ -65,7 +65,7 @@ function ChatOverview({ isGroup, isAI }: ChatOverviewProps) {
                 // console.log('chat overview', response.data)
                 setChats(response.data)
             }catch(error){
-                console.log('overview error', error)
+                // console.log('overview error', error)
             }finally{
                 setLoading(false)
             }

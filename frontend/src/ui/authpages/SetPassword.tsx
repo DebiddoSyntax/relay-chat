@@ -80,7 +80,7 @@ function SetPassword({ reset }: { reset: boolean}) {
 		try {
 			setLoading(true);
 			const response = await api.post(url, payload);
-			console.log(response)
+			// console.log(response)
 			setError('')
 			setMessage(response.data.detail);
 			const redirect = reset ? '/' : '/chats'

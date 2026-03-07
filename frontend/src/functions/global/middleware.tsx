@@ -25,7 +25,7 @@ export async function middleware(req: NextRequest) {
 		// Continue for everything else
 		return NextResponse.next();
 	}catch(error) {
-		console.error("⚠️ Middleware error:", error);
+		console.error("error:");
 	}
 }
 

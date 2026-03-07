@@ -65,11 +65,11 @@ export function useFetchMessages(
             }
         }catch(err){
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 if (fetchTimer) clearTimeout(fetchTimer);
                 setError('Failed to load messages')
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setError('An unexpected error occurred')
             }
         }finally{
@@ -132,11 +132,11 @@ export function useFetchMessages(
             setErrorMore('')
         }catch(err){
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 if (fetchMoreTimer) clearTimeout(fetchMoreTimer);
                 setErrorMore('Failed to load more messages')
             } else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setErrorMore('An unexpected error occurred')
             }
         }finally{

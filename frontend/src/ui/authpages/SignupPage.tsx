@@ -12,6 +12,7 @@ import { AiOutlineLoading3Quarters } from "react-icons/ai";
 import { useAuth } from "@/src/functions/auth/Store";
 import LeftSection from "./LeftSection";
 import api from "@/src/functions/auth/AxiosConfig";
+import { useGoogleReCaptcha } from 'react-google-recaptcha-v3'
 
 
 
@@ -28,6 +29,9 @@ export interface signupType {
 const SignupPage = () => {
 
     const router = useRouter();
+    const { executeRecaptcha } = useGoogleReCaptcha()
+
+
     const setAuth = useAuth((state)=> state.setAuth)
     const show = useAuth((state)=> state.show)
 
@@ -43,6 +47,7 @@ const SignupPage = () => {
         resolver: yupResolver(schema),
     });
 
+    const [showV2, setShowV2] = useState(false)
     const [captchaToken, setCaptchaToken] = useState<string | null>(null)
     const recaptchaRef = useRef<ReCAPTCHA>(null);
 
@@ -56,20 +61,30 @@ const SignupPage = () => {
     
     const handleSignUp = async (data: signupType) => {
 
-        if(!captchaToken || captchaToken == ''){
-            setError("Please verify captcha")
+         if (!executeRecaptcha) {
+            setError("Recaptcha not ready")
             return
         }
 
+        const token = await executeRecaptcha('login_submit')
+
+        if(showV2){
+            if(!captchaToken || captchaToken == ''){
+                setError("Please verify captcha")
+                return
+            }
+        }
+
         const payload = {
-            captchaToken,
+            captchaToken: showV2 ? captchaToken : token,
+            expected_action: !showV2 ? 'login_submit' : '',
             ...data
         }
 
         try{
             setLoading(true)
             const response = await api.post(`/auth/signup/`, payload)
-            console.log("signed Up", response.data)
+            // console.log("signed Up", response.data)
             const authData = response.data
             setAuth(authData.user, authData.accessToken)
             router.push('/chats')
@@ -77,10 +92,11 @@ const SignupPage = () => {
             if (axios.isAxiosError(err)) {
                 recaptchaRef.current?.reset();
                 setCaptchaToken("");
-				console.log("error", err.response?.data);
+                setShowV2(err.response?.data.require_v2)
+				// console.log("error", err.response?.data);
 				setError(err.response?.data.detail || "Something went wrong");
 			} else {
-				console.error("unexpected error", err);
+				// console.error("unexpected error", err);
 				setError("An unexpected error occurred");
 			}
         }finally{
@@ -157,14 +173,13 @@ const SignupPage = () => {
                             </p>
                         </div>
                         
-                        <div className="recaptcha-wrapper" style={{ width: '100%', overflow: 'hidden' }}>
-                        <ReCAPTCHA
-                            sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
-                            onChange={setCaptchaToken}
-                            ref={recaptchaRef}
-                            style={{ transform: 'scale(0.85)', transformOrigin: '0 0', width: '100%' }}
-                        />
-                        </div>
+                        {showV2 &&
+                            <ReCAPTCHA
+                                sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_V2_SITE!}
+                                onChange={setCaptchaToken}
+                                ref={recaptchaRef}
+                            />
+                        }
                         
                         <button type='submit' disabled={loading} className=" cursor-pointer py-5 mt-5 md:mt-5 text-sm font-semibold items-center w-full place-items-center bg-primary text-white rounded-md">
                             {loading ? <AiOutlineLoading3Quarters className='mx-auto stroke-1 text-base text-center animate-spin'/> : 'Create'}

@@ -71,19 +71,19 @@ function Security() {
 
     const onSubmit = async(data: SecurityType) => {
         
-        console.log(data)
+        // console.log(data)
 
         try{
             setLoading(true)
             const res = await api.post('/auth/user/password/update/', data)
-            console.log(res.data)
+            // console.log(res.data)
             setToast({type: 'success', show: true, message: 'Password updated successfully'})
         } catch (err) {
             if (axios.isAxiosError(err)) {
-                console.error("error", err.response?.data);
+                // console.error("error", err.response?.data);
                 setToast({type: 'failure', show: true, message: err.response?.data?.detail || 'Failed to set new password'})
 			} else {
-                console.error("unexpected error", err);
+                // console.error("unexpected error", err);
                 setToast({type: 'failure', show: true, message: 'An unexpected error occurred'})
 			}
 		}finally{
@@ -114,7 +114,7 @@ function Security() {
 
                     <div className="w-full">
                         <label htmlFor="password" className="text-sm font-semibold">Current Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md text-sm'>
                             <input type={state.passwordToggle ? "text" : "password"}
                                 id="password"
                                 placeholder='Enter a unique password'
@@ -134,7 +134,7 @@ function Security() {
 
                     <div className="w-full">
                         <label htmlFor="newPassword" className="text-sm font-semibold">New Password</label>
-                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md'>
+                        <div className='flex justify-between items-center w-full mt-2 p-3 bg-gray-bg rounded-md text-sm'>
                             <input type={state.newPasswordToggle ? "text" : "password"}
                                 id="newPassword"
                                 placeholder='Enter a unique password'

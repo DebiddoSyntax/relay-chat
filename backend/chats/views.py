@@ -11,7 +11,7 @@ from django.shortcuts import get_object_or_404
 from django.db.models import Q, Count
 from django.utils import timezone
 from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 
 from .serializers import SignupSerializer, LoginSerializer, MessageSerializer
@@ -22,10 +22,6 @@ from .utils.encrypt import encrypt_message
 from imagekitio import ImageKit
 from .throttle import AuthRateLimit
 import requests
-import jwt
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes
 
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
@@ -53,6 +49,45 @@ def image_auth(request):
         'signature': auth_params['signature'],
         'publicKey': os.environ.get('IMAGEKIT_PUBLIC_KEY')
     })
+
+
+# get chat messages
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def chat_message_list_view(request, chat_id):
+ 
+    chat = get_object_or_404(Chat, id=chat_id)
+
+   
+    if not chat.users.filter(id=request.user.id).exists():
+        return Response(
+            {"detail": "Chat does not exist"},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    
+    queryset = (Message.objects.filter(chat=chat).select_related('sender').prefetch_related('read_by'))
+
+    # 4. Paginate manually
+    paginator = MessageCursorPagination()
+    page = paginator.paginate_queryset(queryset, request)
+
+    serializer = MessageSerializer(page, many=True, context={'request': request})
+
+
+    unread_messages = (Message.objects.filter(chat=chat).exclude(sender=request.user).exclude(read_by=request.user))
+
+
+    MessageReadBy.objects.bulk_create(
+        [
+            MessageReadBy(message=msg, user=request.user)
+            for msg in unread_messages
+        ],
+        ignore_conflicts=True
+    )
+
+    # 6. Return paginated response
+    return paginator.get_paginated_response(serializer.data)
 
 
 
@@ -113,46 +148,6 @@ def ai_chat_view(request):
     }
 
     return Response(data, status=status.HTTP_200_OK)
-
-
-
-# get chat messages
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def chat_message_list_view(request, chat_id):
- 
-    chat = get_object_or_404(Chat, id=chat_id)
-
-   
-    if not chat.users.filter(id=request.user.id).exists():
-        return Response(
-            {"detail": "Chat does not exist"},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-    
-    queryset = (Message.objects.filter(chat=chat).select_related('sender').prefetch_related('read_by'))
-
-    # 4. Paginate manually
-    paginator = MessageCursorPagination()
-    page = paginator.paginate_queryset(queryset, request)
-
-    serializer = MessageSerializer(page, many=True, context={'request': request})
-
-
-    unread_messages = (Message.objects.filter(chat=chat).exclude(sender=request.user).exclude(read_by=request.user))
-
-
-    MessageReadBy.objects.bulk_create(
-        [
-            MessageReadBy(message=msg, user=request.user)
-            for msg in unread_messages
-        ],
-        ignore_conflicts=True
-    )
-
-    # 6. Return paginated response
-    return paginator.get_paginated_response(serializer.data)
 
 
 
@@ -684,6 +679,8 @@ def delete_group_view(request, chat_id):
 
 
 
+# ======== AUTH =========
+
 # Signup view
 @api_view(['POST'])
 @throttle_classes([AuthRateLimit])
@@ -694,11 +691,12 @@ def signup_view(request):
     if not serializer.is_valid():
         errors = serializer.errors
 
+        require_v2 = errors.get("v2", [False])[0]
         field_name = list(errors.keys())[0]
         message = errors[field_name][0]
 
         return Response(
-            {"detail": message},
+            {"detail": message, "require_v2": require_v2},
             status=status.HTTP_400_BAD_REQUEST
         )
 
@@ -759,12 +757,12 @@ def login_view(request):
 
     if not serializer.is_valid():
         errors = serializer.errors
-
+        require_v2 = errors.get("v2", [False])[0]
         field_name = list(errors.keys())[0]
         message = errors[field_name][0]
 
         return Response(
-            {"detail": message},
+            {"detail": message, "require_v2": require_v2},
             status=status.HTTP_400_BAD_REQUEST
         )
     
@@ -809,6 +807,7 @@ def login_view(request):
     )
 
     return response
+
 
 
 # Google Oauth view
@@ -868,8 +867,8 @@ def google_login_view(request):
     user, created = User.objects.get_or_create(
         email=email,
         defaults={
-            "first_name": firstname,
-            "last_name": lastname,
+            "firstname": firstname,
+            "lastname": lastname,
         },
     )
 
@@ -1083,6 +1082,7 @@ def update_profile_view(request):
     )
 
 
+
 # logout view 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
@@ -1099,6 +1099,7 @@ def logout_view(request):
 
 
 
+# request reset link view 
 @api_view(['POST'])
 @throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
@@ -1143,7 +1144,7 @@ def request_reset_password_view(request):
 
 
 
-
+# reset password view 
 @api_view(['POST'])
 @throttle_classes([AuthRateLimit])
 @permission_classes([AllowAny])
