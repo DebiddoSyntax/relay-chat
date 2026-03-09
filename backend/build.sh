@@ -10,7 +10,14 @@ python manage.py shell -c "
 from django.contrib.auth import get_user_model
 import os
 User = get_user_model()
-if not User.objects.filter(email=os.environ.get('SUPERUSER_EMAIL')).exists():
-    User.objects.create_superuser(email=os.environ.get('SUPERUSER_EMAIL'), password=os.environ.get('SUPERUSER_PASSWORD'))
-print('Superuser ready.')
+email = os.environ.get('SUPERUSER_EMAIL')
+user = User.objects.get(email=email)
+user.username = 'admin'
+user.firstname = 'Admin'
+user.lastname = 'Admin'
+user.is_staff = True
+user.is_superuser = True
+user.set_password(os.environ.get('SUPERUSER_PASSWORD'))
+user.save()
+print('Superuser updated.')
 "
