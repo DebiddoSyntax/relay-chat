@@ -1,4 +1,6 @@
 import json
+import os
+import ssl 
 import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
@@ -9,7 +11,7 @@ from urllib.parse import parse_qs
 
 logger = logging.getLogger(__name__)
 
-REDIS_URL = "redis://localhost:6379"
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 
 class VideoConsumer(AsyncWebsocketConsumer):
     redis_client = None
@@ -18,7 +20,17 @@ class VideoConsumer(AsyncWebsocketConsumer):
     @classmethod
     async def get_redis(cls):
         if cls.redis_client is None:
-            cls.redis_client = await redis.from_url(REDIS_URL, decode_responses=True)
+            if REDIS_URL.startswith("rediss://"):
+                ssl_context = ssl.create_default_context()
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+                cls.redis_client = await redis.from_url(
+                    REDIS_URL,
+                    decode_responses=True,
+                    ssl_context=ssl_context
+                )
+            else:
+                cls.redis_client = await redis.from_url(REDIS_URL, decode_responses=True)
         return cls.redis_client
 
 

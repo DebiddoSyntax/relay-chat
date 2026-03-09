@@ -27,8 +27,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 import resend
 
-
-
+IS_PRODUCTION = not settings.DEBUG
 
 User = get_user_model()
 
@@ -728,8 +727,8 @@ def signup_view(request):
         key='refreshToken',
         value=refreshToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
+        secure=IS_PRODUCTION, 
+        samesite="None" if IS_PRODUCTION else "Lax", 
         max_age=60 * 60 * 24 * 30,
         path='/'
     )
@@ -738,9 +737,9 @@ def signup_view(request):
         key='accessToken',
         value=accessToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
-        max_age=60 * 60 * 24 * 30,
+        secure=IS_PRODUCTION,
+        samesite="None" if IS_PRODUCTION else "Lax",
+        max_age=60 * 15,
         path='/'
     )
 
@@ -790,8 +789,8 @@ def login_view(request):
         key='refreshToken',
         value=refreshToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
+        secure=IS_PRODUCTION, 
+        samesite="None" if IS_PRODUCTION else "Lax", 
         max_age=60 * 60 * 24 * 30,
         path='/'
     )
@@ -800,9 +799,9 @@ def login_view(request):
         key='accessToken',
         value=accessToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
-        max_age=60 * 60 * 24 * 30,
+        secure=IS_PRODUCTION,
+        samesite="None" if IS_PRODUCTION else "Lax",
+        max_age=60 * 15,
         path='/'
     )
 
@@ -895,8 +894,8 @@ def google_login_view(request):
         key='refreshToken',
         value=refreshToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
+        secure=IS_PRODUCTION, 
+        samesite="None" if IS_PRODUCTION else "Lax", 
         max_age=60 * 60 * 24 * 30,
         path='/'
     )
@@ -905,9 +904,9 @@ def google_login_view(request):
         key='accessToken',
         value=accessToken,
         httponly=True,
-        secure=False,
-        samesite="Lax",
-        max_age=60 * 60 * 24 * 30,
+        secure=IS_PRODUCTION,
+        samesite="None" if IS_PRODUCTION else "Lax",
+        max_age=60 * 15,
         path='/'
     )
 
@@ -969,21 +968,21 @@ def refresh_token_view(request):
         if settings.SIMPLE_JWT.get("ROTATE_REFRESH_TOKENS"):
             new_refresh_token = str(refresh)
             response.set_cookie(
-                key="refreshToken",
+                key='refreshToken',
                 value=new_refresh_token,
                 httponly=True,
-                secure=False,  
-                samesite="Lax",
+                secure=IS_PRODUCTION, 
+                samesite="None" if IS_PRODUCTION else "Lax", 
                 max_age=60 * 60 * 24 * 30,
-                path="/"
+                path='/'
             )
 
             response.set_cookie(
                 key='accessToken',
                 value=new_access_token,
                 httponly=True,
-                secure=False,
-                samesite="Lax",
+                secure=IS_PRODUCTION,
+                samesite="None" if IS_PRODUCTION else "Lax",
                 max_age=60 * 15,
                 path='/'
             )

@@ -2,6 +2,9 @@ from dotenv import load_dotenv
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+import dj_database_url 
+import os
+import ssl
 
 
 
@@ -10,21 +13,37 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('DJANGO_SECRETKEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# SECURE_HSTS_SECONDS
+SECURE_SSL_REDIRECT = False
 
-ALLOWED_HOSTS = ['192.168.43.190', '127.0.0.1', 'localhost', '192.168.0.129', '192.168.43.196']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_COOKIE_SECURE = True
+
+CSRF_COOKIE_SECURE = True
+
+SECURE_HSTS_SECONDS = 3600
 
 PASSWORD_RESET_TIMEOUT = 900
+
+CORS_ALLOW_CREDENTIALS = True
+
+ALLOWED_HOSTS = ['relaycha-t.vercel.app']
+
+CORS_ALLOWED_ORIGINS = ['https://relaycha-t.vercel.app']
+
+CORS_ALLOW_HEADERS = [ "Authorization", "Content-Type", "X-CSRFToken", ]
+
+CORS_ALLOW_METHODS = [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", ]
+
+CSRF_TRUSTED_ORIGINS = ['https://relaycha-t.vercel.app']
+
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 # Application definition
 INSTALLED_APPS = [
@@ -71,39 +90,6 @@ REST_FRAMEWORK = {
 
 
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    'http://192.168.0.129:3000',
-    'http://192.168.43.196:3000',
-]
-
-CORS_ALLOW_CREDENTIALS = True
-
-CORS_ALLOW_HEADERS = [
-    "Authorization",
-    "Content-Type",
-    "X-CSRFToken",
-]
-
-CORS_ALLOW_METHODS = [
-    "GET",
-    "POST",
-    "PUT",
-    "PATCH",
-    "DELETE",
-    "OPTIONS",
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    'http://192.168.0.129:3000',
-    'http://192.168.43.196:3000',
-]
-
-
-
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
@@ -112,30 +98,47 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True
 }
 
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("localhost", 6379)],
+if REDIS_URL.startswith("rediss://"):
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [{"address": REDIS_URL, "ssl_cert_reqs": ssl.CERT_NONE}],
+            },
         },
-    },
-}
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
+        },
+    }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.db"
 
 AUTH_USER_MODEL = 'chats.User'
 
+
 MIDDLEWARE = [
+    "django.middleware.security.SecurityMiddleware",
     "corsheaders.middleware.CorsMiddleware",
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.common.CommonMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = 'core.urls'
+
 
 TEMPLATES = [
     {
@@ -159,15 +162,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 # Database
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='5432'),
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get("DATABASE_URL"),
+        conn_max_age=600
+    )
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -204,6 +204,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# This production code might break development mode, so we check whether we're in DEBUG mode
+if not DEBUG:
+    # Tell Django to copy static assets into a path called `staticfiles` (this is specific to Render)
+    STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+    # Enable the WhiteNoise storage backend, which compresses static files to reduce disk use
+    # and renames the files with unique names for each version to support long-term caching
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
