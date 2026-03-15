@@ -31,15 +31,15 @@ PASSWORD_RESET_TIMEOUT = 900
 
 CORS_ALLOW_CREDENTIALS = True
 
-ALLOWED_HOSTS = ['relaycha-t.vercel.app', 'relay-chat-oggo.onrender.com', '.onrender.com',]
+ALLOWED_HOSTS = ['reelaychat.vercel.app', 'relay-chat-oggo.onrender.com', '.onrender.com',]
 
-CORS_ALLOWED_ORIGINS = ['https://relaycha-t.vercel.app', 'https://relay-chat-oggo.onrender.com',]
+CORS_ALLOWED_ORIGINS = ['https://reelaychat.vercel.app', 'https://relay-chat-oggo.onrender.com',]
 
 CORS_ALLOW_HEADERS = [ "Authorization", "Content-Type", "X-CSRFToken", ]
 
 CORS_ALLOW_METHODS = [ "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", ]
 
-CSRF_TRUSTED_ORIGINS = ['https://relaycha-t.vercel.app', 'https://relay-chat-oggo.onrender.com',]
+CSRF_TRUSTED_ORIGINS = ['https://reelaychat.vercel.app', 'https://relay-chat-oggo.onrender.com',]
 
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
