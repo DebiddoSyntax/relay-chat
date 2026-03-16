@@ -62,6 +62,7 @@ interface FailedStateType {
 function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolean | null}) {
     
     const { isDarkMode } = useDarkMode()
+    const token = useAuth((state) => state.accessToken)
     const incomingCall = useChat((state)=> state.incomingCall)
     const setIncomingCall = useChat((state)=> state.setIncomingCall)
     const setActiveCall = useChat((state)=> state.setActiveCall)
@@ -249,7 +250,7 @@ function Call({ activeId, isAudio }: { activeId?: number | null, isAudio: boolea
             };
 
 
-            const socket = new WebSocket(`${socketURL}/video/${currentId}/?audio=${isAudio}`);
+            const socket = new WebSocket(`${socketURL}/video/${currentId}/?audio=${isAudio}&token=${token}`);
             socketRef.current = socket;
 
             let remoteOfferSet = false;

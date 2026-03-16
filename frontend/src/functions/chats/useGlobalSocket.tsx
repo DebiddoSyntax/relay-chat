@@ -22,7 +22,7 @@ export function useGlobalSocket() {
     useEffect(() => {
         if (!token) return
         
-        const socket = new WebSocket(`${socketURL}/user/`)
+        const socket = new WebSocket(`${socketURL}/user/?token=${token}`)
         let reconnectTimeout: NodeJS.Timeout
         
         const connect = () =>{
