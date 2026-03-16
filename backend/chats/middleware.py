@@ -3,6 +3,7 @@ from django.contrib.auth.models import AnonymousUser
 from channels.db import database_sync_to_async
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+from urllib.parse import parse_qs
 
 class JWTAuthMiddleware(BaseMiddleware):
     async def __call__(self, scope, receive, send):
@@ -10,7 +11,10 @@ class JWTAuthMiddleware(BaseMiddleware):
         headers = dict(scope.get("headers", []))
         cookie_header = headers.get(b"cookie", b"").decode()
 
-        token = self.extract_token_from_cookies(cookie_header)
+        token = self.extract_token_from_query(scope)
+
+        if not token:
+            token = self.extract_token_from_cookies(cookie_header)
         
         if token:
             user, error = await self.get_user(token)
@@ -25,6 +29,11 @@ class JWTAuthMiddleware(BaseMiddleware):
     
 
     # utility to get token 
+    def extract_token_from_query(self, scope):
+        query_string = scope.get("query_string", b"").decode()
+        params = parse_qs(query_string)
+        return params.get("token", [None])[0]
+    
     def extract_token_from_cookies(self, cookie_header):
         if not cookie_header:
             print('no token in midd cookie')

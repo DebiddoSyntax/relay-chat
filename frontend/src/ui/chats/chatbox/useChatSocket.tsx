@@ -23,7 +23,7 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
         if(!chatOpen || !activeId) return 
         
         const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
-        const wsUrl = `${socketURL}/chat/${activeId}/`;
+        const wsUrl = `${socketURL}/chat/${activeId}/?token=${token}`;
         console.log("WebSocket URL:", wsUrl);
         let reconnectTimeout: NodeJS.Timeout
         let isCleanup = false
