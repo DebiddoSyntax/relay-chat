@@ -16,7 +16,7 @@ interface ChatCardProps {
 
 function ChatCard({ data, activeId, isAI, showImage, chatName } : ChatCardProps ) {
 
-    const { toggleDarkMode, isDarkMode } = useDarkMode()
+    const { isDarkMode } = useDarkMode()
     const currentDate = new Date(data.last_message_time);
     
     const today = new Date();
