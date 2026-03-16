@@ -24,6 +24,7 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
         
         const socketURL = process.env.NEXT_PUBLIC_BASE_SOCKET_URL
         const wsUrl = `${socketURL}/chat/${activeId}/`;
+        console.log("WebSocket URL:", wsUrl);
         let reconnectTimeout: NodeJS.Timeout
         let isCleanup = false
         
@@ -107,7 +108,7 @@ export function useChatSocket(activeId: number | null, shouldScrollRef: React.Re
 
 
             socket.onerror = (err) => {
-                // console.error("WebSocket error", err);
+                console.error("WebSocket error", err);
             };
         }
 

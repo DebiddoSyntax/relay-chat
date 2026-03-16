@@ -96,7 +96,7 @@ export function useGlobalSocket() {
             }
 
             // socket.onopen = () => console.log('Global socket open')
-            socket.onerror = (err) => console.error('socket error')
+            socket.onerror = (err) => console.error('socket error', err)
 
             socket.onmessage = handleMessage
 

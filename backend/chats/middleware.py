@@ -27,6 +27,7 @@ class JWTAuthMiddleware(BaseMiddleware):
     # utility to get token 
     def extract_token_from_cookies(self, cookie_header):
         if not cookie_header:
+            print('no token in midd cookie')
             return None
         
         cookies = {}
