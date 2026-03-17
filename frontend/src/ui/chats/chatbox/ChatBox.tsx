@@ -1,5 +1,5 @@
 "use client"
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useChat } from "@/src/functions/chats/chatStore";
 import { handlePrivateChatName } from "@/src/functions/chats/handlePrivateChatName";
 import Call from "../call/Call"
@@ -167,6 +167,14 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
         sender_image: ''
     }
 
+
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const mobileCheck = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        setIsMobile(mobileCheck);
+    }, []);
+
     return (
         <div  className={`flex-1 w-full h-full bg-gray-bg overflow-hidden`}>
             {chatOpen ? (
@@ -200,11 +208,11 @@ function ChatBox({ isGroup, isAI }: ChatBoxProps) {
                                 
                                 <div className="relative inline-block text-left">
                                     <div className="flex items-center gap-3">
-                                        {!isGroup && !isAI && 
-                                            <>
+                                        {!isGroup && !isAI && !isMobile &&
+                                            <div className="hidden lg:flex items-center gap-3">
                                                 <Call activeId={activeId} isAudio={false} />
                                                 <Call activeId={activeId} isAudio={true} />
-                                            </>
+                                            </div>
                                         }
                                           {isGroup && <AiFillInfoCircle className='text-2xl cursor-pointer' onClick={toggleGroupInfo}/>}
                                     </div>
